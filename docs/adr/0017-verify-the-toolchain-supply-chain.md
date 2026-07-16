@@ -1,0 +1,3 @@
+# Verify the toolchain supply chain
+
+Every packaged component will be declared in a version-controlled toolchain manifest with an immutable source URL, exact version or commit, SHA-256 digest, license, and source-code reference. Release automation will reject moving download URLs and digest mismatches. It will verify yt-dlp against upstream's GPG-signed checksum list and use upstream verification data for other components when available; otherwise a human-reviewed update pull request will establish the expected digest. The main and platform packages will be published from GitHub Actions using npm trusted publishing and provenance so consumers can trace each package to its source and release workflow.

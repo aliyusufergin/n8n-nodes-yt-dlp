@@ -1,0 +1,3 @@
+# Isolate the child process environment
+
+An invocation will not inherit the n8n container environment wholesale. The node will place HOME, XDG configuration and cache roots, and the temporary directory inside the execution workspace; set a deterministic UTF-8 locale and working directory; and use absolute packaged-tool paths with a minimal PATH. It will pass through only operator-controlled HTTP, HTTPS, and all-proxy variables and their exclusions; certificate-bundle variables; and timezone. Proxy user information will join the redaction secret set. Dynamic-loader, Python, cloud-credential, n8n-secret, and arbitrary environment variables will not reach yt-dlp, and v1 will expose no user-defined environment field.

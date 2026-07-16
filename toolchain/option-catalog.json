@@ -1,0 +1,2070 @@
+{
+  "ytDlpVersion": "2026.07.14.233956",
+  "options": {
+    "--xattr-set-filesize": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--dump-user-agent": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--youtube-include-dash-manifest": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-youtube-skip-dash-manifest": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--youtube-skip-dash-manifest": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-youtube-include-dash-manifest": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--youtube-include-hls-manifest": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-youtube-skip-hls-manifest": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--youtube-skip-hls-manifest": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-youtube-include-hls-manifest": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--youtube-print-sig-code": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--sponskrub": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-sponskrub": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--sponskrub-cut": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-sponskrub-cut": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--sponskrub-force": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-sponskrub-force": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--prefer-avconv": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-prefer-ffmpeg": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--prefer-ffmpeg": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-prefer-avconv": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "-C": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--call-home": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-call-home": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--include-ads": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-include-ads": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--write-annotations": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-write-annotations": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--sponskrub-location": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "--sponskrub-args": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "--cn-verification-proxy": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": [],
+      "sensitive": true
+    },
+    "-h": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--help"
+    },
+    "--help": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["-h"]
+    },
+    "--version": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "-U": {
+      "arity": 0,
+      "classification": "restricted",
+      "aliasOf": "--update"
+    },
+    "--update": {
+      "arity": 0,
+      "classification": "restricted",
+      "aliases": ["-U"]
+    },
+    "--no-update": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--update-to": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "-i": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--ignore-errors"
+    },
+    "--ignore-errors": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["-i"]
+    },
+    "--no-abort-on-error": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--abort-on-error": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--no-ignore-errors"]
+    },
+    "--no-ignore-errors": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--abort-on-error"
+    },
+    "--list-extractors": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--extractor-descriptions": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--use-extractors": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": ["--ies"]
+    },
+    "--ies": {
+      "arity": 1,
+      "classification": "pass",
+      "aliasOf": "--use-extractors"
+    },
+    "--force-generic-extractor": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--default-search": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--ignore-config": {
+      "arity": 0,
+      "classification": "node-controlled",
+      "aliases": ["--no-config"]
+    },
+    "--no-config": {
+      "arity": 0,
+      "classification": "node-controlled",
+      "aliasOf": "--ignore-config"
+    },
+    "--no-config-locations": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--config-locations": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "--plugin-dirs": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "--no-plugin-dirs": {
+      "arity": 0,
+      "classification": "node-controlled",
+      "aliases": []
+    },
+    "--js-runtimes": {
+      "arity": 1,
+      "classification": "node-controlled",
+      "aliases": []
+    },
+    "--no-js-runtimes": {
+      "arity": 0,
+      "classification": "node-controlled",
+      "aliases": []
+    },
+    "--remote-components": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "--no-remote-components": {
+      "arity": 0,
+      "classification": "node-controlled",
+      "aliases": []
+    },
+    "--flat-playlist": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-flat-playlist": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--live-from-start": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-live-from-start": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--wait-for-video": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-wait-for-video": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--mark-watched": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-mark-watched": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-colors": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--no-colours"]
+    },
+    "--no-colours": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--no-colors"
+    },
+    "--color": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--compat-options": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": [],
+      "valueKind": "compat-options",
+      "allowedValues": [
+        "abort-on-error",
+        "embed-metadata",
+        "embed-thumbnail-atomicparsley",
+        "filename",
+        "filename-sanitization",
+        "format-sort",
+        "format-spec",
+        "list-formats",
+        "manifest-filesize-approx",
+        "mtime-by-default",
+        "multistreams",
+        "no-attach-info-json",
+        "no-certifi",
+        "no-clean-infojson",
+        "no-direct-merge",
+        "no-external-downloader-progress",
+        "no-keep-subs",
+        "no-live-chat",
+        "no-playlist-metafiles",
+        "no-youtube-channel-redirect",
+        "no-youtube-prefer-utc-upload-date",
+        "no-youtube-unavailable-videos",
+        "playlist-index",
+        "playlist-match-filter",
+        "prefer-legacy-http-handler",
+        "prefer-vp9-sort",
+        "seperate-video-versions"
+      ]
+    },
+    "--alias": {
+      "arity": 2,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "-t": {
+      "arity": 1,
+      "classification": "pass",
+      "aliasOf": "--preset-alias"
+    },
+    "--preset-alias": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": ["-t"],
+      "valueKind": "preset-alias",
+      "allowedValues": ["aac", "mkv", "mp3", "mp4", "sleep"],
+      "presetExpansions": {
+        "aac": [
+          "-f",
+          "ba[acodec^=aac]/ba[acodec^=mp4a.40.]/ba/b",
+          "-x",
+          "--audio-format",
+          "aac"
+        ],
+        "mkv": ["--merge-output-format", "mkv", "--remux-video", "mkv"],
+        "mp3": ["-f", "ba[acodec^=mp3]/ba/b", "-x", "--audio-format", "mp3"],
+        "mp4": [
+          "--merge-output-format",
+          "mp4",
+          "--remux-video",
+          "mp4",
+          "-S",
+          "vcodec:h264,lang,quality,res,fps,hdr:12,acodec:aac"
+        ],
+        "sleep": [
+          "--sleep-subtitles",
+          "5",
+          "--sleep-requests",
+          "0.75",
+          "--sleep-interval",
+          "10",
+          "--max-sleep-interval",
+          "20"
+        ]
+      }
+    },
+    "--proxy": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": [],
+      "sensitive": true
+    },
+    "--socket-timeout": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--source-address": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--impersonate": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--list-impersonate-targets": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "-4": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--force-ipv4"
+    },
+    "--force-ipv4": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["-4"]
+    },
+    "-6": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--force-ipv6"
+    },
+    "--force-ipv6": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["-6"]
+    },
+    "--enable-file-urls": {
+      "arity": 0,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "--geo-verification-proxy": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": [],
+      "sensitive": true
+    },
+    "--xff": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--geo-bypass": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-geo-bypass": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--geo-bypass-country": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--geo-bypass-ip-block": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--playlist-start": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--playlist-end": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "-I": {
+      "arity": 1,
+      "classification": "pass",
+      "aliasOf": "--playlist-items"
+    },
+    "--playlist-items": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": ["-I"]
+    },
+    "--match-title": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--reject-title": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--min-filesize": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--max-filesize": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--date": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--datebefore": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--dateafter": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--min-views": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--max-views": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--match-filters": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-match-filters": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--break-match-filters": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-break-match-filters": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-playlist": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--yes-playlist": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--age-limit": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--download-archive": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "--no-download-archive": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--max-downloads": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--break-on-existing": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-break-on-existing": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--break-on-reject": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--break-per-input": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-break-per-input": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--skip-playlist-after-errors": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "-N": {
+      "arity": 1,
+      "classification": "pass",
+      "aliasOf": "--concurrent-fragments"
+    },
+    "--concurrent-fragments": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": ["-N"]
+    },
+    "-r": {
+      "arity": 1,
+      "classification": "pass",
+      "aliasOf": "--limit-rate"
+    },
+    "--limit-rate": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": ["-r", "--rate-limit"]
+    },
+    "--rate-limit": {
+      "arity": 1,
+      "classification": "pass",
+      "aliasOf": "--limit-rate"
+    },
+    "--throttled-rate": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "-R": {
+      "arity": 1,
+      "classification": "pass",
+      "aliasOf": "--retries"
+    },
+    "--retries": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": ["-R"]
+    },
+    "--file-access-retries": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--fragment-retries": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--retry-sleep": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--skip-unavailable-fragments": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--no-abort-on-unavailable-fragments"]
+    },
+    "--no-abort-on-unavailable-fragments": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--skip-unavailable-fragments"
+    },
+    "--abort-on-unavailable-fragments": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--no-skip-unavailable-fragments"]
+    },
+    "--no-skip-unavailable-fragments": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--abort-on-unavailable-fragments"
+    },
+    "--keep-fragments": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-keep-fragments": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--buffer-size": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--resize-buffer": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-resize-buffer": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--http-chunk-size": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--test": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--playlist-reverse": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-playlist-reverse": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--playlist-random": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--lazy-playlist": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-lazy-playlist": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--hls-prefer-native": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--hls-prefer-ffmpeg": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--hls-use-mpegts": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-hls-use-mpegts": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--download-sections": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--downloader": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": ["--external-downloader"]
+    },
+    "--external-downloader": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliasOf": "--downloader"
+    },
+    "--downloader-args": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": ["--external-downloader-args"]
+    },
+    "--external-downloader-args": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliasOf": "--downloader-args"
+    },
+    "-a": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliasOf": "--batch-file"
+    },
+    "--batch-file": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": ["-a"]
+    },
+    "--no-batch-file": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--id": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "-P": {
+      "arity": 1,
+      "classification": "node-controlled",
+      "aliasOf": "--paths"
+    },
+    "--paths": {
+      "arity": 1,
+      "classification": "node-controlled",
+      "aliases": ["-P"]
+    },
+    "-o": {
+      "arity": 1,
+      "classification": "pass",
+      "aliasOf": "--output",
+      "valueKind": "output-template"
+    },
+    "--output": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": ["-o"],
+      "valueKind": "output-template"
+    },
+    "--output-na-placeholder": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": [],
+      "valueKind": "path-component"
+    },
+    "--autonumber-size": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--autonumber-start": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--restrict-filenames": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-restrict-filenames": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--windows-filenames": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-windows-filenames": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--trim-filenames": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": ["--trim-file-names"]
+    },
+    "--trim-file-names": {
+      "arity": 1,
+      "classification": "pass",
+      "aliasOf": "--trim-filenames"
+    },
+    "-w": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--no-overwrites"
+    },
+    "--no-overwrites": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["-w"]
+    },
+    "--force-overwrites": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--yes-overwrites"]
+    },
+    "--yes-overwrites": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--force-overwrites"
+    },
+    "--no-force-overwrites": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "-c": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--continue"
+    },
+    "--continue": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["-c"]
+    },
+    "--no-continue": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--part": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-part": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--mtime": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-mtime": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--write-description": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-write-description": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--write-info-json": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-write-info-json": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--write-playlist-metafiles": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-write-playlist-metafiles": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--clean-info-json": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--clean-infojson"]
+    },
+    "--clean-infojson": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--clean-info-json"
+    },
+    "--no-clean-info-json": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--no-clean-infojson"]
+    },
+    "--no-clean-infojson": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--no-clean-info-json"
+    },
+    "--write-comments": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--get-comments"]
+    },
+    "--get-comments": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--write-comments"
+    },
+    "--no-write-comments": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--no-get-comments"]
+    },
+    "--no-get-comments": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--no-write-comments"
+    },
+    "--load-info-json": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "--cookies": {
+      "arity": 1,
+      "classification": "node-controlled",
+      "aliases": []
+    },
+    "--no-cookies": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--cookies-from-browser": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "--no-cookies-from-browser": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--cache-dir": {
+      "arity": 1,
+      "classification": "node-controlled",
+      "aliases": []
+    },
+    "--no-cache-dir": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--rm-cache-dir": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--write-thumbnail": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-write-thumbnail": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--write-all-thumbnails": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--list-thumbnails": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--write-link": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--write-url-link": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--write-webloc-link": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--write-desktop-link": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "-q": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--quiet"
+    },
+    "--quiet": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["-q"]
+    },
+    "--no-quiet": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-warnings": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "-s": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--simulate"
+    },
+    "--simulate": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["-s"]
+    },
+    "--no-simulate": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--ignore-no-formats-error": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-ignore-no-formats-error": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--skip-download": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--no-download"]
+    },
+    "--no-download": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--skip-download"
+    },
+    "-O": {
+      "arity": 1,
+      "classification": "pass",
+      "aliasOf": "--print"
+    },
+    "--print": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": ["-O"]
+    },
+    "--print-to-file": {
+      "arity": 2,
+      "classification": "restricted",
+      "aliases": [],
+      "reason": "Writing to arbitrary paths is not supported."
+    },
+    "-g": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--get-url"
+    },
+    "--get-url": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["-g"]
+    },
+    "-e": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--get-title"
+    },
+    "--get-title": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["-e"]
+    },
+    "--get-id": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--get-thumbnail": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--get-description": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--get-duration": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--get-filename": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--get-format": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "-j": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--dump-json"
+    },
+    "--dump-json": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["-j"]
+    },
+    "-J": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--dump-single-json"
+    },
+    "--dump-single-json": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["-J"]
+    },
+    "--print-json": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--force-write-archive": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--force-write-download-archive", "--force-download-archive"]
+    },
+    "--force-write-download-archive": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--force-write-archive"
+    },
+    "--force-download-archive": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--force-write-archive"
+    },
+    "--newline": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-progress": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--progress": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--console-title": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--progress-template": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--progress-delta": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "-v": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--verbose"
+    },
+    "--verbose": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["-v"]
+    },
+    "--dump-pages": {
+      "arity": 0,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "--write-pages": {
+      "arity": 0,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "--load-pages": {
+      "arity": 0,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "--print-traffic": {
+      "arity": 0,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "--encoding": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--legacy-server-connect": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-check-certificates": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--prefer-insecure": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--prefer-unsecure"]
+    },
+    "--prefer-unsecure": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--prefer-insecure"
+    },
+    "--user-agent": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--referer": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--add-headers": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": [],
+      "sensitive": true
+    },
+    "--bidi-workaround": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--sleep-requests": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--sleep-interval": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": ["--min-sleep-interval"]
+    },
+    "--min-sleep-interval": {
+      "arity": 1,
+      "classification": "pass",
+      "aliasOf": "--sleep-interval"
+    },
+    "--max-sleep-interval": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--sleep-subtitles": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "-f": {
+      "arity": 1,
+      "classification": "pass",
+      "aliasOf": "--format"
+    },
+    "--format": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": ["-f"]
+    },
+    "-S": {
+      "arity": 1,
+      "classification": "pass",
+      "aliasOf": "--format-sort"
+    },
+    "--format-sort": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": ["-S"]
+    },
+    "--format-sort-reset": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--format-sort-force": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--S-force"]
+    },
+    "--S-force": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--format-sort-force"
+    },
+    "--no-format-sort-force": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--video-multistreams": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-video-multistreams": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--audio-multistreams": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-audio-multistreams": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--all-formats": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--prefer-free-formats": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-prefer-free-formats": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--check-formats": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--check-all-formats": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-check-formats": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "-F": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--list-formats"
+    },
+    "--list-formats": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["-F"]
+    },
+    "--list-formats-as-table": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--list-formats-old": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--no-list-formats-as-table"]
+    },
+    "--no-list-formats-as-table": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--list-formats-old"
+    },
+    "--merge-output-format": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--allow-unplayable-formats": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-allow-unplayable-formats": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--write-subs": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--write-srt"]
+    },
+    "--write-srt": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--write-subs"
+    },
+    "--no-write-subs": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--no-write-srt"]
+    },
+    "--no-write-srt": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--no-write-subs"
+    },
+    "--write-auto-subs": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--write-automatic-subs"]
+    },
+    "--write-automatic-subs": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--write-auto-subs"
+    },
+    "--no-write-auto-subs": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--no-write-automatic-subs"]
+    },
+    "--no-write-automatic-subs": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--no-write-auto-subs"
+    },
+    "--all-subs": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--list-subs": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--sub-format": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--sub-langs": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": ["--srt-langs"]
+    },
+    "--srt-langs": {
+      "arity": 1,
+      "classification": "pass",
+      "aliasOf": "--sub-langs"
+    },
+    "-u": {
+      "arity": 1,
+      "classification": "pass",
+      "aliasOf": "--username",
+      "sensitive": true
+    },
+    "--username": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": ["-u"],
+      "sensitive": true
+    },
+    "-p": {
+      "arity": 1,
+      "classification": "pass",
+      "aliasOf": "--password",
+      "sensitive": true
+    },
+    "--password": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": ["-p"],
+      "sensitive": true
+    },
+    "-2": {
+      "arity": 1,
+      "classification": "pass",
+      "aliasOf": "--twofactor",
+      "sensitive": true
+    },
+    "--twofactor": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": ["-2"],
+      "sensitive": true
+    },
+    "-n": {
+      "arity": 0,
+      "classification": "restricted",
+      "aliasOf": "--netrc"
+    },
+    "--netrc": {
+      "arity": 0,
+      "classification": "restricted",
+      "aliases": ["-n"]
+    },
+    "--netrc-location": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "--netrc-cmd": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "--video-password": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": [],
+      "sensitive": true
+    },
+    "--ap-mso": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--ap-username": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": [],
+      "sensitive": true
+    },
+    "--ap-password": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": [],
+      "sensitive": true
+    },
+    "--ap-list-mso": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--client-certificate": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "--client-certificate-key": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "--client-certificate-password": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "-x": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--extract-audio"
+    },
+    "--extract-audio": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["-x"]
+    },
+    "--audio-format": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--audio-quality": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--remux-video": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--recode-video": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--postprocessor-args": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": ["--ppa"]
+    },
+    "--ppa": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliasOf": "--postprocessor-args"
+    },
+    "-k": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--keep-video"
+    },
+    "--keep-video": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["-k"]
+    },
+    "--no-keep-video": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--post-overwrites": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-post-overwrites": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--embed-subs": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-embed-subs": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--embed-thumbnail": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-embed-thumbnail": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--embed-metadata": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--add-metadata"]
+    },
+    "--add-metadata": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--embed-metadata"
+    },
+    "--no-embed-metadata": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--no-add-metadata"]
+    },
+    "--no-add-metadata": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--no-embed-metadata"
+    },
+    "--embed-chapters": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--add-chapters"]
+    },
+    "--add-chapters": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--embed-chapters"
+    },
+    "--no-embed-chapters": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--no-add-chapters"]
+    },
+    "--no-add-chapters": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--no-embed-chapters"
+    },
+    "--embed-info-json": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-embed-info-json": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--metadata-from-title": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--parse-metadata": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--replace-in-metadata": {
+      "arity": 3,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--xattrs": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--xattr"]
+    },
+    "--xattr": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--xattrs"
+    },
+    "--concat-playlist": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--fixup": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--ffmpeg-location": {
+      "arity": 1,
+      "classification": "node-controlled",
+      "aliases": []
+    },
+    "--exec": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": [],
+      "reason": "Launching arbitrary executables is not supported."
+    },
+    "--no-exec": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--exec-before-download": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "--no-exec-before-download": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--convert-subs": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": ["--convert-sub", "--convert-subtitles"]
+    },
+    "--convert-sub": {
+      "arity": 1,
+      "classification": "pass",
+      "aliasOf": "--convert-subs"
+    },
+    "--convert-subtitles": {
+      "arity": 1,
+      "classification": "pass",
+      "aliasOf": "--convert-subs"
+    },
+    "--convert-thumbnails": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--split-chapters": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--split-tracks"]
+    },
+    "--split-tracks": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--split-chapters"
+    },
+    "--no-split-chapters": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--no-split-tracks"]
+    },
+    "--no-split-tracks": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--no-split-chapters"
+    },
+    "--remove-chapters": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-remove-chapters": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--force-keyframes-at-cuts": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-force-keyframes-at-cuts": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--use-postprocessor": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "--sponsorblock-mark": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--sponsorblock-remove": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--sponsorblock-chapter-title": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-sponsorblock": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--sponsorblock-api": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--extractor-retries": {
+      "arity": 1,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--allow-dynamic-mpd": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--no-ignore-dynamic-mpd"]
+    },
+    "--no-ignore-dynamic-mpd": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--allow-dynamic-mpd"
+    },
+    "--ignore-dynamic-mpd": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": ["--no-allow-dynamic-mpd"]
+    },
+    "--no-allow-dynamic-mpd": {
+      "arity": 0,
+      "classification": "pass",
+      "aliasOf": "--ignore-dynamic-mpd"
+    },
+    "--hls-split-discontinuity": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--no-hls-split-discontinuity": {
+      "arity": 0,
+      "classification": "pass",
+      "aliases": []
+    },
+    "--extractor-args": {
+      "arity": 1,
+      "classification": "restricted",
+      "aliases": []
+    },
+    "--match-filter": {
+      "arity": 1,
+      "classification": "pass"
+    },
+    "--dump-intermediate-pages": {
+      "arity": 0,
+      "classification": "restricted"
+    },
+    "--write-intermediate-pages": {
+      "arity": 0,
+      "classification": "restricted"
+    },
+    "--dump-headers": {
+      "arity": 0,
+      "classification": "restricted"
+    }
+  }
+}

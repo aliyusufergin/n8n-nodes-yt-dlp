@@ -1,0 +1,3 @@
+# Support a single official n8n Docker instance
+
+The first release will support n8n 2.x, beginning at 2.0.0, in the official n8n Docker image running as a single instance on Linux amd64 and Linux arm64. Native Linux installations, alternative container bases, queue mode, Windows, macOS, and n8n 1.x are out of scope. The code will not deliberately reject queue mode, but that deployment remains unsupported until installation, worker lifecycle, binary storage, mixed-architecture behavior, and multi-container integration tests are specified. This keeps the executable, API compatibility, and test matrices bounded and lets the package select the official yt-dlp musllinux build for a known runtime.

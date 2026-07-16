@@ -1,0 +1,42 @@
+{
+  "id": "YtDlpE2ETest0001",
+  "name": "yt-dlp community node E2E",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "c0e7610b-5986-43e3-9fe6-04eca0c1cd41",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "arguments": "--format bestvideo+bestaudio --merge-output-format mp4 --output merged.%(ext)s http://127.0.0.1:18080/manifest.mpd",
+        "timeoutSeconds": 120
+      },
+      "id": "02e3857c-e66c-4341-ae0a-6df9cca32d34",
+      "name": "yt-dlp",
+      "type": "n8n-nodes-yt-dlp.ytDlp",
+      "typeVersion": 1,
+      "position": [240, 0]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "yt-dlp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

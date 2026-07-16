@@ -1,0 +1,24 @@
+{
+  "name": "n8n-nodes-yt-dlp-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Workspace for the n8n yt-dlp community node and its platform toolchains",
+  "license": "UNLICENSED",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "source:bundle": "node toolchain/build-corresponding-source.mjs",
+    "source:plan": "node toolchain/build-corresponding-source.mjs --plan",
+    "test": "node --test test/**/*.test.mjs && npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "verify:metadata": "node toolchain/verify-release-metadata.mjs",
+    "verify": "npm run verify:metadata && npm run typecheck && npm test && npm run lint && npm run build"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "npm@12.0.0"
+}

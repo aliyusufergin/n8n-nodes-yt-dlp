@@ -1,0 +1,3 @@
+# Distribute toolchains as platform packages
+
+The `n8n-nodes-yt-dlp` main package will declare `n8n-nodes-yt-dlp-linux-x64` and `n8n-nodes-yt-dlp-linux-arm64` as platform-constrained optional dependencies. Each platform package will contain pinned executables at publication time, allowing npm to install only the matching architecture with registry integrity checks and without a network-fetching install script; releases must keep the main and platform package versions coordinated. Release automation will recheck package-name availability before the first publication and stop rather than silently rename any package.

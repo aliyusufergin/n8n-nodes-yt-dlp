@@ -1,0 +1,297 @@
+{
+  "schemaVersion": 1,
+  "packageVersion": "0.1.0",
+  "expectedInventory": {
+    "waderArchives": [
+      "VMAF",
+      "GLIB",
+      "LIBHARFBUZZ",
+      "CAIRO",
+      "PANGO",
+      "LIBRSVG",
+      "LIBARIBB24",
+      "LIBASS",
+      "LIBBLURAY",
+      "DAV1D",
+      "DAVS2",
+      "FDK_AAC",
+      "KVAZAAR",
+      "LIBMODPLUG",
+      "MP3LAME",
+      "LCMS2",
+      "LIBMYSOFA",
+      "OPENCOREAMR",
+      "OPENJPEG",
+      "OPUS",
+      "LIBRABBITMQ",
+      "RAV1E",
+      "RUBBERBAND",
+      "LIBSHINE",
+      "SPEEX",
+      "SRT",
+      "LIBSSH",
+      "SVTAV1",
+      "OGG",
+      "THEORA",
+      "TWOLAME",
+      "VIDSTAB",
+      "VORBIS",
+      "VPX",
+      "LIBWEBP",
+      "X265",
+      "XAVS2",
+      "XVID",
+      "XEVE",
+      "XEVD",
+      "ZIMG",
+      "LIBJXL",
+      "LIBZMQ",
+      "LIBVA",
+      "LIBVPL",
+      "VVENC",
+      "FFMPEG"
+    ],
+    "alpineDistfiles": [
+      "brotli-1.1.0.tar.gz",
+      "bzip2-1.0.8.tar.gz",
+      "drm-libdrm-2.4.120.tar.gz",
+      "expat-2.7.5.tar.xz",
+      "fftw-3.3.10.tar.gz",
+      "fontconfig-2.15.0.tar.gz",
+      "freetype-2.13.2.tar.xz",
+      "fribidi-1.0.15.tar.xz",
+      "ft2demos-2.13.2.tar.xz",
+      "gcc-13-20240309.tar.xz",
+      "giflib-5.2.2.tar.gz",
+      "googletest-18f8200e3079b0e54fa00cb7ac55d4c39dcf6da6.tar.gz",
+      "graphite2-1.3.14.tar.gz",
+      "libjpeg-turbo-3.0.3.tar.gz",
+      "libpciaccess-0.18.1.tar.xz",
+      "libpng-1.6.56-apng.patch.gz",
+      "libpng-1.6.57.tar.gz",
+      "libsamplerate-0.2.2.tar.xz",
+      "libwebp-1.3.2.tar.gz",
+      "libxml2-2.12.10.tar.xz",
+      "musl-1.2.5.tar.gz",
+      "numactl-2.0.18.tar.gz",
+      "openssl-3.3.7.tar.gz",
+      "snappy-1.1.10.tar.gz",
+      "soxr-0.1.3.tar.xz",
+      "tiff-4.6.0t.tar.gz",
+      "vo-amrwbenc-0.1.3.tar.gz",
+      "xz-5.8.3.tar.gz",
+      "zlib-1.3.2.tar.gz",
+      "zstd-1.5.6.tar.gz"
+    ]
+  },
+  "wader": {
+    "repository": "https://github.com/wader/static-ffmpeg.git",
+    "commit": "06ed6fd0a3b2be35b1ab277cc0243f144c04072f",
+    "buildRunUrl": "https://github.com/wader/static-ffmpeg/actions/runs/27713441288",
+    "image": "docker.io/mwader/static-ffmpeg:8.1.2",
+    "imageDigest": "sha256:33f770f812cbfc3de96c547157fc9faf8bd95a36481753439ffa761045167585",
+    "platformManifests": {
+      "linux/amd64": "sha256:3bfa407c614a29a4535f1e3220fd9f6bc9cd7c25483036962e3c8ff711b56e01",
+      "linux/arm64": "sha256:1998feb6c6bd24b57f4240b11300529f6d3bad067fc162d88ab74c4ce479adba"
+    }
+  },
+  "topLevelSources": [
+    {
+      "name": "yt-dlp",
+      "repository": "https://github.com/yt-dlp/yt-dlp.git",
+      "commit": "aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8"
+    },
+    {
+      "name": "ejs",
+      "repository": "https://github.com/yt-dlp/ejs.git",
+      "commit": "4fb477f4af56880cfd324c48bd4294a2d2294e50"
+    },
+    {
+      "name": "node",
+      "repository": "https://github.com/nodejs/node.git",
+      "commit": "bd96dfbf0361576724b65322046e2ca9f9609cb9"
+    },
+    {
+      "name": "docker-alpine",
+      "repository": "https://github.com/alpinelinux/docker-alpine.git",
+      "commit": "7d63673353bd39d92ba42f6effcc199aeebd45ee"
+    }
+  ],
+  "reviewedGitSources": [
+    {
+      "name": "aom",
+      "url": "https://aomedia.googlesource.com/aom",
+      "commit": "03087864cf4bea6abb0d28f95cf7843511413d8f"
+    },
+    {
+      "name": "libudfread",
+      "url": "https://code.videolan.org/videolan/libudfread.git",
+      "commit": "c3cd5cbb097924557ea4d9da1ff76a74620c51a8"
+    },
+    {
+      "name": "game-music-emu",
+      "url": "https://github.com/libgme/game-music-emu.git",
+      "commit": "265d8b90c9b46bd3b892443dee4da585a0384858"
+    },
+    {
+      "name": "libgsm",
+      "url": "https://github.com/timothytylee/libgsm.git",
+      "commit": "98f1708fb5e06a0dfebd58a3b40d610823db9715"
+    },
+    {
+      "name": "rtmpdump",
+      "url": "https://git.ffmpeg.org/rtmpdump.git",
+      "commit": "138fdb258d9fc26f1843fd1b891180416c9dc575"
+    },
+    {
+      "name": "uavs3d",
+      "url": "https://github.com/uavs3/uavs3d.git",
+      "commit": "0e20d2c291853f196c68922a264bcd8471d75b68"
+    },
+    {
+      "name": "x264",
+      "url": "https://code.videolan.org/videolan/x264.git",
+      "commit": "b35605ace3ddf7c1a5d67a2eb553f034aef41d55"
+    }
+  ],
+  "supplementalArchives": [
+    {
+      "name": "glib-pcre2",
+      "version": "10.44",
+      "url": "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.44/pcre2-10.44.tar.bz2",
+      "sha256": "d34f02e113cf7193a1ebf2770d3ac527088d485d4e047ed10e5d217c6ef5de96"
+    },
+    {
+      "name": "glib-pcre2-wrapdb-patch",
+      "filename": "pcre2_10.44-2_patch.zip",
+      "version": "10.44-2",
+      "url": "https://wrapdb.mesonbuild.com/v2/pcre2_10.44-2/get_patch",
+      "sha256": "4336d422ee9043847e5e10dbbbd01940d4c9e5027f31ccdc33a7898a1ca94009"
+    },
+    {
+      "name": "cairo-pixman",
+      "version": "0.43.4",
+      "url": "https://www.cairographics.org/releases/pixman-0.43.4.tar.gz",
+      "sha256": "a0624db90180c7ddb79fc7a9151093dc37c646d8c38d3f232f767cf64b85a226"
+    }
+  ],
+  "supplementalGitSources": [
+    {
+      "name": "glib-proxy-libintl",
+      "repository": "https://github.com/frida/proxy-libintl.git",
+      "commit": "33934de09af6a6627eb44e310a8079df009abdbb"
+    },
+    {
+      "name": "glib-sysprof",
+      "repository": "https://gitlab.gnome.org/GNOME/sysprof.git",
+      "commit": "02e50efa49885a5a20a84a8cd7feda10ae7e7e98"
+    },
+    {
+      "name": "glib-libffi-meson-port",
+      "repository": "https://gitlab.freedesktop.org/gstreamer/meson-ports/libffi.git",
+      "commit": "83d0cfd00d7d37af4b4349511d29f1f0512621b3",
+      "provenance": "inferred-build-time-head"
+    },
+    {
+      "name": "libjxl-testdata",
+      "repository": "https://github.com/libjxl/testdata.git",
+      "commit": "873045a9c42ed60721756e26e2a6b32e17415205"
+    },
+    {
+      "name": "libjxl-brotli",
+      "repository": "https://github.com/google/brotli.git",
+      "commit": "36533a866ed1ca4b75cf049f4521e4ec5fe24727"
+    },
+    {
+      "name": "libjxl-googletest",
+      "repository": "https://github.com/google/googletest.git",
+      "commit": "6910c9d9165801d8827d628cb72eb7ea9dd538c5"
+    },
+    {
+      "name": "libjxl-highway",
+      "repository": "https://github.com/google/highway.git",
+      "commit": "457c891775a7397bdb0376bb1031e6e027af1c48"
+    },
+    {
+      "name": "libjxl-skcms",
+      "repository": "https://skia.googlesource.com/skcms.git",
+      "commit": "b2e692629c1fb19342517d7fb61f1cf83d075492"
+    },
+    {
+      "name": "libjxl-sjpeg",
+      "repository": "https://github.com/webmproject/sjpeg.git",
+      "commit": "94e0df6d0f8b44228de5be0ff35efb9f946a13c9"
+    },
+    {
+      "name": "libjxl-zlib",
+      "repository": "https://github.com/madler/zlib.git",
+      "commit": "51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf"
+    },
+    {
+      "name": "libjxl-libpng",
+      "repository": "https://github.com/glennrp/libpng.git",
+      "commit": "872555f4ba910252783af1507f9e7fe1653be252"
+    },
+    {
+      "name": "libjxl-libjpeg-turbo",
+      "repository": "https://github.com/libjpeg-turbo/libjpeg-turbo.git",
+      "commit": "8ecba3647edb6dd940463fedf38ca33a8e2a73d1"
+    }
+  ],
+  "alpine": {
+    "baseImage": "docker.io/library/alpine:3.20.3",
+    "baseImageDigest": "sha256:1e42bbe2508154c9126d48c2b8a75420c3544343bf86fd041fb7527e017a4b4a",
+    "aportsRepository": "https://gitlab.alpinelinux.org/alpine/aports.git",
+    "aportsCommit": "6ba2b85c6ce3a4f89fa6b213120181d4f70ab9f0",
+    "distfilesBaseUrl": "https://distfiles.alpinelinux.org/distfiles/v3.20",
+    "fallbackArchives": [
+      {
+        "name": "alpine-freetype",
+        "filename": "freetype-2.13.2.tar.xz",
+        "url": "https://download.savannah.gnu.org/releases/freetype/freetype-2.13.2.tar.xz",
+        "sha256": "12991c4e55c506dd7f9b765933e62fd2be2e06d421505d7950a132e4f1bb484d"
+      },
+      {
+        "name": "alpine-ft2demos",
+        "filename": "ft2demos-2.13.2.tar.xz",
+        "url": "https://download.savannah.gnu.org/releases/freetype/ft2demos-2.13.2.tar.xz",
+        "sha256": "99ee2ed8b98bcfad17bc57c2d9699d764f20fe29ad304c69b8eb28834ca3b48e"
+      },
+      {
+        "name": "alpine-tiff",
+        "filename": "tiff-4.6.0t.tar.gz",
+        "url": "https://distfiles.alpinelinux.org/distfiles/v3.20/tiff-4.6.0t.tar.gz",
+        "sha256": "9938aa79c7639b98757706da40c3d8e3d6b21d7a93bdddeac5082dda6ab517c4"
+      }
+    ],
+    "packageDirectories": [
+      "main/musl",
+      "main/gcc",
+      "main/openssl",
+      "main/zlib",
+      "main/bzip2",
+      "main/brotli",
+      "main/libxml2",
+      "main/expat",
+      "main/fontconfig",
+      "main/freetype",
+      "main/graphite2",
+      "main/libjpeg-turbo",
+      "main/libpng",
+      "main/fribidi",
+      "main/giflib",
+      "main/fftw",
+      "main/libsamplerate",
+      "main/snappy",
+      "main/xz",
+      "main/tiff",
+      "main/libdrm",
+      "main/libpciaccess",
+      "main/numactl",
+      "main/zstd",
+      "main/libwebp",
+      "community/soxr",
+      "community/vo-amrwbenc"
+    ]
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "packageVersion": "0.1.0",
+  "target": { "platform": "linux", "arch": "arm64", "libc": "musl" },
+  "versions": {
+    "ytDlp": "2026.07.14.233956",
+    "ffmpeg": "8.1.2",
+    "ffprobe": "8.1.2",
+    "ejs": "0.8.0"
+  },
+  "paths": {
+    "ytDlp": "vendor/yt-dlp",
+    "ffmpeg": "vendor/ffmpeg",
+    "ffprobe": "vendor/ffprobe",
+    "node": "vendor/node",
+    "ejs": "vendor/ejs"
+  },
+  "optionCatalogPath": "option-catalog.json",
+  "sources": [
+    {
+      "name": "yt-dlp",
+      "url": "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.07.14.233956/yt-dlp_musllinux_aarch64",
+      "sha256": "4edc3cb6499e9a57b8e502383b5b57463a591ebfae682a31557c17ff77453847",
+      "signature": {
+        "checksumsUrl": "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.07.14.233956/SHA2-256SUMS",
+        "signatureUrl": "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.07.14.233956/SHA2-256SUMS.sig",
+        "publicKeyPath": "toolchain/yt-dlp-public.key",
+        "fingerprint": "AC0CBBE6848D6A873464AF4E57CF65933B5A7581"
+      },
+      "license": "Unlicense and third-party notices embedded upstream",
+      "sourceUrl": "https://github.com/yt-dlp/yt-dlp/tree/aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8"
+    },
+    {
+      "name": "ffmpeg",
+      "image": "docker.io/mwader/static-ffmpeg:8.1.2",
+      "imageDigest": "sha256:33f770f812cbfc3de96c547157fc9faf8bd95a36481753439ffa761045167585",
+      "platformManifestDigest": "sha256:1998feb6c6bd24b57f4240b11300529f6d3bad067fc162d88ab74c4ce479adba",
+      "platform": "linux/arm64",
+      "files": {
+        "ffmpeg": {
+          "path": "/ffmpeg",
+          "sha256": "6087ad2490b898089f6801483914b84e61241b36edf7dc0d6559cdd4f57abe8e"
+        },
+        "ffprobe": {
+          "path": "/ffprobe",
+          "sha256": "387088871b4a8492d99c7208a60c403e192f35581feb1c9ced21978fd8a0247a"
+        }
+      },
+      "license": "GPL-3.0-or-later",
+      "sourceUrl": "https://github.com/wader/static-ffmpeg/tree/06ed6fd0a3b2be35b1ab277cc0243f144c04072f"
+    },
+    {
+      "name": "node",
+      "url": "https://unofficial-builds.nodejs.org/download/release/v22.23.1/node-v22.23.1-linux-arm64-musl.tar.xz",
+      "sha256": "c1d42b2e46541e16ecd81744085534a355a0835eabf4a9b9c2834133fbc4ee60",
+      "license": "MIT and bundled third-party licenses",
+      "sourceUrl": "https://github.com/nodejs/node/tree/v22.23.1"
+    },
+    {
+      "name": "ejs",
+      "url": "https://github.com/yt-dlp/ejs/releases/download/0.8.0/yt.solver.core.min.js",
+      "sha256": "18da6ce0758b416e7ae645084f4f8801f9f9d59d6c477c05eaa0ff94ebd8cc00",
+      "license": "Unlicense",
+      "sourceUrl": "https://github.com/yt-dlp/ejs/tree/0.8.0"
+    }
+  ]
+}

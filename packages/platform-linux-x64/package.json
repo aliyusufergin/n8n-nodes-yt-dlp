@@ -1,0 +1,41 @@
+{
+  "name": "n8n-nodes-yt-dlp-linux-x64",
+  "version": "0.1.0",
+  "description": "Linux x64 musl yt-dlp toolchain for n8n-nodes-yt-dlp",
+  "license": "GPL-3.0-or-later",
+  "homepage": "https://github.com/aliyusufergin/n8n-nodes-ytdlp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aliyusufergin/n8n-nodes-ytdlp.git",
+    "directory": "packages/platform-linux-x64"
+  },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "SOURCE_OFFER.md",
+    "THIRD_PARTY_NOTICES.md",
+    "option-catalog.json",
+    "toolchain-manifest.json",
+    "vendor"
+  ],
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "libc": [
+    "musl"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "prepare-toolchain": "node ../../toolchain/prepare-toolchain.mjs .",
+    "prepack": "node ../../toolchain/verify-platform-package.mjs ."
+  }
+}

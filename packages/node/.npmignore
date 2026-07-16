@@ -1,0 +1,3 @@
+dist/test/
+dist/vitest.config.*
+dist/*.tsbuildinfo

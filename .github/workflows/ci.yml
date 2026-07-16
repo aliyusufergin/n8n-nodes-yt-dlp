@@ -1,0 +1,134 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  corresponding-source-plan:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.1
+      - run: npm run source:plan
+
+  node-package:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.1
+          cache: npm
+      - run: npm ci --force
+      - run: npm run verify
+      - run: npm pack --workspace n8n-nodes-yt-dlp
+      - uses: actions/upload-artifact@v4
+        with:
+          name: node-package
+          path: n8n-nodes-yt-dlp-*.tgz
+          if-no-files-found: error
+
+  platform-package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            package: n8n-nodes-yt-dlp-linux-x64
+            directory: packages/platform-linux-x64
+          - runner: ubuntu-24.04-arm
+            package: n8n-nodes-yt-dlp-linux-arm64
+            directory: packages/platform-linux-arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.1
+          cache: npm
+      - run: npm ci --force
+      - run: npm run prepare-toolchain --workspace "${{ matrix.package }}"
+      - run: node toolchain/audit-option-catalog.mjs "${{ matrix.directory }}"
+      - name: Smoke-test the musl toolchain in the supported n8n image
+        run: |
+          docker run --rm --entrypoint /bin/sh \
+            -v "${{ github.workspace }}:/workspace" \
+            docker.n8n.io/n8nio/n8n:2.31.1 -ec '
+              /workspace/${{ matrix.directory }}/vendor/yt-dlp --version
+              /workspace/${{ matrix.directory }}/vendor/ffmpeg -version
+              /workspace/${{ matrix.directory }}/vendor/ffprobe -version
+              /workspace/${{ matrix.directory }}/vendor/node --version
+            '
+      - run: npm pack --workspace "${{ matrix.package }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.package }}
+          path: n8n-nodes-yt-dlp-linux-*.tgz
+          if-no-files-found: error
+
+  official-n8n-e2e:
+    needs: [node-package, platform-package]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: x64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: node-package
+          path: artifacts
+      - uses: actions/download-artifact@v4
+        with:
+          name: n8n-nodes-yt-dlp-linux-${{ matrix.arch }}
+          path: artifacts
+      - name: Generate a local split-stream DASH fixture
+        run: |
+          mkdir -p fixture platform-package
+          tar -xzf artifacts/n8n-nodes-yt-dlp-linux-${{ matrix.arch }}-*.tgz -C platform-package
+          platform-package/package/vendor/ffmpeg \
+            -hide_banner -loglevel error \
+            -f lavfi -i testsrc=size=160x90:rate=10 \
+            -f lavfi -i sine=frequency=1000:sample_rate=48000 \
+            -t 1 -map 0:v:0 -map 1:a:0 \
+            -c:v libx264 -pix_fmt yuv420p -c:a aac \
+            -f dash -adaptation_sets "id=0,streams=v id=1,streams=a" \
+            fixture/manifest.mpd
+      - name: Install and execute in the official n8n image
+        run: |
+          docker run --rm --entrypoint /bin/sh \
+            -e N8N_DIAGNOSTICS_ENABLED=false \
+            -e N8N_PERSONALIZATION_ENABLED=false \
+            -e N8N_VERSION_NOTIFICATIONS_ENABLED=false \
+            -e N8N_COMMUNITY_PACKAGES_ENABLED=true \
+            -v "${{ github.workspace }}:/workspace" \
+            docker.n8n.io/n8nio/n8n:2.31.1 -ec '
+              mkdir -p /home/node/.n8n/nodes
+              cd /home/node/.n8n/nodes
+              npm init -y >/dev/null
+              npm install --omit=optional /workspace/artifacts/n8n-nodes-yt-dlp-linux-${{ matrix.arch }}-*.tgz >/dev/null
+              npm install --omit=optional /workspace/artifacts/n8n-nodes-yt-dlp-[0-9]*.tgz >/dev/null
+              node /workspace/test/e2e/static-server.mjs /workspace/fixture &
+              server_pid=$!
+              trap "kill $server_pid" EXIT
+              node -e "let n=0; (async function wait(){try{const r=await fetch(\`http://127.0.0.1:18080/manifest.mpd\`);if(r.ok)return}catch{}if(++n===50)process.exit(1);setTimeout(wait,100)})()"
+              n8n import:workflow --input=/workspace/test/e2e/workflow.json
+              if ! n8n execute --id=YtDlpE2ETest0001 --rawOutput > /tmp/execution.json; then
+                cat /tmp/execution.json
+                exit 1
+              fi
+              node /workspace/test/e2e/assert-execution.mjs /tmp/execution.json
+            '

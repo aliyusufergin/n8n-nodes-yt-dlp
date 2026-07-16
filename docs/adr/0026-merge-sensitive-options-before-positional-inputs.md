@@ -1,0 +1,3 @@
+# Merge sensitive options before positional inputs
+
+The effective argv will contain node-owned isolation options, the normal argument tokens, and then the credential's sensitive option tokens. If the normal line contains `--`, sensitive tokens move immediately before that separator and its positional inputs. Sensitive Arguments may contain only cataloged options and their values, never positional inputs or their own separator. A duplicated pass-through option therefore takes its later sensitive value. After merging, the complete argv is revalidated against the option catalog, path confinement, and restricted-option rules before process creation.

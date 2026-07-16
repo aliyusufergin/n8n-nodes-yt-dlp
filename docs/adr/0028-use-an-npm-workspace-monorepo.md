@@ -1,0 +1,3 @@
+# Use an npm workspace monorepo
+
+The repository will use a private npm-workspace root with one lockfile and three publishable packages: the programmatic TypeScript node package and two data-only Linux platform packages. Toolchain manifests and release/build scripts will live at the root, while deterministic fixtures and integration tests remain outside published package contents. Platform packages will contain executables and compliance material but no application logic. Network acquisition and verification occur only in release preparation, never during installation or node execution, and runtime JavaScript dependencies will remain minimal unless a concrete need justifies one.

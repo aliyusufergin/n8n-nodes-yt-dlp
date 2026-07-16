@@ -1,0 +1,71 @@
+{
+  "name": "n8n-nodes-yt-dlp",
+  "version": "0.1.0",
+  "description": "Run a packaged yt-dlp toolchain from self-hosted n8n",
+  "license": "MIT",
+  "homepage": "https://github.com/aliyusufergin/n8n-nodes-ytdlp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aliyusufergin/n8n-nodes-ytdlp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aliyusufergin/n8n-nodes-ytdlp/issues"
+  },
+  "author": {
+    "name": "Ali Yusuf",
+    "email": "254281921+aliyusufergin@users.noreply.github.com"
+  },
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "yt-dlp",
+    "youtube",
+    "media"
+  ],
+  "main": "dist/nodes/YtDlp/YtDlp.node.js",
+  "types": "dist/nodes/YtDlp/YtDlp.node.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "node ../../toolchain/clean-node-dist.mjs && n8n-node build",
+    "dev": "n8n-node dev",
+    "lint": "n8n-node lint",
+    "prepublishOnly": "n8n-node prerelease",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json"
+  },
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "strict": false,
+    "credentials": [
+      "dist/credentials/YtDlpSecrets.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/YtDlp/YtDlp.node.js"
+    ]
+  },
+  "optionalDependencies": {
+    "n8n-nodes-yt-dlp-linux-arm64": "0.1.0",
+    "n8n-nodes-yt-dlp-linux-x64": "0.1.0"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  },
+  "devDependencies": {
+    "@n8n/node-cli": "0.39.3",
+    "@types/node": "22.18.13",
+    "eslint": "9.39.4",
+    "n8n-workflow": "2.31.1",
+    "prettier": "3.8.3",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}
