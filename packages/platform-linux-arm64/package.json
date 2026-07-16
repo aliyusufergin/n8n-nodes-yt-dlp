@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "description": "Linux arm64 musl yt-dlp toolchain for n8n-nodes-yt-dlp",
   "license": "GPL-3.0-or-later",
-  "homepage": "https://github.com/aliyusufergin/n8n-nodes-ytdlp#readme",
+  "homepage": "https://github.com/aliyusufergin/n8n-nodes-yt-dlp#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aliyusufergin/n8n-nodes-ytdlp.git",
+    "url": "git+https://github.com/aliyusufergin/n8n-nodes-yt-dlp.git",
     "directory": "packages/platform-linux-arm64"
   },
   "files": [

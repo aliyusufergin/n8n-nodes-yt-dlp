@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "description": "Run a packaged yt-dlp toolchain from self-hosted n8n",
   "license": "MIT",
-  "homepage": "https://github.com/aliyusufergin/n8n-nodes-ytdlp#readme",
+  "homepage": "https://github.com/aliyusufergin/n8n-nodes-yt-dlp#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aliyusufergin/n8n-nodes-ytdlp.git"
+    "url": "git+https://github.com/aliyusufergin/n8n-nodes-yt-dlp.git"
   },
   "bugs": {
-    "url": "https://github.com/aliyusufergin/n8n-nodes-ytdlp/issues"
+    "url": "https://github.com/aliyusufergin/n8n-nodes-yt-dlp/issues"
   },
   "author": {
     "name": "Ali Yusuf",

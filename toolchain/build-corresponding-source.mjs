@@ -529,7 +529,7 @@ async function addPackageRecipe(root, work, metadata, packageVersion) {
   metadata.set(relativePath, {
     kind: "packaging-recipe",
     name: "n8n-nodes-ytdlp-package-recipe",
-    origin: "https://github.com/aliyusufergin/n8n-nodes-ytdlp",
+    origin: "https://github.com/aliyusufergin/n8n-nodes-yt-dlp",
     versionOrCommit: packageVersion,
   });
 }

@@ -8,7 +8,7 @@ export class YtDlpSecrets implements ICredentialType {
   icon = "file:ytdlp.svg" as const;
 
   documentationUrl =
-    "https://github.com/aliyusufergin/n8n-nodes-ytdlp#yt-dlp-secrets-credential";
+    "https://github.com/aliyusufergin/n8n-nodes-yt-dlp#yt-dlp-secrets-credential";
 
   properties: INodeProperties[] = [
     {
