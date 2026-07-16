@@ -1,13 +1,17 @@
 import { spawnSync } from 'node:child_process';
-import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
+
+import { verifyYtDlpSignedChecksum } from './verify-yt-dlp-signature.mjs';
 
 const packageDirectory = resolve(process.argv[2] ?? '');
 if (!process.argv[2]) {
   throw new Error('Usage: node toolchain/audit-option-catalog.mjs <package-directory>');
 }
 
+const repositoryRoot = resolve(import.meta.dirname, '..');
 const manifest = JSON.parse(
   await readFile(join(packageDirectory, 'toolchain-manifest.json'), 'utf8'),
 );
@@ -16,20 +20,20 @@ const ytDlpSource = manifest.sources.find((source) => source.name === 'yt-dlp');
 const workspace = await mkdtemp(join(tmpdir(), 'n8n-ytdlp-options-'));
 
 try {
-  const executablePath = join(packageDirectory, manifest.paths.ytDlp);
-  let inspectedPath = executablePath;
-  try {
-    await readFile(executablePath);
-  } catch {
-    const portableUrl = new URL('yt-dlp', new URL('.', ytDlpSource.url)).href;
-    const response = await fetch(portableUrl, { redirect: 'follow' });
-    if (!response.ok) {
-      throw new Error(`Portable yt-dlp download failed: HTTP ${response.status}`);
-    }
-    inspectedPath = join(workspace, basename(new URL(portableUrl).pathname));
-    await writeFile(inspectedPath, Buffer.from(await response.arrayBuffer()), { mode: 0o700 });
-    await chmod(inspectedPath, 0o700);
+  const signedDigests = await verifyYtDlpSignedChecksum(ytDlpSource, workspace, repositoryRoot);
+  const portableUrl = new URL('yt-dlp', new URL('.', ytDlpSource.url)).href;
+  const response = await fetch(portableUrl, { redirect: 'follow' });
+  if (!response.ok) {
+    throw new Error(`Portable yt-dlp download failed: HTTP ${response.status}`);
   }
+  const portableAsset = Buffer.from(await response.arrayBuffer());
+  const portableName = basename(new URL(portableUrl).pathname);
+  const portableDigest = createHash('sha256').update(portableAsset).digest('hex');
+  if (signedDigests.get(portableName) !== portableDigest) {
+    throw new Error(`Signed checksum mismatch for ${portableName}`);
+  }
+  const inspectedPath = join(workspace, portableName);
+  await writeFile(inspectedPath, portableAsset);
 
   const inspectionProgram = String.raw`
 import json, sys

@@ -52,14 +52,19 @@ export async function verifyYtDlpSignedChecksum(source, workspace, repositoryRoo
   }
 
   runGpg(gpgHome, ['--verify', signaturePath, checksumPath]);
+  const signedDigests = new Map(
+    (await readFile(checksumPath, 'utf8'))
+      .split(/\r?\n/u)
+      .map((line) => line.match(/^([0-9a-f]{64})\s+\*?(.+)$/u))
+      .filter((match) => match !== null)
+      .map((match) => [match[2], match[1]]),
+  );
   const assetName = basename(new URL(source.url).pathname);
-  const signedDigest = (await readFile(checksumPath, 'utf8'))
-    .split(/\r?\n/u)
-    .map((line) => line.match(/^([0-9a-f]{64})\s+\*?(.+)$/u))
-    .find((match) => match?.[2] === assetName)?.[1];
+  const signedDigest = signedDigests.get(assetName);
   if (signedDigest === undefined || signedDigest !== source.sha256) {
     throw new Error(`Signed checksum mismatch for ${assetName}`);
   }
+  return signedDigests;
 }
 
 if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) {
