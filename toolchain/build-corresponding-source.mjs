@@ -545,10 +545,11 @@ async function addPackageRecipe(root, work, metadata, packageVersion) {
 async function addProvenanceEvidence(root, work, lock, metadata) {
   const image = `${lock.wader.image}@${lock.wader.imageDigest}`;
   await mkdir(join(root, "manifests"), { recursive: true });
-  for (const [platform, architecture] of [
+  const platforms = [
     ["linux/amd64", "amd64"],
     ["linux/arm64", "arm64"],
-  ]) {
+  ];
+  for (const [index, [platform, architecture]] of platforms.entries()) {
     const containerId = await run(
       "docker",
       ["create", "--platform", platform, image],
@@ -582,6 +583,9 @@ async function addProvenanceEvidence(root, work, lock, metadata) {
       origin: image,
       versionOrCommit: lock.wader.commit,
     });
+    if (index < platforms.length - 1) {
+      await run("docker", ["image", "rm", "--force", image]);
+    }
   }
 
   const relativePath = join("manifests", "original-build-run.txt");
