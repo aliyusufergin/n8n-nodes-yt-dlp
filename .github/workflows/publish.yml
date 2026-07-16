@@ -32,6 +32,8 @@ jobs:
         with:
           node-version: "24"
           package-manager-cache: false
+          registry-url: https://registry.npmjs.org
+          always-auth: true
 
       - name: Validate the release and CI run
         env:
@@ -88,15 +90,26 @@ jobs:
         run: npm install --global npm@11.18.0
 
       - name: Inspect package archives
+        env:
+          NODE_AUTH_TOKEN: unused
         run: |
           npm publish release/x64/n8n-nodes-yt-dlp-linux-x64-0.1.0.tgz --tag next --access public --dry-run
           npm publish release/arm64/n8n-nodes-yt-dlp-linux-arm64-0.1.0.tgz --tag next --access public --dry-run
           npm publish release/node/n8n-nodes-yt-dlp-0.1.0.tgz --tag next --access public --dry-run
 
+      - name: Require the first-publication token
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: test -n "$NODE_AUTH_TOKEN"
+
       - name: Publish platform packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           npm publish release/x64/n8n-nodes-yt-dlp-linux-x64-0.1.0.tgz --tag next --access public
           npm publish release/arm64/n8n-nodes-yt-dlp-linux-arm64-0.1.0.tgz --tag next --access public
 
       - name: Publish the n8n community node
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish release/node/n8n-nodes-yt-dlp-0.1.0.tgz --tag next --access public
