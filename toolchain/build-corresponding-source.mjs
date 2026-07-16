@@ -454,7 +454,8 @@ for package in ${packageList}; do
 done
 `;
   const image = `${lock.alpine.baseImage}@${lock.alpine.baseImageDigest}`;
-  for (const platform of ["linux/amd64", "linux/arm64"]) {
+  const platforms = ["linux/amd64", "linux/arm64"];
+  for (const [index, platform] of platforms.entries()) {
     log(`fetching and verifying Alpine distfiles for ${platform}`);
     await run("docker", [
       "run",
@@ -472,6 +473,9 @@ done
       "-ec",
       script,
     ]);
+    if (index < platforms.length - 1) {
+      await run("docker", ["image", "rm", "--force", image]);
+    }
   }
   for (const packageDirectory of lock.alpine.packageDirectories) {
     await rm(join(selected, packageDirectory, "src"), {
