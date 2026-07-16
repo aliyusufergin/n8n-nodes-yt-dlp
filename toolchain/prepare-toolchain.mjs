@@ -125,9 +125,9 @@ async function copyOciFiles(source) {
 
 try {
   await rm(vendorDirectory, { force: true, recursive: true });
-  await mkdir(join(vendorDirectory, "ejs"), { mode: 0o700, recursive: true });
+  await mkdir(join(vendorDirectory, "ejs"), { mode: 0o755, recursive: true });
   await mkdir(join(vendorDirectory, "licenses"), {
-    mode: 0o700,
+    mode: 0o755,
     recursive: true,
   });
   await copyFile(
