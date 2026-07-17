@@ -12,6 +12,10 @@ function hasHttpAuthorityWithUserInfo(value: string): boolean {
 	return /^https?:\/\/[^/?#]*@/iu.test(value);
 }
 
+function hasExplicitHttpAuthority(value: string): boolean {
+	return /^https?:\/\/[^/?#]+(?:[/?#]|$)/iu.test(value);
+}
+
 export interface DownloadRequest {
 	sourceUrl: string;
 	arguments: string;
@@ -32,7 +36,7 @@ export function createDownloadRequest(sourceUrl: unknown, argumentsValue: string
 		Buffer.byteLength(sourceUrl, 'utf8') > MAX_SOURCE_URL_BYTES ||
 		containsControlCharacter(sourceUrl) ||
 		sourceUrl.trim() !== sourceUrl ||
-		!/^https?:\/\//iu.test(sourceUrl) ||
+		!hasExplicitHttpAuthority(sourceUrl) ||
 		hasHttpAuthorityWithUserInfo(sourceUrl)
 	) {
 		throw new InvalidSourceUrlError();

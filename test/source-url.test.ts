@@ -12,6 +12,8 @@ describe('Source URL policy', () => {
 	it.each([
 		'',
 		'example.com/video',
+		'http:///tmp/video.mp4',
+		'https:////example.com/video',
 		'ftp://example.com/video',
 		'file:///tmp/video.mp4',
 		'data:text/plain,video',
