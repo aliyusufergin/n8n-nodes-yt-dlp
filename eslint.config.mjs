@@ -16,4 +16,10 @@ export default [
 			'n8n-nodes-base/node-execute-block-wrong-error-thrown': 'off',
 		},
 	},
+	{
+		files: ['nodes/YtDlp/process.ts'],
+		rules: {
+			'@n8n/community-nodes/no-dangerous-functions': 'off',
+		},
+	},
 ];

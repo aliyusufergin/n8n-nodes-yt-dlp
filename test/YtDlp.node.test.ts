@@ -68,8 +68,44 @@ describe('yt-dlp node adapter', () => {
 		});
 		expect(startRequest).toHaveBeenCalledTimes(1);
 		expect(startRequest).toHaveBeenCalledWith(
-			{ sourceUrl: 'https://example.com/valid', arguments: '--format best' },
+			{
+				argv: [
+					'--playlist-items',
+					'1:5',
+					'--format',
+					'best',
+					'--',
+					'https://example.com/valid',
+				],
+			},
 			0,
 		);
+	});
+
+	it.each([
+		'--output /tmp/file',
+		'--paths /tmp',
+		'--config-locations /tmp/config',
+		'--plugin-dirs /tmp/plugins',
+		'--js-runtimes node',
+		'--update',
+		'--exec id',
+		'--username user',
+		'--proxy http://proxy',
+		'--concurrent-fragments 99',
+		'--verbose',
+		'--simulate',
+		'--load-info-json /tmp/info.json',
+		'--unknown-option value',
+	])('rejects %j before starting a child process', async (argumentsValue) => {
+		const startRequest = vi.fn<DownloadRequestExecutor>();
+		const context = createExecutionContext([
+			{ sourceUrl: 'https://example.com/video', arguments: argumentsValue },
+		]);
+
+		await expect(executeYtDlpNode(context, startRequest)).rejects.toMatchObject({
+			context: { errorCode: 'INVALID_ARGUMENTS', itemIndex: 0 },
+		});
+		expect(startRequest).not.toHaveBeenCalled();
 	});
 });

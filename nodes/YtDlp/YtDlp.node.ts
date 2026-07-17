@@ -7,14 +7,19 @@ import type {
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 import {
+	INVALID_ARGUMENTS,
+	InvalidArgumentsError,
+	createYtDlpExecutionPlan,
+	type YtDlpExecutionPlan,
+} from './arguments';
+import {
 	INVALID_SOURCE_URL,
 	InvalidSourceUrlError,
 	createDownloadRequest,
-	type DownloadRequest,
 } from './source-url';
 
 export type DownloadRequestExecutor = (
-	request: DownloadRequest,
+	plan: YtDlpExecutionPlan,
 	itemIndex: number,
 ) => Promise<INodeExecutionData[]>;
 
@@ -32,15 +37,18 @@ export async function executeYtDlpNode(
 			const sourceUrl = execution.getNodeParameter('sourceUrl', itemIndex);
 			const argumentsValue = execution.getNodeParameter('arguments', itemIndex, '') as string;
 			const request = createDownloadRequest(sourceUrl, argumentsValue);
+			const plan = createYtDlpExecutionPlan(request);
 
-			outputItems.push(...(await startRequest(request, itemIndex)));
+			outputItems.push(...(await startRequest(plan, itemIndex)));
 		} catch (error) {
-			if (error instanceof InvalidSourceUrlError) {
+			if (error instanceof InvalidSourceUrlError || error instanceof InvalidArgumentsError) {
+				const errorCode =
+					error instanceof InvalidSourceUrlError ? INVALID_SOURCE_URL : INVALID_ARGUMENTS;
 				const nodeError = new NodeOperationError(execution.getNode(), error, {
-					description: INVALID_SOURCE_URL,
+					description: errorCode,
 					itemIndex,
 				});
-				nodeError.context.errorCode = INVALID_SOURCE_URL;
+				nodeError.context.errorCode = errorCode;
 				throw nodeError;
 			}
 
