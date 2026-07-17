@@ -123,6 +123,38 @@ describe('yt-dlp process boundary', () => {
 		).rejects.toMatchObject({ code: 'PROCESS_OUTPUT_LIMIT' });
 	});
 
+	it('emits one cancellation classification when cancellation races an output flood', async () => {
+		const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-output-cancel-race-'));
+		temporaryDirectories.push(workspace);
+		const executablePath = join(workspace, 'controlled-executable');
+		await writeFile(
+			executablePath,
+			`#!${process.execPath}\n` +
+				`process.stdout.write(Buffer.alloc(${PROCESS_OUTPUT_LIMIT_BYTES + 1}, 'o'));\n` +
+				`setInterval(() => {}, 1000);\n`,
+			{ mode: 0o700 },
+		);
+		const controller = new AbortController();
+		const sendSignal = process.kill.bind(process);
+		const kill = vi.spyOn(process, 'kill').mockImplementation((pid, signal) => {
+			if (signal === 'SIGTERM') queueMicrotask(() => controller.abort());
+			return sendSignal(pid, signal);
+		});
+
+		try {
+			await expect(
+				superviseYtDlpExecutionPlan(
+					executablePath,
+					{ argv: [] },
+					{ cwd: workspace, signal: controller.signal },
+				),
+			).rejects.toMatchObject({ name: 'YtDlpProcessCancellationError' });
+			expect(kill.mock.calls.filter(([, signal]) => signal === 'SIGTERM')).toHaveLength(1);
+		} finally {
+			kill.mockRestore();
+		}
+	});
+
 	it('times out before a delayed descendant can start', async () => {
 		const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-timeout-'));
 		temporaryDirectories.push(workspace);
