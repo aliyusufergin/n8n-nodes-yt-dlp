@@ -1,0 +1,11 @@
+---
+status: accepted
+---
+
+# V0.2.0 tüm release gate'leri aynı immutable paket zincirinde geçmeden latest olmaz
+
+V0.2.0 yalnız public npm registry'de `next` altındaki aynı exact ve immutable üç paketli Release Candidate Zinciri için release-ready sayılır. Local workspace, yayımlanmamış tarball, PATH tool'u veya değiştirilmiş container kabul kanıtı değildir. Zincir ADR 0025'in üç exact official Linux x64 n8n anchor'ında gerçek Community Packages hermetik queue-mode E2E'yi, frozen head'de worker propagation/recreation recovery lane'ini ve ADR 0030'un temiz canlı JSC canary'sini geçmelidir. Security/process negatif testleri, Resource Envelope ve cancellation, binary round-trip, Toolchain Attestation, secret-safe Result/log, cleanup, provenance, exact inventory/digest, complete Corresponding Source Bundle, clean rebuild, manuel lisans incelemesi ve yayın dokümantasyonu ayrı bloklayıcı gate'lerdir; hiçbiri diğerinden feragat ettiremez.
+
+Mevcut n8n 2.27.4 Docker queue-mode stack birinci sınıf kabul ortamıdır ve `latest` öncesi exact `next` paketleriyle ayrıca dar, işlem özelinde onaylanmış E2E geçmelidir: GUI/backend install, mevcut worker'lara propagation, production ve worker-offloaded manual execution, packaged yt-dlp/FFmpeg/FFprobe/Deno seçimi, database binary round-trip, bounded cancellation, log ve owned-workspace cleanup. Bu karar sunucu işlemi yetkilendirmez; container/config değişimi, worker recreate/add, load/failure testi ve third-party credential/content bu lane'de yoktur. Disruptive recovery disposable CI'da kalır.
+
+Kapsam tek programmatic regular node, official n8n Docker Linux x64, n8n `>=2 <3`, database binary storage, sıralı HTTP(S) İndirme İstekleri, exact V1 allowlist ve credential, packaged toolchain, atomik Artifact Item/Failure Item, bounded process/resource ve cleanup'tır. n8n 1.x/3.x/Cloud; diğer platform/image/libc'ler; S3; AI tool; paralel veya kısmi sonuç; arbitrary CLI/config/plugin/runtime; system fallback; geniş auth yüzeyi; uygulama SSRF firewall'u; transactional rollback; same-UID/root sandbox; SIGKILL sonrası anlık cleanup; node metrics/telemetry; universal capacity ve supported-site garantisi açıkça kapsam dışıdır. Listelenen bütün implementation ve E2E kanıtları çalıştırılana kadar tasarımın kendisi release kanıtı değildir.

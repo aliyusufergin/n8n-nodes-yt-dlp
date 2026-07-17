@@ -1,0 +1,7 @@
+---
+status: accepted
+---
+
+# Özgün kod MIT, binary platform paketi component Lisans Yüzeyi kullanır
+
+Projeye ait özgün JavaScript/TypeScript, test, dokümantasyon ve build orchestration kodu MIT ile lisanslanır; third-party dosyalar kendi lisanslarını korur. Ana paket ve Platform Selector `license: "MIT"`, binary taşıyan Platform Paketi `license: "SEE LICENSE IN LICENSES.md"` kullanır. Platform tarball'ı top-level `LICENSES.md`, `THIRD_PARTY_NOTICES.md`, `CORRESPONDING_SOURCE.md`, `TOOLCHAIN.lock.json` ve `LICENSES/` altında yt-dlp Unlicense, Deno MIT, FFmpeg GPLv3, FFmpeg-Builds MIT ile her statik library'nin exact verbatim license/notice eşlemesini taşır; dağıtımın tamamı MIT veya GPL diye genellenmez. Source Delivery Gate, exact Corresponding Source Bundle ile SHA-256'nın Platform Paketi'nden önce aynı versioned GitHub Release'te yayımlanmasını ve README/tarball'dan direct immutable asset URL, digest ve rebuild talimatı verilmesini şart koşar. Bundle exact source trees, patches, configure/generated inputs, build/install scripts, container/toolchain tanımı içerir; mutable upstream indirme tarifine dayanmaz. Her Toolchain Lock değişiminde final tarball/license envanter kontrolü, clean isolated rebuild ve manuel lisans incelemesi zorunludur. npm binary indirilebilir kaldığı sürece source asset erişilebilir tutulur. Ayrı-process/MIT-wrapper değerlendirmesi hukuki kesinlik değildir; manuel inceleme desteklemezse publish durur ve lisans tasarımı yeniden açılır.

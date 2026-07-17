@@ -1,0 +1,7 @@
+---
+status: accepted
+---
+
+# npm yayınları next altında lockstep ve sonrasında stage-only OIDC kullanır
+
+`0.2.0`, mevcut paket gerektiren Trusted Publisher ve staged publishing önkoşullarını karşılamak için tek Bootstrap Publish istisnasıdır. Registry'nin 24 saatlik full-unpublish engelleri bittikten ve bütün pre-publication gate'leri geçtikten sonra korumalı `npm-bootstrap` GitHub Environment içindeki en kısa izinli ömürlü granular read/write ve bypass-2FA token'ı ile GitHub-hosted `publish.yml`; provenance açık ve `--tag next --access public` kullanarak Linux x64 Platform Paketi, Platform Selector, ardından ana paketi yayımlar. Registry metadata/tarball/provenance read-back sonrası environment secret silinir ve token revoke edilir. `0.2.0@next`, real Community Packages explicit-version queue-mode E2E'yi geçmeden `latest` olmaz. Sonrasında üç paket aynı `publish.yml` ve korumalı `npm-release` Environment'a yalnız `npm stage publish` izinli OIDC Trusted Publisher ile bağlanır ve geleneksel token publish kapatılır. Gelecek Release Candidate Zinciri aynı dependency sırasıyla `next` altında stage edilir, tarball'ları insan tarafından incelenir ve 2FA ile onaylanır; `latest` aynı sırayla, ana paket en son terfi ettirilir. Rollback unpublish kullanmaz: main tag'leri önce geri alınır, ardından selector/platform tag'leri; kötü lockstep sürümler deprecate edilir ve yeni patch sürümü yayımlanır.

@@ -1,0 +1,7 @@
+---
+status: accepted
+---
+
+# Toolchain Attestation process başına lazy ve değişiklik-duyarlıdır
+
+Platform Selector exact platform paket adı/sürümü ile canonical execution manifest SHA-256'sını kendi yayınında sabitleyecek; manifest her runtime executable/companion path'inin byte boyutunu, SHA-256'sını, mode koşullarını ve beklenen version probe sonucunu taşıyacaktır. Her main/worker process'inde ilk kullanım async ve fail-closed olarak manifest digest'ini, package-root confinement'ı, `O_NOFOLLOW` descriptor üzerinden regular/executable ve group/world-writable olmayan dosya koşullarını, stream SHA-256/boyutu ve yt-dlp/FFmpeg/FFprobe/Deno'nun sabit ağsız bounded probe'larını doğrulayacaktır. Eşzamanlı ilk çağrılar tek in-flight promise paylaşır. Başarı platform root/version ile her dosyanın `dev`, `ino`, `size`, `mtimeNs` ve `ctimeNs` fingerprint'ine cache'lenir; her İndirme İsteği öncesi ucuz restat karşılaştırması yapılır ve değişiklik full re-attestation gerektirir. Her mismatch workspace veya process başlamadan global invariant hatasıdır; repair, chmod, download veya fallback yoktur. Bu mekanizma packaging/copy bozulmasını ve olağan file replacement'ı saptar; aynı worker UID/root saldırganına karşı sandbox, signature authority veya kusursuz TOCTOU koruması olduğu iddia edilmez. Exact probe argv/output, timeout ve ilk-use latency frozen Toolchain Lock ile official-image E2E geçmeden doğrulanmış sayılmaz.
