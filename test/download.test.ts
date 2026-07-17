@@ -1,9 +1,10 @@
 import { createServer, type Server } from 'node:http';
-import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import type { Readable } from 'node:stream';
+import { setTimeout as delay } from 'node:timers/promises';
 
 import type { IBinaryData, IExecuteFunctions, INode } from 'n8n-workflow';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -74,6 +75,7 @@ async function createControlledExecutable(directory: string, extension: string):
 function createExecutionContext(
 	sourceUrl: string,
 	prepareBinaryData: (data: Buffer | Readable, fileName?: string, mimeType?: string) => Promise<IBinaryData>,
+	signal?: AbortSignal,
 ): IExecuteFunctions {
 	const node: INode = {
 		id: 'node-id',
@@ -88,11 +90,116 @@ function createExecutionContext(
 		getInputData: vi.fn(() => [{ json: {} }]),
 		getNode: vi.fn(() => node),
 		getNodeParameter: vi.fn((name: string) => (name === 'sourceUrl' ? sourceUrl : '')),
+		getExecutionCancelSignal: vi.fn(() => signal),
 		helpers: { prepareBinaryData },
 	} as unknown as IExecuteFunctions;
 }
 
 describe('single-file download request', () => {
+	it('forwards n8n cancellation and cleans up only after process close', async () => {
+		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-cancel-test-'));
+		temporaryDirectories.push(workspaceParent);
+		const executablePath = join(workspaceParent, 'controlled-yt-dlp');
+		const startedPath = join(workspaceParent, 'started');
+		const closedPath = join(workspaceParent, 'closed');
+		await writeFile(
+			executablePath,
+			`#!${process.execPath}\n` +
+				`const { writeFileSync } = require('node:fs');\n` +
+				`writeFileSync(${JSON.stringify(startedPath)}, 'yes');\n` +
+				`process.on('SIGTERM', () => { writeFileSync(${JSON.stringify(closedPath)}, 'yes'); setTimeout(() => process.exit(0), 25); });\n` +
+				`setInterval(() => {}, 1000);\n` +
+				`setTimeout(() => process.exit(0), 500);\n`,
+			{ mode: 0o700 },
+		);
+		const controller = new AbortController();
+		const context = createExecutionContext(
+			'https://example.com/video',
+			vi.fn(),
+			controller.signal,
+		);
+		const request = executeSingleFileDownload(
+			context,
+			{ argv: ['--', 'https://example.com/video'] },
+			0,
+			{ executablePath, workspaceParent },
+		);
+		for (let attempt = 0; attempt < 100; attempt++) {
+			try {
+				await readFile(startedPath);
+				break;
+			} catch (error) {
+				if ((error as NodeJS.ErrnoException).code !== 'ENOENT') return Promise.reject(error);
+				await delay(10);
+			}
+		}
+
+		controller.abort();
+
+		await expect(request).rejects.toMatchObject({ name: 'YtDlpProcessCancellationError' });
+		expect(await readFile(closedPath, 'utf8')).toBe('yes');
+		expect((await readdir(workspaceParent)).sort()).toEqual([
+			'closed',
+			'controlled-yt-dlp',
+			'started',
+		]);
+	});
+
+	it('does not clean the request workspace under a live process after termination failure', async () => {
+		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-invariant-test-'));
+		temporaryDirectories.push(workspaceParent);
+		const executablePath = join(workspaceParent, 'controlled-yt-dlp');
+		const startedPath = join(workspaceParent, 'started');
+		await writeFile(
+			executablePath,
+			`#!${process.execPath}\n` +
+				`const { writeFileSync } = require('node:fs');\n` +
+				`writeFileSync(${JSON.stringify(startedPath)}, 'yes');\n` +
+				`setInterval(() => {}, 1000);\n` +
+				`setTimeout(() => process.exit(0), 300);\n`,
+			{ mode: 0o700 },
+		);
+		const controller = new AbortController();
+		const context = createExecutionContext(
+			'https://example.com/video',
+			vi.fn(),
+			controller.signal,
+		);
+		const request = executeSingleFileDownload(
+			context,
+			{ argv: ['--', 'https://example.com/video'] },
+			0,
+			{ executablePath, workspaceParent },
+		);
+		for (let attempt = 0; attempt < 100; attempt++) {
+			try {
+				await readFile(startedPath);
+				break;
+			} catch (error) {
+				if ((error as NodeJS.ErrnoException).code !== 'ENOENT') return Promise.reject(error);
+				await delay(10);
+			}
+		}
+		const signalError = Object.assign(new Error('signal denied'), { code: 'EPERM' });
+		const kill = vi.spyOn(process, 'kill').mockImplementation(() => {
+			throw signalError;
+		});
+
+		try {
+			controller.abort();
+			await expect(request).rejects.toMatchObject({
+				name: 'YtDlpProcessTerminationError',
+				processClosed: false,
+			});
+		} finally {
+			kill.mockRestore();
+		}
+
+		expect(await readdir(workspaceParent)).toEqual(
+			expect.arrayContaining([expect.stringMatching(/^n8n-nodes-yt-dlp-/)]),
+		);
+	});
+
 	it.each([
 		{ extension: 'mp4', expectedMimeType: 'video/mp4' },
 		{ extension: 'webm', expectedMimeType: 'video/webm' },

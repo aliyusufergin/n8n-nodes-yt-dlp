@@ -6,7 +6,7 @@ import { extname, join } from 'node:path';
 import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 
 import type { YtDlpExecutionPlan } from './arguments';
-import { spawnYtDlpExecutionPlan } from './process';
+import { YtDlpProcessTerminationError, superviseYtDlpExecutionPlan } from './process';
 
 const MIME_TYPES: Readonly<Record<string, string>> = {
 	'.aac': 'audio/aac',
@@ -69,25 +69,6 @@ function createWorkspacePlan(
 	};
 }
 
-async function waitForSuccessfulClose(
-	child: ReturnType<typeof spawnYtDlpExecutionPlan>,
-): Promise<void> {
-	child.stdout.resume();
-	child.stderr.resume();
-
-	await new Promise<void>((resolve, reject) => {
-		child.once('error', reject);
-		child.once('close', (exitCode, signal) => {
-			if (exitCode === 0) {
-				resolve();
-				return;
-			}
-
-			reject(new Error(`yt-dlp exited unsuccessfully (${exitCode ?? signal ?? 'unknown'}).`));
-		});
-	});
-}
-
 export async function executeSingleFileDownload(
 	execution: IExecuteFunctions,
 	plan: YtDlpExecutionPlan,
@@ -100,6 +81,7 @@ export async function executeSingleFileDownload(
 	const artifactsDirectory = join(workspace, 'artifacts');
 	const tempDirectory = join(workspace, 'temp');
 	const controlDirectory = join(workspace, 'control');
+	let cleanupAllowed = true;
 
 	try {
 		await Promise.all(
@@ -108,11 +90,15 @@ export async function executeSingleFileDownload(
 			),
 		);
 		const workspacePlan = createWorkspacePlan(plan, artifactsDirectory, tempDirectory);
-		const child = spawnYtDlpExecutionPlan(options.executablePath, workspacePlan, {
+		await superviseYtDlpExecutionPlan(options.executablePath, workspacePlan, {
 			cwd: workspace,
-			env: {},
+			signal: execution.getExecutionCancelSignal(),
+		}).catch((error: unknown) => {
+			if (error instanceof YtDlpProcessTerminationError && !error.processClosed) {
+				cleanupAllowed = false;
+			}
+			return Promise.reject(error);
 		});
-		await waitForSuccessfulClose(child);
 
 		const artifactNames = await readdir(artifactsDirectory);
 		if (artifactNames.length !== 1) {
@@ -147,6 +133,8 @@ export async function executeSingleFileDownload(
 			},
 		];
 	} finally {
-		await rm(workspace, { recursive: true, maxRetries: 2, retryDelay: 50 });
+		if (cleanupAllowed) {
+			await rm(workspace, { recursive: true, maxRetries: 2, retryDelay: 50 });
+		}
 	}
 }
