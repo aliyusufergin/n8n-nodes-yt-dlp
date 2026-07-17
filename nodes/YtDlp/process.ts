@@ -5,6 +5,7 @@ import {
 } from 'node:child_process';
 import { isAbsolute } from 'node:path';
 import { finished } from 'node:stream/promises';
+import { setTimeout as delay } from 'node:timers/promises';
 
 import type { YtDlpExecutionPlan } from './arguments';
 
@@ -188,19 +189,13 @@ export async function superviseYtDlpExecutionPlan(
 		| Extract<YtDlpProcessErrorCode, 'PROCESS_OUTPUT_LIMIT' | 'REQUEST_TIMEOUT'>
 		| 'CANCELLED';
 	let terminationReason: TerminationReason | undefined;
-	let terminationStarted = false;
-	let processClosed = false;
+	let terminationPromise: Promise<void> | undefined;
 	let childError: Error | undefined;
-	let escalationTimer: ReturnType<typeof setTimeout> | undefined;
-	let killConfirmationTimer: ReturnType<typeof setTimeout> | undefined;
 	const closed = new Promise<[number | null, NodeJS.Signals | null]>((resolve) => {
 		child.once('error', (error) => {
 			childError = error;
 		});
 		child.once('close', (exitCode, signal) => {
-			processClosed = true;
-			if (escalationTimer !== undefined) clearTimeout(escalationTimer);
-			if (killConfirmationTimer !== undefined) clearTimeout(killConfirmationTimer);
 			resolve([exitCode, signal]);
 		});
 	});
@@ -208,37 +203,69 @@ export async function superviseYtDlpExecutionPlan(
 	const terminationFailure = new Promise<never>((_resolve, reject) => {
 		rejectTerminationFailure = reject;
 	});
-	let terminationFailed = false;
-	const failTermination = (cause: unknown): void => {
-		if (terminationFailed) return;
-		terminationFailed = true;
-		rejectTerminationFailure(new YtDlpProcessTerminationError(processClosed, cause));
+	void terminationFailure.catch(() => {});
+	let terminationError: YtDlpProcessTerminationError | undefined;
+	const failTermination = (cause: unknown): YtDlpProcessTerminationError => {
+		if (terminationError !== undefined) return terminationError;
+		terminationError = new YtDlpProcessTerminationError(false, cause);
+		rejectTerminationFailure(terminationError);
+		return terminationError;
 	};
-	const signalProcessGroup = (signal: NodeJS.Signals): boolean => {
+	if (child.pid === undefined) {
+		failTermination(new Error('The process group leader has no PID.'));
+	}
+	const processGroupId = child.pid;
+	type ProcessGroupState = 'failed' | 'gone' | 'present';
+	const signalProcessGroup = (signal: NodeJS.Signals | 0): ProcessGroupState => {
 		try {
-			if (child.pid === undefined) throw new Error('The process group leader has no PID.');
-			process.kill(-child.pid, signal);
-			return true;
+			if (processGroupId === undefined) return 'failed';
+			process.kill(-processGroupId, signal);
+			return 'present';
 		} catch (error) {
-			if ((error as NodeJS.ErrnoException).code === 'ESRCH') return true;
+			if ((error as NodeJS.ErrnoException).code === 'ESRCH') return 'gone';
 			failTermination(error);
-			return false;
+			return 'failed';
 		}
 	};
+	const rejectForTerminationFailure = (): Promise<never> =>
+		Promise.reject(
+			terminationError ?? failTermination(new Error('The process group state is unavailable.')),
+		);
+	const processGroupIsGone = (): boolean => signalProcessGroup(0) === 'gone';
+	const waitForProcessGroupExit = async (): Promise<boolean> => {
+		const deadline = Date.now() + PROCESS_TERMINATION_GRACE_MS;
+		while (true) {
+			const state = signalProcessGroup(0);
+			if (state === 'gone') return true;
+			if (state === 'failed') return rejectForTerminationFailure();
+			const remainingMs = deadline - Date.now();
+			if (remainingMs <= 0) return false;
+			await delay(Math.min(25, remainingMs));
+		}
+	};
+	const terminateProcessGroup = async (): Promise<void> => {
+		child.stdin.end();
+		const initialState = signalProcessGroup(0);
+		if (initialState === 'gone') return;
+		if (initialState === 'failed') return rejectForTerminationFailure();
+		if (signalProcessGroup('SIGTERM') === 'failed') return rejectForTerminationFailure();
+		if (await waitForProcessGroupExit()) return;
+		if (signalProcessGroup('SIGKILL') === 'failed') return rejectForTerminationFailure();
+		if (await waitForProcessGroupExit()) return;
+		const cause = new Error('The process group remained after SIGKILL.');
+		return Promise.reject(failTermination(cause));
+	};
+	const startTermination = (): Promise<void> => {
+		if (terminationPromise === undefined) {
+			terminationPromise = terminateProcessGroup();
+			void terminationPromise.catch(() => {});
+		}
+		return terminationPromise;
+	};
 	const requestTermination = (reason: TerminationReason): void => {
-		if (processClosed) return;
 		if (reason === 'CANCELLED') terminationReason = reason;
 		else terminationReason ??= reason;
-		if (terminationStarted) return;
-		terminationStarted = true;
-		child.stdin.end();
-		if (!signalProcessGroup('SIGTERM')) return;
-		escalationTimer = setTimeout(() => {
-			if (processClosed || !signalProcessGroup('SIGKILL')) return;
-			killConfirmationTimer = setTimeout(() => {
-				if (!processClosed) failTermination(new Error('The process group remained after SIGKILL.'));
-			}, PROCESS_TERMINATION_GRACE_MS);
-		}, PROCESS_TERMINATION_GRACE_MS);
+		void startTermination();
 	};
 
 	const consumeOutput = (tail: BoundedRedactedTail, chunk: Buffer | string): void => {
@@ -257,14 +284,18 @@ export async function superviseYtDlpExecutionPlan(
 			await finished(stream);
 			return undefined;
 		} catch (error) {
-			if (ignoreBrokenPipe && (error as NodeJS.ErrnoException).code === 'EPIPE') return undefined;
+			if (
+				ignoreBrokenPipe &&
+				['EPIPE', 'ERR_STREAM_PREMATURE_CLOSE'].includes((error as NodeJS.ErrnoException).code ?? '')
+			) {
+				return undefined;
+			}
 			return error instanceof Error ? error : new Error('A child process stream failed.');
 		}
 	};
 	const stdinFinished = settleStream(child.stdin, true);
 	const stdoutFinished = settleStream(child.stdout);
 	const stderrFinished = settleStream(child.stderr);
-	child.stdin.end();
 	const timeoutTimer = setTimeout(() => requestTermination('REQUEST_TIMEOUT'), timeoutMs);
 	const abortHandler = (): void => requestTermination('CANCELLED');
 	context.signal?.addEventListener('abort', abortHandler, { once: true });
@@ -281,10 +312,17 @@ export async function superviseYtDlpExecutionPlan(
 			Promise.all([closed, stdinFinished, stdoutFinished, stderrFinished]),
 			terminationFailure,
 		]);
+		const orphanedProcessGroup = terminationPromise === undefined && !processGroupIsGone();
+		if (orphanedProcessGroup) await startTermination();
+		else if (terminationPromise !== undefined) await terminationPromise;
+		if (orphanedProcessGroup) {
+			throw new YtDlpProcessTerminationError(
+				true,
+				new Error('Descendants remained after the process group leader closed.'),
+			);
+		}
 	} finally {
-		if (escalationTimer !== undefined) clearTimeout(escalationTimer);
-		if (killConfirmationTimer !== undefined) clearTimeout(killConfirmationTimer);
-		if (timeoutTimer !== undefined) clearTimeout(timeoutTimer);
+		clearTimeout(timeoutTimer);
 		context.signal?.removeEventListener('abort', abortHandler);
 	}
 	const [[exitCode, signal], stdinError, stdoutError, stderrError] = lifecycle;

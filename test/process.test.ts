@@ -123,13 +123,18 @@ describe('yt-dlp process boundary', () => {
 		).rejects.toMatchObject({ code: 'PROCESS_OUTPUT_LIMIT' });
 	});
 
-	it('classifies a request timeout after terminating the process group', async () => {
+	it('times out before a delayed descendant can start', async () => {
 		const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-timeout-'));
 		temporaryDirectories.push(workspace);
 		const executablePath = join(workspace, 'controlled-executable');
+		const descendantStartedPath = join(workspace, 'descendant-started');
 		await writeFile(
 			executablePath,
-			`#!${process.execPath}\nsetInterval(() => {}, 1000); setTimeout(() => process.exit(0), 500);\n`,
+			`#!${process.execPath}\n` +
+				`const { spawn } = require('node:child_process');\n` +
+				`const { writeFileSync } = require('node:fs');\n` +
+				`setTimeout(() => { writeFileSync(${JSON.stringify(descendantStartedPath)}, 'yes'); spawn(process.execPath, ['-e', ''], { stdio: 'ignore' }); }, 200);\n` +
+				`setInterval(() => {}, 1000);\n`,
 			{ mode: 0o700 },
 		);
 
@@ -140,7 +145,41 @@ describe('yt-dlp process boundary', () => {
 				{ cwd: workspace, timeoutMs: 25 },
 			),
 		).rejects.toMatchObject({ code: 'REQUEST_TIMEOUT' });
+		await expect(readFile(descendantStartedPath)).rejects.toMatchObject({ code: 'ENOENT' });
 	});
+
+	it(
+		'times out after a TERM-cooperative leader creates an ignored-SIGTERM descendant',
+		async () => {
+			const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-descendant-timeout-'));
+			temporaryDirectories.push(workspace);
+			const executablePath = join(workspace, 'controlled-executable');
+			const pidPath = join(workspace, 'pids');
+			await writeFile(
+				executablePath,
+				`#!${process.execPath}\n` +
+					`const { spawn } = require('node:child_process');\n` +
+					`const { writeFileSync } = require('node:fs');\n` +
+					`const descendant = spawn(process.execPath, ['-e', "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000); setTimeout(() => process.exit(0), 8000)"], { stdio: 'ignore' });\n` +
+					`writeFileSync(${JSON.stringify(pidPath)}, process.pid + '\\n' + descendant.pid);\n` +
+					`setInterval(() => {}, 1000);\n`,
+				{ mode: 0o700 },
+			);
+			const supervision = superviseYtDlpExecutionPlan(
+				executablePath,
+				{ argv: [] },
+				{ cwd: workspace, timeoutMs: 500 },
+			);
+			const pids = await waitForPidFile(pidPath);
+			const timeoutObservedAt = Date.now();
+
+			await expect(supervision).rejects.toMatchObject({ code: 'REQUEST_TIMEOUT' });
+
+			expect(Date.now() - timeoutObservedAt).toBeGreaterThanOrEqual(4_900);
+			await waitForProcessesToDisappear(pids);
+		},
+		12_000,
+	);
 
 	it('treats a process-group signal failure as a global invariant', async () => {
 		const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-signal-failure-'));
@@ -201,6 +240,7 @@ describe('yt-dlp process boundary', () => {
 				{ cwd: workspace, signal: controller.signal },
 			);
 			const pids = await waitForPidFile(pidPath);
+			await expect(readFile(stdinClosedPath)).rejects.toMatchObject({ code: 'ENOENT' });
 
 			const cancellationStartedAt = Date.now();
 			controller.abort();

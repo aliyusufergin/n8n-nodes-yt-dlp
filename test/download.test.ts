@@ -31,6 +31,19 @@ async function collect(stream: Readable): Promise<Buffer> {
 	return Buffer.concat(chunks);
 }
 
+async function waitForFile(path: string): Promise<void> {
+	for (let attempt = 0; attempt < 100; attempt++) {
+		try {
+			await readFile(path);
+			return;
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code !== 'ENOENT') return Promise.reject(error);
+			await delay(10);
+		}
+	}
+	throw new Error('The controlled executable did not create its marker file.');
+}
+
 async function startSyntheticOrigin(body: Buffer): Promise<string> {
 	const server = createServer((_request, response) => {
 		response.writeHead(200, { 'content-type': 'video/mp4' });
@@ -107,7 +120,7 @@ describe('single-file download request', () => {
 			`#!${process.execPath}\n` +
 				`const { writeFileSync } = require('node:fs');\n` +
 				`writeFileSync(${JSON.stringify(startedPath)}, 'yes');\n` +
-				`process.on('SIGTERM', () => { writeFileSync(${JSON.stringify(closedPath)}, 'yes'); setTimeout(() => process.exit(0), 25); });\n` +
+				`process.on('SIGTERM', () => { writeFileSync(${JSON.stringify(closedPath)}, 'yes'); setTimeout(() => process.exit(0), 150); });\n` +
 				`setInterval(() => {}, 1000);\n` +
 				`setTimeout(() => process.exit(0), 500);\n`,
 			{ mode: 0o700 },
@@ -124,17 +137,13 @@ describe('single-file download request', () => {
 			0,
 			{ executablePath, workspaceParent },
 		);
-		for (let attempt = 0; attempt < 100; attempt++) {
-			try {
-				await readFile(startedPath);
-				break;
-			} catch (error) {
-				if ((error as NodeJS.ErrnoException).code !== 'ENOENT') return Promise.reject(error);
-				await delay(10);
-			}
-		}
+		await waitForFile(startedPath);
 
 		controller.abort();
+		await waitForFile(closedPath);
+		expect(await readdir(workspaceParent)).toEqual(
+			expect.arrayContaining([expect.stringMatching(/^n8n-nodes-yt-dlp-/)]),
+		);
 
 		await expect(request).rejects.toMatchObject({ name: 'YtDlpProcessCancellationError' });
 		expect(await readFile(closedPath, 'utf8')).toBe('yes');
@@ -171,15 +180,7 @@ describe('single-file download request', () => {
 			0,
 			{ executablePath, workspaceParent },
 		);
-		for (let attempt = 0; attempt < 100; attempt++) {
-			try {
-				await readFile(startedPath);
-				break;
-			} catch (error) {
-				if ((error as NodeJS.ErrnoException).code !== 'ENOENT') return Promise.reject(error);
-				await delay(10);
-			}
-		}
+		await waitForFile(startedPath);
 		const signalError = Object.assign(new Error('signal denied'), { code: 'EPERM' });
 		const kill = vi.spyOn(process, 'kill').mockImplementation(() => {
 			throw signalError;
