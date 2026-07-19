@@ -1,0 +1,75 @@
+{
+	"schemaVersion": 1,
+	"packageName": "n8n-nodes-yt-dlp-linux-x64",
+	"packageVersion": "0.2.0",
+	"policy": {
+		"lockstepPackageVersion": "0.2.0",
+		"mutableAssets": false,
+		"runtimeDownloads": false,
+		"runtimeSelfUpdate": false
+	},
+	"components": [
+		{
+			"name": "yt-dlp",
+			"upstream": {
+				"repository": "yt-dlp/yt-dlp",
+				"releaseRepository": "yt-dlp/yt-dlp-nightly-builds",
+				"tag": "2026.07.14.233956",
+				"commit": "aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8"
+			},
+			"assets": [
+				{
+					"name": "yt-dlp_linux",
+					"sha256": "64ce4959c7e98b58bf4954c39d3fea5d7e26f1afef155f547f908fe8fa4eeab0"
+				}
+			],
+			"license": "Unlicense AND LicenseRef-yt-dlp-third-party",
+			"sourceBundle": {
+				"name": "yt-dlp.tar.gz",
+				"sha256": "07e2aec9b176ce346d5dd96aa4ade127add1ee88a297129e5bad854be2170dab"
+			}
+		},
+		{
+			"name": "deno",
+			"upstream": {
+				"repository": "denoland/deno",
+				"tag": "v2.9.3",
+				"commit": "f39575ecd50602a5b42b1ba8e93849460de9fcf4"
+			},
+			"assets": [
+				{
+					"name": "deno-x86_64-unknown-linux-gnu.zip",
+					"sha256": "8101865641cbede56f08ad19c0a67a87df84bce127fee0d3e3e1f7467717ffa6"
+				}
+			],
+			"license": "MIT",
+			"sourceBundle": {
+				"name": "deno_src.tar.gz",
+				"sha256": "58da10e48968a80a6c205b31584d1f1f4583226e59ebb08cb3783b12e7f22d4d"
+			}
+		},
+		{
+			"name": "yt-dlp-ejs",
+			"upstream": {
+				"repository": "yt-dlp/ejs",
+				"tag": "0.8.0",
+				"commit": "4fb477f4af56880cfd324c48bd4294a2d2294e50"
+			},
+			"assets": [
+				{
+					"name": "yt.solver.core.js",
+					"sha256": "ca259e4e3cdd37d92fc266d9af08d4fd66da8479e240f4d984f29da402c22ead"
+				},
+				{
+					"name": "yt.solver.lib.js",
+					"sha256": "770831df5c46474fbff06732315b28f4fb090e427ca669a51da61e2457d41c82"
+				}
+			],
+			"license": "Unlicense AND MIT AND ISC",
+			"sourceBundle": {
+				"name": "yt_dlp_ejs-0.8.0.tar.gz",
+				"sha256": "d5fa1639f63b5c4af8d932495f60689d5370f1a095782c944f7f62a303eb104e"
+			}
+		}
+	]
+}

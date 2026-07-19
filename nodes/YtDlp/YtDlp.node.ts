@@ -242,7 +242,9 @@ export async function executeYtDlpNode(
 				const toolchain = await resolveToolchain();
 				return await executeDownloadRequest(execution, plan, itemIndex, {
 					authentication,
+					denoPath: toolchain.deno,
 					executablePath: toolchain.ytDlp,
+					ffmpegPath: toolchain.ffmpeg,
 					resourceEnvelope,
 					signal,
 					workspaceParent,

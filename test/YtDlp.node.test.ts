@@ -1,7 +1,10 @@
+import { createServer, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
+
 import type { IExecuteFunctions, INode } from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 import { ToolchainAttestationError } from 'n8n-nodes-yt-dlp-platform';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
 	YtDlp,
@@ -37,6 +40,31 @@ const createTestWorkspace = async () => ({
 	close: vi.fn(async () => {}),
 });
 
+const servers: Server[] = [];
+
+afterEach(async () => {
+	await Promise.all(
+		servers.splice(0).map(
+			async (server) =>
+				await new Promise<void>((resolveClose) => server.close(() => resolveClose())),
+		),
+	);
+});
+
+async function startSyntheticOrigin(body: Buffer): Promise<string> {
+	const server = createServer((_request, response) => {
+		response.writeHead(200, { 'content-type': 'video/mp4' });
+		response.end(body);
+	});
+	servers.push(server);
+	await new Promise<void>((resolveListen, rejectListen) => {
+		server.once('error', rejectListen);
+		server.listen(0, '127.0.0.1', resolveListen);
+	});
+	const address = server.address() as AddressInfo;
+	return `http://127.0.0.1:${address.port}/fixture`;
+}
+
 function createExecutionContext(
 	parameters: NodeParameters[],
 	continueOnFail = false,
@@ -64,6 +92,13 @@ function createExecutionContext(
 		getNode: vi.fn(() => node),
 		getCredentials: vi.fn(async () => authentication ?? {}),
 		getNodeParameter: vi.fn((name: string, itemIndex: number) => parameters[itemIndex][name as keyof NodeParameters]),
+		helpers: {
+			prepareBinaryData: vi.fn(async (_data, fileName?: string, mimeType?: string) => ({
+				data: 'stored',
+				fileName,
+				mimeType,
+			})),
+		},
 		logger: {
 			debug: vi.fn(),
 			error: vi.fn(),
@@ -121,15 +156,23 @@ describe('yt-dlp node adapter', () => {
 		);
 	});
 
-	it('uses the attested packaged synthetic yt-dlp for the default request executor', async () => {
+	it('uses the attested packaged yt-dlp for the default request executor', async () => {
+		const fixture = Buffer.from('default packaged yt-dlp');
+		const sourceUrl = await startSyntheticOrigin(fixture);
 		const context = createExecutionContext([
-			{ sourceUrl: 'https://example.com/video', arguments: '' },
+			{ sourceUrl, arguments: '' },
 		]);
 
-		await expect(executeYtDlpNode(context)).rejects.toMatchObject({
-			context: { errorCode: 'YTDLP_FAILED', itemIndex: 0 },
-		});
-	});
+		await expect(executeYtDlpNode(context)).resolves.toMatchObject([[
+			{
+				json: {
+					status: 'success',
+					fileName: '000001-fixture.mp4',
+					sizeBytes: fixture.byteLength,
+				},
+			},
+		]]);
+	}, 30_000);
 
 	it('logs one bounded success terminal event and one execution summary', async () => {
 		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([

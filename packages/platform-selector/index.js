@@ -9,11 +9,18 @@ const { dirname, isAbsolute, join, relative } = require('node:path');
 const PLATFORM_PACKAGE_NAME = 'n8n-nodes-yt-dlp-linux-x64';
 const PLATFORM_PACKAGE_VERSION = '0.2.0';
 const EXECUTION_MANIFEST_DIGEST =
-	'328e2e648df1ea9c159ec6a5f2b1b36aeb092a9ce0e649ae7cfc1555b85b9d16';
+	'643de48d480a1328fbfb00abf0405c15bd6ae4a11bb546664adad308b26db214';
 const EXECUTION_MANIFEST_NAME = 'execution-manifest.json';
-const EXPECTED_TOOL_NAMES = ['ytDlp', 'ffmpeg', 'ffprobe', 'deno'];
+const EXPECTED_FILES = [
+	{ name: 'ytDlp', executable: true },
+	{ name: 'ffmpeg', executable: true },
+	{ name: 'ffprobe', executable: true },
+	{ name: 'deno', executable: true },
+	{ name: 'ejsCore', executable: false },
+	{ name: 'ejsLib', executable: false },
+];
 const PROBE_OUTPUT_LIMIT_BYTES = 64 * 1024;
-const PROBE_TIMEOUT_MS = 2_000;
+const PROBE_TIMEOUT_MS = 10_000;
 
 let cachedAttestation;
 let inFlightAttestation;
@@ -58,7 +65,7 @@ function sameFingerprint(left, right) {
 	);
 }
 
-function assertExecutableMatchesMode(stat, mode) {
+function assertFileMatchesMode(stat, mode) {
 	if (
 		!stat.isFile() ||
 		((stat.mode & 0o111n) !== 0n) !== mode.executable ||
@@ -88,18 +95,20 @@ function parseExecutionManifest(contents) {
 		manifest.packageName !== PLATFORM_PACKAGE_NAME ||
 		manifest.packageVersion !== PLATFORM_PACKAGE_VERSION ||
 		!Array.isArray(manifest.files) ||
-		manifest.files.length !== EXPECTED_TOOL_NAMES.length
+		manifest.files.length !== EXPECTED_FILES.length
 	) {
 		failAttestation();
 	}
 	for (const [index, entry] of manifest.files.entries()) {
+		const expected = EXPECTED_FILES[index];
 		if (
 			entry === null ||
 			typeof entry !== 'object' ||
-			entry.name !== EXPECTED_TOOL_NAMES[index] ||
+			entry.name !== expected.name ||
 			entry.mode === null ||
 			typeof entry.mode !== 'object' ||
-			entry.mode.executable !== true ||
+			typeof entry.mode.executable !== 'boolean' ||
+			entry.mode.executable !== expected.executable ||
 			entry.mode.groupWritable !== false ||
 			entry.mode.worldWritable !== false ||
 			typeof entry.path !== 'string' ||
@@ -110,11 +119,13 @@ function parseExecutionManifest(contents) {
 			entry.size < 0 ||
 			typeof entry.sha256 !== 'string' ||
 			!/^[0-9a-f]{64}$/u.test(entry.sha256) ||
-			entry.probe === null ||
-			typeof entry.probe !== 'object' ||
-			!Array.isArray(entry.probe.args) ||
-			entry.probe.args.some((argument) => typeof argument !== 'string') ||
-			typeof entry.probe.stdout !== 'string'
+			(entry.mode.executable
+				? entry.probe === null ||
+					typeof entry.probe !== 'object' ||
+					!Array.isArray(entry.probe.args) ||
+					entry.probe.args.some((argument) => typeof argument !== 'string') ||
+					typeof entry.probe.stdout !== 'string'
+				: entry.probe !== undefined)
 		) {
 			failAttestation();
 		}
@@ -154,7 +165,7 @@ async function hashDescriptor(handle) {
 	return hash.digest('hex');
 }
 
-async function verifyExecutable(platformRoot, entry) {
+async function verifyFile(platformRoot, entry) {
 	const executablePath = join(platformRoot, entry.path);
 	const resolvedPath = await realpath(executablePath);
 	if (!isConfinedPath(platformRoot, resolvedPath)) failAttestation();
@@ -163,11 +174,11 @@ async function verifyExecutable(platformRoot, entry) {
 	try {
 		handle = await open(executablePath, constants.O_RDONLY | constants.O_NOFOLLOW);
 		const before = await handle.stat({ bigint: true });
-		assertExecutableMatchesMode(before, entry.mode);
+		assertFileMatchesMode(before, entry.mode);
 		if (before.size !== BigInt(entry.size)) failAttestation();
 		if ((await hashDescriptor(handle)) !== entry.sha256) failAttestation();
 		const after = await handle.stat({ bigint: true });
-		assertExecutableMatchesMode(after, entry.mode);
+		assertFileMatchesMode(after, entry.mode);
 		if (!sameFingerprint(fingerprint(before), fingerprint(after))) failAttestation();
 		return {
 			path: executablePath,
@@ -258,15 +269,17 @@ async function attestToolchain() {
 		const platformRoot = await loadPlatformRoot();
 		const verifiedManifest = await readManifest(platformRoot);
 		const { manifest } = verifiedManifest;
-		const executables = [];
+		const files = [];
 		for (const entry of manifest.files) {
-			executables.push(await verifyExecutable(platformRoot, entry));
+			files.push(await verifyFile(platformRoot, entry));
 		}
-		for (const executable of executables) await runProbe(executable);
+		for (const file of files) {
+			if (file.mode.executable) await runProbe(file);
+		}
 		const toolchain = Object.freeze(
-			Object.fromEntries(executables.map((executable, index) => [manifest.files[index].name, executable.path])),
+			Object.fromEntries(files.map((file, index) => [manifest.files[index].name, file.path])),
 		);
-		return { platformRoot, verifiedManifest, executables, toolchain };
+		return { platformRoot, verifiedManifest, files, toolchain };
 	} catch (error) {
 		if (error instanceof ToolchainAttestationError) throw error;
 		throw new ToolchainAttestationError();
@@ -288,10 +301,10 @@ async function fingerprintsAreUnchanged(attestation) {
 		) {
 			return false;
 		}
-		for (const executable of attestation.executables) {
-			const stat = await lstat(executable.path, { bigint: true });
-			assertExecutableMatchesMode(stat, executable.mode);
-			if (!sameFingerprint(fingerprint(stat), executable.fingerprint)) return false;
+		for (const file of attestation.files) {
+			const stat = await lstat(file.path, { bigint: true });
+			assertFileMatchesMode(stat, file.mode);
+			if (!sameFingerprint(fingerprint(stat), file.fingerprint)) return false;
 		}
 		return true;
 	} catch {
