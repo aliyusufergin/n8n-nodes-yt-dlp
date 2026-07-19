@@ -7,7 +7,18 @@ import {
 	executeYtDlpNode,
 	type DownloadRequestExecutor,
 } from '../nodes/YtDlp/YtDlp.node';
-import { YtDlpProcessError } from '../nodes/YtDlp/process';
+import { InvalidArgumentsError } from '../nodes/YtDlp/arguments';
+import {
+	BinaryTransferError,
+	InvalidArtifactSetError,
+} from '../nodes/YtDlp/download';
+import {
+	YtDlpProcessCancellationError,
+	YtDlpProcessError,
+	YtDlpProcessTerminationError,
+} from '../nodes/YtDlp/process';
+import { YtDlpRequestResourceLimitError } from '../nodes/YtDlp/resource-envelope';
+import { InvalidSourceUrlError } from '../nodes/YtDlp/source-url';
 
 interface NodeParameters {
 	sourceUrl: string;
@@ -18,7 +29,11 @@ interface NodeParameters {
 	maximumTotalArtifactSizeMiB?: number;
 }
 
-function createExecutionContext(parameters: NodeParameters[]): IExecuteFunctions {
+function createExecutionContext(
+	parameters: NodeParameters[],
+	continueOnFail = false,
+	executionSignal?: AbortSignal,
+): IExecuteFunctions {
 	const node: INode = {
 		id: 'node-id',
 		name: 'yt-dlp',
@@ -29,6 +44,8 @@ function createExecutionContext(parameters: NodeParameters[]): IExecuteFunctions
 	};
 
 	return {
+		continueOnFail: vi.fn(() => continueOnFail),
+		getExecutionCancelSignal: vi.fn(() => executionSignal),
 		getInputData: vi.fn(() => parameters.map(() => ({ json: {} }))),
 		getNode: vi.fn(() => node),
 		getNodeParameter: vi.fn((name: string, itemIndex: number) => parameters[itemIndex][name as keyof NodeParameters]),
@@ -58,13 +75,180 @@ describe('yt-dlp node metadata', () => {
 });
 
 describe('yt-dlp node adapter', () => {
+	it('stops globally when cancellation races with request settlement', async () => {
+		const controller = new AbortController();
+		const startRequest = ((...args: unknown[]) => {
+			const signal = args[3] as AbortSignal;
+			return new Promise<[]>(resolve => {
+				signal.addEventListener('abort', () => resolve([]), { once: true });
+			});
+		}) as DownloadRequestExecutor;
+		const context = createExecutionContext(
+			[{ sourceUrl: 'https://example.com/video', arguments: '' }],
+			true,
+			controller.signal,
+		);
+
+		const execution = executeYtDlpNode(context, startRequest);
+		controller.abort();
+
+		const error = await execution.catch((cause: unknown) => cause);
+		expect(error).toBeInstanceOf(Error);
+		expect((error as { context?: { itemIndex?: number } }).context?.itemIndex).toBeUndefined();
+	});
+
+	it('runs one request at a time and preserves input output order', async () => {
+		let activeRequests = 0;
+		let maximumActiveRequests = 0;
+		const startRequest = vi.fn<DownloadRequestExecutor>(async (_plan, itemIndex) => {
+			activeRequests++;
+			maximumActiveRequests = Math.max(maximumActiveRequests, activeRequests);
+			await Promise.resolve();
+			activeRequests--;
+			return [
+				{
+					json: { status: 'success', itemIndex },
+					pairedItem: { item: itemIndex },
+				},
+			];
+		});
+		const context = createExecutionContext([
+			{ sourceUrl: 'https://example.com/first', arguments: '' },
+			{ sourceUrl: 'https://example.com/second', arguments: '' },
+			{ sourceUrl: 'https://example.com/third', arguments: '' },
+		]);
+
+		const [outputItems] = await executeYtDlpNode(context, startRequest);
+
+		expect(maximumActiveRequests).toBe(1);
+		expect(outputItems.map(({ pairedItem }) => pairedItem)).toEqual([
+			{ item: 0 },
+			{ item: 1 },
+			{ item: 2 },
+		]);
+	});
+
+	it.each([
+		['cancellation', new YtDlpProcessCancellationError()],
+		[
+			'process termination invariant',
+			new YtDlpProcessTerminationError(true, new Error('termination invariant')),
+		],
+		['toolchain invariant', new Error('toolchain invariant')],
+		['cleanup invariant', new Error('cleanup invariant')],
+		['unknown exception', new Error('unknown exception')],
+	] as const)('stops the execution for a %s even with Continue On Fail', async (_name, globalError) => {
+		const startRequest = vi
+			.fn<DownloadRequestExecutor>()
+			.mockRejectedValueOnce(globalError)
+			.mockResolvedValueOnce([]);
+		const context = createExecutionContext(
+			[
+				{ sourceUrl: 'https://example.com/first', arguments: '' },
+				{ sourceUrl: 'https://example.com/second', arguments: '' },
+			],
+			true,
+		);
+
+		await expect(executeYtDlpNode(context, startRequest)).rejects.toBe(globalError);
+		expect(startRequest).toHaveBeenCalledOnce();
+	});
+
+	it.each([
+		['INVALID_SOURCE_URL', new InvalidSourceUrlError()],
+		['INVALID_ARGUMENTS', new InvalidArgumentsError()],
+		['YTDLP_FAILED', new YtDlpProcessError('YTDLP_FAILED', 'secret', 'stdout', 'stderr')],
+		[
+			'REQUEST_TIMEOUT',
+			new YtDlpProcessError('REQUEST_TIMEOUT', 'secret', 'stdout', 'stderr'),
+		],
+		[
+			'PROCESS_OUTPUT_LIMIT',
+			new YtDlpProcessError('PROCESS_OUTPUT_LIMIT', 'secret', 'stdout', 'stderr'),
+		],
+		['RESOURCE_LIMIT', new YtDlpRequestResourceLimitError('secret')],
+		['INVALID_ARTIFACT_SET', new InvalidArtifactSetError()],
+		['BINARY_TRANSFER_FAILED', new BinaryTransferError(new Error('secret'))],
+	] as const)(
+		'returns a bounded, binary-free %s Failure Item',
+		async (errorCode, requestError) => {
+			const startRequest = vi
+				.fn<DownloadRequestExecutor>()
+				.mockRejectedValue(requestError);
+			const context = createExecutionContext(
+				[{ sourceUrl: 'https://example.com/video', arguments: '' }],
+				true,
+			);
+
+			const [[failureItem]] = await executeYtDlpNode(context, startRequest);
+			const errorMessage = failureItem.json.errorMessage as string;
+
+			expect(failureItem).toEqual({
+				json: {
+					status: 'error',
+					errorCode,
+					errorMessage: expect.any(String),
+				},
+				pairedItem: { item: 0 },
+			});
+			expect(Buffer.byteLength(errorMessage)).toBeLessThanOrEqual(4 * 1024);
+			expect(errorMessage.split('\n')).toHaveLength(1);
+			expect(JSON.stringify(failureItem)).not.toContain('secret');
+			expect(JSON.stringify(failureItem)).not.toContain('stdout');
+			expect(JSON.stringify(failureItem)).not.toContain('stderr');
+		},
+	);
+
+	it('returns one Failure Item and continues with the next input for a typed request failure', async () => {
+		const successItem = {
+			json: { status: 'success' },
+			pairedItem: { item: 1 },
+		};
+		const startRequest = vi
+			.fn<DownloadRequestExecutor>()
+			.mockRejectedValueOnce(
+				new YtDlpProcessError(
+					'YTDLP_FAILED',
+					'sensitive process failure',
+					'sensitive stdout',
+					'sensitive stderr',
+				),
+			)
+			.mockResolvedValueOnce([successItem]);
+		const context = createExecutionContext(
+			[
+				{ sourceUrl: 'https://example.com/failed', arguments: '' },
+				{ sourceUrl: 'https://example.com/succeeded', arguments: '' },
+			],
+			true,
+		);
+
+		const result = await executeYtDlpNode(context, startRequest);
+
+		expect(result).toEqual([
+			[
+				{
+					json: {
+						status: 'error',
+						errorCode: 'YTDLP_FAILED',
+						errorMessage: 'yt-dlp could not complete the Download Request.',
+					},
+					pairedItem: { item: 0 },
+				},
+				successItem,
+			],
+		]);
+		expect(startRequest).toHaveBeenCalledTimes(2);
+		expect(JSON.stringify(result)).not.toContain('sensitive');
+	});
+
 	it('accepts exactly 20 input items', async () => {
 		const parameters = Array.from({ length: 20 }, (_, index) => ({
 			sourceUrl: `https://example.com/video-${index}`,
 			arguments: '',
 		}));
 		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([]);
-		const context = createExecutionContext(parameters);
+		const context = createExecutionContext(parameters, true);
 
 		await expect(executeYtDlpNode(context, startRequest)).resolves.toEqual([[]]);
 		expect(startRequest).toHaveBeenCalledTimes(20);
@@ -76,7 +260,7 @@ describe('yt-dlp node adapter', () => {
 			arguments: '',
 		}));
 		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([]);
-		const context = createExecutionContext(parameters);
+		const context = createExecutionContext(parameters, true);
 
 		await expect(executeYtDlpNode(context, startRequest)).rejects.toMatchObject({
 			context: { errorCode: 'RESOURCE_LIMIT' },
@@ -95,9 +279,10 @@ describe('yt-dlp node adapter', () => {
 				});
 			});
 		}) as DownloadRequestExecutor;
-		const context = createExecutionContext([
-			{ sourceUrl: 'https://example.com/video', arguments: '' },
-		]);
+		const context = createExecutionContext(
+			[{ sourceUrl: 'https://example.com/video', arguments: '' }],
+			true,
+		);
 
 		try {
 			const execution = executeYtDlpNode(context, startRequest).catch(
@@ -169,7 +354,12 @@ describe('yt-dlp node adapter', () => {
 		expect(startRequest).not.toHaveBeenCalled();
 	});
 
-	it.each(['REQUEST_TIMEOUT', 'RESOURCE_LIMIT'] as const)(
+	it.each([
+		'YTDLP_FAILED',
+		'REQUEST_TIMEOUT',
+		'PROCESS_OUTPUT_LIMIT',
+		'RESOURCE_LIMIT',
+	] as const)(
 		'classifies %s process termination as an indexed request failure',
 		async (errorCode) => {
 			const startRequest = vi
