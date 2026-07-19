@@ -1,5 +1,6 @@
 import { createServer, request as httpRequest, type Server } from 'node:http';
 import {
+	chmod,
 	mkdir,
 	mkdtemp,
 	readFile,
@@ -168,6 +169,7 @@ function createExecutionContext(
 
 	return {
 		continueOnFail: vi.fn(() => false),
+		getExecutionId: vi.fn(() => 'execution-id'),
 		getInputData: vi.fn(() => [{ json: {} }]),
 		getNode: vi.fn(() => node),
 		getNodeParameter: vi.fn((name: string, _itemIndex: number, fallback?: unknown) => {
@@ -177,6 +179,12 @@ function createExecutionContext(
 		}),
 		getExecutionCancelSignal: vi.fn(() => signal),
 		helpers: { prepareBinaryData },
+		logger: {
+			debug: vi.fn(),
+			error: vi.fn(),
+			info: vi.fn(),
+			warn: vi.fn(),
+		},
 	} as unknown as IExecuteFunctions;
 }
 
@@ -185,13 +193,13 @@ function createDownloadRequestExecutor(
 	executablePath: string,
 	workspaceParent: string,
 ): DownloadRequestExecutor {
-	return async (plan, itemIndex, resourceEnvelope, signal, authentication) =>
+	return async (plan, itemIndex, resourceEnvelope, signal, authentication, executionWorkspace) =>
 		await executeDownloadRequest(context, plan, itemIndex, {
 			authentication,
 			executablePath,
 			resourceEnvelope,
 			signal,
-			workspaceParent,
+			workspaceParent: executionWorkspace ?? workspaceParent,
 		});
 }
 
@@ -216,6 +224,37 @@ async function expectInvalidArtifactFixture(fixtureSource: string): Promise<void
 }
 
 describe('download request', () => {
+	it('classifies request workspace cleanup failure as a global invariant', async () => {
+		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-cleanup-failure-test-'));
+		temporaryDirectories.push(workspaceParent);
+		const executablePath = await createArtifactFixtureExecutable(
+			workspaceParent,
+			`await fs.writeFile(join(artifacts, '000001-fixture.mp4'), 'fixture');\n` +
+				`await fs.chmod(process.cwd(), 0o500);\n`,
+		);
+		const context = createExecutionContext(
+			'https://example.com/video',
+			vi.fn(async () => ({ data: 'fixture', mimeType: 'video/mp4' })),
+		);
+
+		const error = await executeDownloadRequest(
+			context,
+			{ argv: ['--', 'https://example.com/video'] },
+			0,
+			{ executablePath, workspaceParent },
+		).catch((cause: unknown) => cause);
+
+		expect(error).toMatchObject({
+			name: 'WorkspaceCleanupError',
+			code: 'WORKSPACE_CLEANUP_FAILED',
+		});
+		const requestWorkspace = (await readdir(workspaceParent)).find((name) =>
+			name.startsWith('n8n-nodes-yt-dlp-'),
+		);
+		expect(requestWorkspace).toBeDefined();
+		await chmod(join(workspaceParent, requestWorkspace!), 0o700);
+	});
+
 	it('uses cookie, site login, video password, and an authenticated synthetic proxy without exposing secrets', async () => {
 		const fixture = Buffer.from('authenticated synthetic media');
 		const siteUsername = 'site-user';

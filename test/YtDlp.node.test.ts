@@ -1,5 +1,5 @@
 import type { IExecuteFunctions, INode } from 'n8n-workflow';
-import { NodeConnectionTypes } from 'n8n-workflow';
+import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -20,6 +20,7 @@ import {
 } from '../nodes/YtDlp/process';
 import { YtDlpRequestResourceLimitError } from '../nodes/YtDlp/resource-envelope';
 import { InvalidSourceUrlError } from '../nodes/YtDlp/source-url';
+import { WorkspaceCleanupError } from '../nodes/YtDlp/workspace';
 
 interface NodeParameters {
 	sourceUrl: string;
@@ -29,6 +30,11 @@ interface NodeParameters {
 	maximumArtifactSizeMiB?: number;
 	maximumTotalArtifactSizeMiB?: number;
 }
+
+const createTestWorkspace = async () => ({
+	path: '/tmp/n8n-nodes-yt-dlp-test-execution',
+	close: vi.fn(async () => {}),
+});
 
 function createExecutionContext(
 	parameters: NodeParameters[],
@@ -51,11 +57,18 @@ function createExecutionContext(
 
 	return {
 		continueOnFail: vi.fn(() => continueOnFail),
+		getExecutionId: vi.fn(() => 'execution-id'),
 		getExecutionCancelSignal: vi.fn(() => executionSignal),
 		getInputData: vi.fn(() => parameters.map(() => ({ json: {} }))),
 		getNode: vi.fn(() => node),
 		getCredentials: vi.fn(async () => authentication ?? {}),
 		getNodeParameter: vi.fn((name: string, itemIndex: number) => parameters[itemIndex][name as keyof NodeParameters]),
+		logger: {
+			debug: vi.fn(),
+			error: vi.fn(),
+			info: vi.fn(),
+			warn: vi.fn(),
+		},
 	} as unknown as IExecuteFunctions;
 }
 
@@ -86,6 +99,60 @@ describe('yt-dlp node metadata', () => {
 });
 
 describe('yt-dlp node adapter', () => {
+	it('logs one bounded success terminal event and one execution summary', async () => {
+		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([
+			{
+				json: {
+					status: 'success',
+					fileName: 'secret-title.mp4',
+					sizeBytes: 123,
+				},
+				pairedItem: { item: 0 },
+			},
+		]);
+		const context = createExecutionContext([
+			{
+				sourceUrl: 'https://example.com/secret-video?token=secret',
+				arguments: '--format secret-format',
+			},
+		]);
+
+		await executeYtDlpNode(context, startRequest);
+
+		expect(context.logger.debug).toHaveBeenCalledOnce();
+		expect(context.logger.debug).toHaveBeenCalledWith('yt-dlp request terminal', {
+			artifactCount: 1,
+			durationMs: expect.any(Number),
+			executionId: 'execution-id',
+			finalBytes: 123,
+			inputIndex: 0,
+			outcome: 'success',
+			packageVersion: '0.2.0',
+			schemaVersion: 1,
+			toolchainVersion: '0.2.0',
+		});
+		expect(context.logger.info).toHaveBeenCalledOnce();
+		expect(context.logger.info).toHaveBeenCalledWith('yt-dlp execution summary', {
+			artifactCount: 1,
+			durationMs: expect.any(Number),
+			executionId: 'execution-id',
+			finalBytes: 123,
+			outcome: 'success',
+			packageVersion: '0.2.0',
+			schemaVersion: 1,
+			toolchainVersion: '0.2.0',
+		});
+		expect(context.logger.warn).not.toHaveBeenCalled();
+		expect(context.logger.error).not.toHaveBeenCalled();
+		const logs = JSON.stringify([
+			...(context.logger.debug as ReturnType<typeof vi.fn>).mock.calls,
+			...(context.logger.info as ReturnType<typeof vi.fn>).mock.calls,
+		]);
+		expect(logs).not.toContain('secret');
+		expect(logs).not.toContain('example.com');
+		expect(logs).not.toContain('secret-title.mp4');
+	});
+
 	it('resolves an optional credential by reference and passes only accepted authentication fields', async () => {
 		const authentication: YtDlpAuthenticationData = {
 			cookies: 'cookie-secret',
@@ -111,6 +178,7 @@ describe('yt-dlp node adapter', () => {
 			expect.any(Object),
 			expect.any(AbortSignal),
 			authentication,
+			expect.stringMatching(/\/n8n-nodes-yt-dlp\/n8n-nodes-yt-dlp-execution-/),
 		);
 		expect(JSON.stringify(context.getNode())).not.toContain('cookie-secret');
 		expect(JSON.stringify(context.getNode())).not.toContain('site-password');
@@ -132,13 +200,196 @@ describe('yt-dlp node adapter', () => {
 			expect.any(Object),
 			expect.any(AbortSignal),
 			undefined,
+			expect.stringMatching(/\/n8n-nodes-yt-dlp\/n8n-nodes-yt-dlp-execution-/),
 		);
+	});
+
+	it('logs a typed request failure once without process output or input data', async () => {
+		const startRequest = vi.fn<DownloadRequestExecutor>().mockRejectedValue(
+			new YtDlpProcessError(
+				'YTDLP_FAILED',
+				'secret process failure',
+				'secret stdout',
+				'secret stderr',
+			),
+		);
+		const context = createExecutionContext(
+			[{ sourceUrl: 'https://example.com/secret', arguments: '--format secret' }],
+			true,
+		);
+
+		await executeYtDlpNode(context, startRequest);
+
+		expect(context.logger.warn).toHaveBeenCalledOnce();
+		expect(context.logger.warn).toHaveBeenCalledWith('yt-dlp request terminal', {
+			artifactCount: 0,
+			durationMs: expect.any(Number),
+			errorCode: 'YTDLP_FAILED',
+			executionId: 'execution-id',
+			finalBytes: 0,
+			inputIndex: 0,
+			outcome: 'failure',
+			packageVersion: '0.2.0',
+			schemaVersion: 1,
+			toolchainVersion: '0.2.0',
+		});
+		expect(context.logger.info).toHaveBeenCalledWith(
+			'yt-dlp execution summary',
+			expect.objectContaining({ outcome: 'partial_failure' }),
+		);
+		expect(context.logger.debug).not.toHaveBeenCalled();
+		expect(context.logger.error).not.toHaveBeenCalled();
+		expect(JSON.stringify((context.logger.warn as ReturnType<typeof vi.fn>).mock.calls)).not.toContain(
+			'secret',
+		);
+	});
+
+	it('logs a cleanup failure as one secret-safe global terminal event', async () => {
+		const startRequest = vi
+			.fn<DownloadRequestExecutor>()
+			.mockRejectedValue(
+				new WorkspaceCleanupError('WORKSPACE_CLEANUP_FAILED', new Error('secret path')),
+			);
+		const context = createExecutionContext(
+			[{ sourceUrl: 'https://example.com/secret', arguments: '--format secret' }],
+			true,
+		);
+
+		await expect(executeYtDlpNode(context, startRequest)).rejects.toMatchObject({
+			code: 'WORKSPACE_CLEANUP_FAILED',
+		});
+
+		expect(context.logger.error).toHaveBeenCalledOnce();
+		expect(context.logger.error).toHaveBeenCalledWith('yt-dlp request terminal', {
+			artifactCount: 0,
+			durationMs: expect.any(Number),
+			errorCode: 'WORKSPACE_CLEANUP_FAILED',
+			executionId: 'execution-id',
+			finalBytes: 0,
+			inputIndex: 0,
+			outcome: 'global_failure',
+			packageVersion: '0.2.0',
+			schemaVersion: 1,
+			toolchainVersion: '0.2.0',
+		});
+		expect(context.logger.info).toHaveBeenCalledOnce();
+		expect(context.logger.warn).not.toHaveBeenCalled();
+		expect(context.logger.debug).not.toHaveBeenCalled();
+		expect(JSON.stringify((context.logger.error as ReturnType<typeof vi.fn>).mock.calls)).not.toContain(
+			'secret',
+		);
+	});
+
+	it('allowlists global error codes before logging them', async () => {
+		const context = createExecutionContext([
+			{ sourceUrl: 'https://example.com/video', arguments: '' },
+		]);
+		const injectedError = new NodeOperationError(context.getNode(), 'failure');
+		injectedError.context.errorCode = 'secret\nmultiline-code';
+		const startRequest = vi.fn<DownloadRequestExecutor>().mockRejectedValue(injectedError);
+
+		await expect(executeYtDlpNode(context, startRequest)).rejects.toBe(injectedError);
+
+		expect(context.logger.error).toHaveBeenCalledWith(
+			'yt-dlp request terminal',
+			expect.objectContaining({ errorCode: 'UNEXPECTED_ERROR' }),
+		);
+		expect(JSON.stringify((context.logger.error as ReturnType<typeof vi.fn>).mock.calls)).not.toContain(
+			'secret',
+		);
+		expect(JSON.stringify((context.logger.error as ReturnType<typeof vi.fn>).mock.calls)).not.toContain(
+			'multiline',
+		);
+	});
+
+	it('reports cleanup failure instead of cancellation in the execution summary', async () => {
+		const controller = new AbortController();
+		let requestStarted!: () => void;
+		const started = new Promise<void>((resolve) => {
+			requestStarted = resolve;
+		});
+		const startRequest = ((...args: unknown[]) => {
+			const signal = args[3] as AbortSignal;
+			requestStarted();
+			return new Promise<[]>(resolve => {
+				signal.addEventListener('abort', () => resolve([]), { once: true });
+			});
+		}) as DownloadRequestExecutor;
+		const cleanupError = new WorkspaceCleanupError(
+			'WORKSPACE_CLEANUP_FAILED',
+			new Error('secret path'),
+		);
+		const context = createExecutionContext(
+			[{ sourceUrl: 'https://example.com/video', arguments: '' }],
+			true,
+			controller.signal,
+		);
+		const startWorkspace = async () => ({
+			path: '/tmp/n8n-nodes-yt-dlp-test-execution',
+			close: vi.fn(async () => await Promise.reject(cleanupError)),
+		});
+
+		const execution = executeYtDlpNode(context, startRequest, startWorkspace);
+		await started;
+		controller.abort();
+		await expect(execution).rejects.toBe(cleanupError);
+
+		expect(context.logger.info).toHaveBeenCalledWith(
+			'yt-dlp execution summary',
+			expect.objectContaining({
+				errorCode: 'WORKSPACE_CLEANUP_FAILED',
+				outcome: 'failure',
+			}),
+		);
+	});
+
+	it('logs a concurrent cleanup invariant as a global request failure', async () => {
+		const controller = new AbortController();
+		const cleanupError = new WorkspaceCleanupError(
+			'WORKSPACE_CLEANUP_FAILED',
+			new Error('secret path'),
+		);
+		let requestStarted!: () => void;
+		const started = new Promise<void>((resolve) => {
+			requestStarted = resolve;
+		});
+		const startRequest = ((...args: unknown[]) => {
+			const signal = args[3] as AbortSignal;
+			requestStarted();
+			return new Promise<[]>((_resolve, reject) => {
+				signal.addEventListener('abort', () => reject(cleanupError), { once: true });
+			});
+		}) as DownloadRequestExecutor;
+		const context = createExecutionContext(
+			[{ sourceUrl: 'https://example.com/video', arguments: '' }],
+			true,
+			controller.signal,
+		);
+
+		const execution = executeYtDlpNode(context, startRequest, createTestWorkspace);
+		await started;
+		controller.abort();
+		await expect(execution).rejects.toBe(cleanupError);
+
+		expect(context.logger.error).toHaveBeenCalledWith(
+			'yt-dlp request terminal',
+			expect.objectContaining({
+				errorCode: 'WORKSPACE_CLEANUP_FAILED',
+				outcome: 'global_failure',
+			}),
+		);
+		expect(context.logger.warn).not.toHaveBeenCalled();
 	});
 
 	it('stops globally when cancellation races with request settlement', async () => {
 		const controller = new AbortController();
+		let requestStarted!: () => void;
+		const started = new Promise<void>((resolve) => {
+			requestStarted = resolve;
+		});
 		const startRequest = ((...args: unknown[]) => {
 			const signal = args[3] as AbortSignal;
+			requestStarted();
 			return new Promise<[]>(resolve => {
 				signal.addEventListener('abort', () => resolve([]), { once: true });
 			});
@@ -149,12 +400,23 @@ describe('yt-dlp node adapter', () => {
 			controller.signal,
 		);
 
-		const execution = executeYtDlpNode(context, startRequest);
+		const execution = executeYtDlpNode(context, startRequest, createTestWorkspace);
+		await started;
 		controller.abort();
 
 		const error = await execution.catch((cause: unknown) => cause);
 		expect(error).toBeInstanceOf(Error);
 		expect((error as { context?: { itemIndex?: number } }).context?.itemIndex).toBeUndefined();
+		expect(context.logger.warn).toHaveBeenCalledOnce();
+		expect(context.logger.warn).toHaveBeenCalledWith(
+			'yt-dlp request terminal',
+			expect.objectContaining({ errorCode: 'CANCELLED', outcome: 'cancelled' }),
+		);
+		expect(context.logger.info).toHaveBeenCalledWith(
+			'yt-dlp execution summary',
+			expect.objectContaining({ errorCode: 'CANCELLED', outcome: 'cancelled' }),
+		);
+		expect(context.logger.error).not.toHaveBeenCalled();
 	});
 
 	it('runs one request at a time and preserves input output order', async () => {
@@ -331,8 +593,13 @@ describe('yt-dlp node adapter', () => {
 	it('aborts an execution at the two-hour hard cap as a global failure', async () => {
 		vi.useFakeTimers();
 		let observedSignal: AbortSignal | undefined;
+		let requestStarted!: () => void;
+		const started = new Promise<void>((resolve) => {
+			requestStarted = resolve;
+		});
 		const startRequest = ((...args: unknown[]) => {
 			observedSignal = args[3] as AbortSignal | undefined;
+			requestStarted();
 			return new Promise<[]>(resolve => {
 				observedSignal?.addEventListener('abort', () => resolve([]), {
 					once: true,
@@ -345,15 +612,43 @@ describe('yt-dlp node adapter', () => {
 		);
 
 		try {
-			const execution = executeYtDlpNode(context, startRequest).catch(
+			const execution = executeYtDlpNode(context, startRequest, createTestWorkspace).catch(
 				(cause: unknown) => cause,
 			);
+			await started;
 			await vi.advanceTimersByTimeAsync(2 * 60 * 60 * 1000);
 
 			expect(observedSignal?.aborted).toBe(true);
 			const error = await execution;
 			expect(error).toMatchObject({ context: { errorCode: 'RESOURCE_LIMIT' } });
 			expect((error as { context: { itemIndex?: number } }).context.itemIndex).toBeUndefined();
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it('starts the execution hard cap before workspace recovery', async () => {
+		vi.useFakeTimers();
+		let resolveWorkspace!: (workspace: Awaited<ReturnType<typeof createTestWorkspace>>) => void;
+		const workspace = new Promise<Awaited<ReturnType<typeof createTestWorkspace>>>((resolve) => {
+			resolveWorkspace = resolve;
+		});
+		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([]);
+		const context = createExecutionContext([
+			{ sourceUrl: 'https://example.com/video', arguments: '' },
+		]);
+
+		try {
+			const execution = executeYtDlpNode(context, startRequest, async () => await workspace).catch(
+				(cause: unknown) => cause,
+			);
+			await vi.advanceTimersByTimeAsync(2 * 60 * 60 * 1000);
+			resolveWorkspace(await createTestWorkspace());
+
+			await expect(execution).resolves.toMatchObject({
+				context: { errorCode: 'RESOURCE_LIMIT' },
+			});
+			expect(startRequest).not.toHaveBeenCalled();
 		} finally {
 			vi.useRealTimers();
 		}
@@ -396,6 +691,7 @@ describe('yt-dlp node adapter', () => {
 			},
 			expect.any(AbortSignal),
 			undefined,
+			expect.stringMatching(/\/n8n-nodes-yt-dlp\/n8n-nodes-yt-dlp-execution-/),
 		);
 	});
 
@@ -468,6 +764,7 @@ describe('yt-dlp node adapter', () => {
 			},
 			expect.any(AbortSignal),
 			undefined,
+			expect.stringMatching(/\/n8n-nodes-yt-dlp\/n8n-nodes-yt-dlp-execution-/),
 		);
 	});
 

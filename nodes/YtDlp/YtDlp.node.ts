@@ -6,6 +6,8 @@ import type {
 } from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
+import packageMetadata from '../../package.json';
+
 import {
 	INVALID_ARGUMENTS,
 	InvalidArgumentsError,
@@ -45,7 +47,13 @@ import {
 import {
 	YtDlpProcessCancellationError,
 	YtDlpProcessError,
+	YtDlpProcessTerminationError,
 } from './process';
+import {
+	WorkspaceCleanupError,
+	createExecutionWorkspace,
+	type ExecutionWorkspace,
+} from './workspace';
 
 export type DownloadRequestExecutor = (
 	plan: YtDlpExecutionPlan,
@@ -53,7 +61,10 @@ export type DownloadRequestExecutor = (
 	resourceEnvelope: ResourceEnvelope,
 	signal: AbortSignal,
 	authentication?: YtDlpAuthenticationData,
+	workspaceParent?: string,
 ) => Promise<INodeExecutionData[]>;
+
+export type ExecutionWorkspaceFactory = () => Promise<ExecutionWorkspace>;
 
 const pendingDownloadRequestExecutor: DownloadRequestExecutor = () => Promise.resolve([]);
 
@@ -69,6 +80,93 @@ const REQUEST_FAILURE_MESSAGES = {
 } as const;
 
 type RequestFailureCode = keyof typeof REQUEST_FAILURE_MESSAGES;
+
+const LOG_SCHEMA_VERSION = 1;
+const PACKAGE_VERSION = packageMetadata.version;
+const LOG_ERROR_CODES = new Set<string>([
+	...Object.keys(REQUEST_FAILURE_MESSAGES),
+	'PROCESS_TERMINATION_FAILED',
+	'STALE_WORKSPACE_CLEANUP_FAILED',
+	'WORKSPACE_CLEANUP_FAILED',
+]);
+
+interface ArtifactTotals {
+	artifactCount: number;
+	finalBytes: number;
+}
+
+function artifactTotals(items: readonly INodeExecutionData[]): ArtifactTotals {
+	let artifactCount = 0;
+	let finalBytes = 0;
+	for (const item of items) {
+		if (item.json.status !== 'success') continue;
+		artifactCount++;
+		const sizeBytes = item.json.sizeBytes;
+		if (typeof sizeBytes === 'number' && Number.isSafeInteger(sizeBytes) && sizeBytes >= 0) {
+			finalBytes += sizeBytes;
+		}
+	}
+	return { artifactCount, finalBytes };
+}
+
+function durationSince(startedAt: number): number {
+	return Math.max(0, Date.now() - startedAt);
+}
+
+function baseLogMetadata(execution: IExecuteFunctions): Record<string, unknown> {
+	return {
+		executionId: execution.getExecutionId(),
+		packageVersion: PACKAGE_VERSION,
+		schemaVersion: LOG_SCHEMA_VERSION,
+		toolchainVersion: PACKAGE_VERSION,
+	};
+}
+
+function logRequestTerminal(
+	execution: IExecuteFunctions,
+	level: 'debug' | 'error' | 'warn',
+	event: ArtifactTotals & {
+		durationMs: number;
+		errorCode?: string;
+		inputIndex: number;
+		outcome: 'cancelled' | 'failure' | 'global_failure' | 'success';
+	},
+): void {
+	const metadata: Record<string, unknown> = {
+		...baseLogMetadata(execution),
+		artifactCount: event.artifactCount,
+		durationMs: event.durationMs,
+		finalBytes: event.finalBytes,
+		inputIndex: event.inputIndex,
+		outcome: event.outcome,
+	};
+	if (event.errorCode !== undefined) metadata.errorCode = event.errorCode;
+	execution.logger[level]('yt-dlp request terminal', metadata);
+}
+
+function globalErrorCode(error: unknown): string {
+	if (error instanceof WorkspaceCleanupError) return error.code;
+	if (error instanceof YtDlpExecutionResourceLimitError) return error.code;
+	if (error instanceof YtDlpProcessTerminationError) return 'PROCESS_TERMINATION_FAILED';
+	if (
+		error instanceof NodeOperationError &&
+		typeof error.context.errorCode === 'string' &&
+		LOG_ERROR_CODES.has(error.context.errorCode)
+	) {
+		return error.context.errorCode;
+	}
+	return 'UNEXPECTED_ERROR';
+}
+
+function requestFailureCode(error: unknown): RequestFailureCode | undefined {
+	if (error instanceof YtDlpProcessError) return error.code;
+	if (error instanceof InvalidSourceUrlError) return INVALID_SOURCE_URL;
+	if (error instanceof InvalidArgumentsError) return INVALID_ARGUMENTS;
+	if (error instanceof YtDlpRequestResourceLimitError) return RESOURCE_LIMIT;
+	if (error instanceof InvalidArtifactSetError) return error.code;
+	if (error instanceof BinaryTransferError) return error.code;
+	return undefined;
+}
 
 function executionResourceLimitError(execution: IExecuteFunctions, message: string): NodeOperationError {
 	const error = new NodeOperationError(
@@ -97,22 +195,23 @@ function throwIfExecutionTerminated(
 export async function executeYtDlpNode(
 	execution: IExecuteFunctions,
 	startRequest: DownloadRequestExecutor = pendingDownloadRequestExecutor,
+	startWorkspace: ExecutionWorkspaceFactory = createExecutionWorkspace,
 ): Promise<INodeExecutionData[][]> {
+	const executionStartedAt = Date.now();
 	const items = execution.getInputData();
 	const outputItems: INodeExecutionData[] = [];
-	if (items.length > MAXIMUM_EXECUTION_INPUTS) {
-		throw executionResourceLimitError(
-			execution,
-			`The execution exceeds the ${MAXIMUM_EXECUTION_INPUTS}-item Resource Envelope.`,
-		);
-	}
 	const executionController = new AbortController();
 	let executionTerminationReason: 'cancelled' | 'timeout' | undefined;
+	let executionWorkspace: ExecutionWorkspace | undefined;
+	let executionError: unknown;
+	let hadRequestFailure = false;
+	let workspaceCloseFailed = false;
 	const externalSignal = execution.getExecutionCancelSignal?.();
 	const cancelExecution = (): void => {
 		executionTerminationReason ??= 'cancelled';
 		executionController.abort();
 	};
+
 	externalSignal?.addEventListener('abort', cancelExecution, { once: true });
 	if (externalSignal?.aborted === true) cancelExecution();
 	const executionTimer = setTimeout(() => {
@@ -122,8 +221,16 @@ export async function executeYtDlpNode(
 	executionTimer.unref?.();
 
 	try {
+		executionWorkspace = await startWorkspace();
 		throwIfExecutionTerminated(execution, executionTerminationReason);
+		if (items.length > MAXIMUM_EXECUTION_INPUTS) {
+			throw executionResourceLimitError(
+				execution,
+				`The execution exceeds the ${MAXIMUM_EXECUTION_INPUTS}-item Resource Envelope.`,
+			);
+		}
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
+			const requestStartedAt = Date.now();
 			try {
 				const sourceUrl = execution.getNodeParameter('sourceUrl', itemIndex);
 				const argumentsValue = execution.getNodeParameter('arguments', itemIndex, '') as string;
@@ -165,19 +272,57 @@ export async function executeYtDlpNode(
 					resourceEnvelope,
 					executionController.signal,
 					authentication,
+					executionWorkspace.path,
 				);
 				throwIfExecutionTerminated(execution, executionTerminationReason);
+				const totals = artifactTotals(requestOutput);
+				logRequestTerminal(execution, 'debug', {
+					artifactCount: totals.artifactCount,
+					durationMs: durationSince(requestStartedAt),
+					finalBytes: totals.finalBytes,
+					inputIndex: itemIndex,
+					outcome: 'success',
+				});
 				outputItems.push(...requestOutput);
 			} catch (error) {
-				throwIfExecutionTerminated(execution, executionTerminationReason);
-				let errorCode: RequestFailureCode | undefined;
-				if (error instanceof YtDlpProcessError) errorCode = error.code;
-				else if (error instanceof InvalidSourceUrlError) errorCode = INVALID_SOURCE_URL;
-				else if (error instanceof InvalidArgumentsError) errorCode = INVALID_ARGUMENTS;
-				else if (error instanceof YtDlpRequestResourceLimitError) errorCode = RESOURCE_LIMIT;
-				else if (error instanceof InvalidArtifactSetError) errorCode = error.code;
-				else if (error instanceof BinaryTransferError) errorCode = error.code;
+				let effectiveError = error;
+				if (
+					!(error instanceof WorkspaceCleanupError) &&
+					!(error instanceof YtDlpProcessTerminationError)
+				) {
+					try {
+						throwIfExecutionTerminated(execution, executionTerminationReason);
+					} catch (terminationError) {
+						effectiveError = terminationError;
+					}
+				}
+				const cancelled =
+					!(effectiveError instanceof WorkspaceCleanupError) &&
+					!(effectiveError instanceof YtDlpProcessTerminationError) &&
+					(executionTerminationReason === 'cancelled' ||
+						effectiveError instanceof YtDlpProcessCancellationError);
+				const errorCode = requestFailureCode(effectiveError);
+				if (cancelled) {
+					logRequestTerminal(execution, 'warn', {
+						artifactCount: 0,
+						durationMs: durationSince(requestStartedAt),
+						errorCode: 'CANCELLED',
+						finalBytes: 0,
+						inputIndex: itemIndex,
+						outcome: 'cancelled',
+					});
+					throw effectiveError;
+				}
 				if (errorCode !== undefined) {
+					hadRequestFailure = true;
+					logRequestTerminal(execution, 'warn', {
+						artifactCount: 0,
+						durationMs: durationSince(requestStartedAt),
+						errorCode,
+						finalBytes: 0,
+						inputIndex: itemIndex,
+						outcome: 'failure',
+					});
 					if (execution.continueOnFail()) {
 						outputItems.push({
 							json: {
@@ -191,7 +336,9 @@ export async function executeYtDlpNode(
 					}
 
 					const cause =
-						error instanceof Error ? error : new Error(REQUEST_FAILURE_MESSAGES[errorCode]);
+						effectiveError instanceof Error
+							? effectiveError
+							: new Error(REQUEST_FAILURE_MESSAGES[errorCode]);
 					const nodeError = new NodeOperationError(execution.getNode(), cause, {
 						description: errorCode,
 						itemIndex,
@@ -200,14 +347,63 @@ export async function executeYtDlpNode(
 					throw nodeError;
 				}
 
-				throw error instanceof Error ? error : new Error('Unexpected request failure.');
+				logRequestTerminal(execution, 'error', {
+					artifactCount: 0,
+					durationMs: durationSince(requestStartedAt),
+					errorCode: globalErrorCode(effectiveError),
+					finalBytes: 0,
+					inputIndex: itemIndex,
+					outcome: 'global_failure',
+				});
+				throw effectiveError instanceof Error
+					? effectiveError
+					: new Error('Unexpected request failure.');
 			}
 		}
+	} catch (error) {
+		executionError = error;
 	} finally {
 		clearTimeout(executionTimer);
 		externalSignal?.removeEventListener('abort', cancelExecution);
+		if (executionWorkspace !== undefined) {
+			const preserve =
+				executionError instanceof YtDlpProcessTerminationError &&
+				!executionError.processClosed;
+			try {
+				await executionWorkspace.close({ preserve });
+			} catch (error) {
+				workspaceCloseFailed = true;
+				executionError = error;
+			}
+		}
+		const totals = artifactTotals(outputItems);
+		const cancelled =
+			!workspaceCloseFailed &&
+			!(executionError instanceof WorkspaceCleanupError) &&
+			!(executionError instanceof YtDlpProcessTerminationError) &&
+			(executionTerminationReason === 'cancelled' ||
+				executionError instanceof YtDlpProcessCancellationError);
+		const summaryMetadata: Record<string, unknown> = {
+			...baseLogMetadata(execution),
+			artifactCount: totals.artifactCount,
+			durationMs: durationSince(executionStartedAt),
+			finalBytes: totals.finalBytes,
+			outcome:
+				executionError !== undefined
+					? cancelled
+						? 'cancelled'
+						: 'failure'
+					: hadRequestFailure
+						? 'partial_failure'
+						: 'success',
+		};
+		if (executionError !== undefined) {
+			summaryMetadata.errorCode = cancelled ? 'CANCELLED' : globalErrorCode(executionError);
+		}
+		execution.logger.info('yt-dlp execution summary', summaryMetadata);
 	}
 
+	if (executionError !== undefined) throw executionError;
 	return [outputItems];
 }
 

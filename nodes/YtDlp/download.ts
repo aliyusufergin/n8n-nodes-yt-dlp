@@ -6,7 +6,6 @@ import {
 	open,
 	readdir,
 	realpath,
-	rm,
 	type FileHandle,
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -25,6 +24,7 @@ import {
 	createResourceEnvelope,
 	type ResourceEnvelope,
 } from './resource-envelope';
+import { removeWorkspace } from './workspace';
 
 export const INVALID_ARTIFACT_SET = 'INVALID_ARTIFACT_SET';
 export const BINARY_TRANSFER_FAILED = 'BINARY_TRANSFER_FAILED';
@@ -407,7 +407,7 @@ export async function executeDownloadRequest(
 				);
 			} finally {
 				if (cleanupAllowed) {
-					await rm(workspace, { recursive: true, maxRetries: 2, retryDelay: 50 });
+					await removeWorkspace(workspace);
 				}
 			}
 		}
