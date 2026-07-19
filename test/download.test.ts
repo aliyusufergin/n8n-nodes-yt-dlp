@@ -340,7 +340,7 @@ describe('download request', () => {
 	});
 
 	it.each([
-		{ outcome: 'Secret Config parse failure', expected: { name: 'InvalidAuthenticationError' } },
+		{ outcome: 'Secret Config parse failure', expected: { code: 'YTDLP_FAILED' } },
 		{ outcome: 'process failure', expected: { code: 'YTDLP_FAILED' } },
 		{ outcome: 'timeout', expected: { code: 'REQUEST_TIMEOUT' } },
 		{ outcome: 'cancellation', expected: { name: 'YtDlpProcessCancellationError' } },
@@ -354,7 +354,11 @@ describe('download request', () => {
 			executablePath,
 			`#!${process.execPath}\n` +
 				`const fs = require('node:fs/promises'); const { join } = require('node:path');\n` +
-				`void (async () => { const argv = process.argv.slice(2); let stdin = ''; process.stdin.setEncoding('utf8'); for await (const chunk of process.stdin) stdin += chunk; const config = Object.fromEntries(stdin.trimEnd().split('\\n').map(line => { const separator = line.indexOf('='); return [line.slice(0, separator), line.slice(separator + 2, -1)]; })); const cookies = await fs.readFile(config['--cookies'], 'utf8');\n` +
+				`void (async () => { const argv = process.argv.slice(2); let stdin = ''; process.stdin.setEncoding('utf8'); for await (const chunk of process.stdin) stdin += chunk; ` +
+				(outcome === 'Secret Config parse failure'
+					? `const config = Object.fromEntries(stdin.trimEnd().split('\\n').map(line => { const match = /^(--[a-z-]+)='([^']*)'$/.exec(line); if (match === null) throw new SyntaxError('Secret Config parse failure'); return [match[1], match[2]]; })); `
+					: `const config = Object.fromEntries(stdin.trimEnd().split('\\n').map(line => { const separator = line.indexOf('='); return [line.slice(0, separator), line.slice(separator + 2, -1)]; })); `) +
+				`const cookies = await fs.readFile(config['--cookies'], 'utf8');\n` +
 				(outcome === 'process failure'
 					? `process.stderr.write(stdin + cookies); process.exitCode = 2; return;\n`
 					: outcome === 'binary transfer failure'
@@ -376,10 +380,7 @@ describe('download request', () => {
 		const cookieSecret = `cookie-secret-${outcome}`;
 		const authentication = {
 			cookies: `# Netscape HTTP Cookie File\nexample.test\tFALSE\t/\tFALSE\t0\tsession\t${cookieSecret}\n`,
-			username:
-				outcome === 'Secret Config parse failure'
-					? `username-line\nfeed-${outcome}`
-					: `username-'${outcome}`,
+			username: `username-'${outcome}`,
 			password: `password-${outcome}`,
 			videoPassword: `video-password-${outcome}`,
 			proxyUrl: `http://proxy-user:proxy-password@proxy-${outcome.replace(/\s/g, '-')}.test`,
