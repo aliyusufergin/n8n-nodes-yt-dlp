@@ -22,6 +22,27 @@ import {
 	type ResourceEnvelope,
 } from './resource-envelope';
 
+export const INVALID_ARTIFACT_SET = 'INVALID_ARTIFACT_SET';
+export const BINARY_TRANSFER_FAILED = 'BINARY_TRANSFER_FAILED';
+
+export class InvalidArtifactSetError extends Error {
+	readonly code = INVALID_ARTIFACT_SET;
+
+	constructor() {
+		super('The download request produced an invalid Artifact set.');
+		this.name = 'InvalidArtifactSetError';
+	}
+}
+
+export class BinaryTransferError extends Error {
+	readonly code = BINARY_TRANSFER_FAILED;
+
+	constructor(cause: unknown) {
+		super('An Artifact could not be transferred to n8n binary storage.', { cause });
+		this.name = 'BinaryTransferError';
+	}
+}
+
 const MIME_TYPES: Readonly<Record<string, string>> = {
 	'.aac': 'audio/aac',
 	'.aiff': 'audio/aiff',
@@ -71,8 +92,8 @@ interface PinnedDirectory {
 	stat: Stats;
 }
 
-function invalidArtifactSet(): Error {
-	return new Error('The download request produced an invalid Artifact set.');
+function invalidArtifactSet(): InvalidArtifactSetError {
+	return new InvalidArtifactSetError();
 }
 
 function requestResourceLimit(message: string): YtDlpRequestResourceLimitError {
@@ -320,7 +341,7 @@ export async function executeDownloadRequest(
 			temporaryNames.length > 0 ||
 			controlNames.length > 0
 		) {
-			throw new Error('The download request left unexpected workspace residue.');
+			throw invalidArtifactSet();
 		}
 		await Promise.all([
 			assertDirectoryIdentity(tempDirectoryIdentity),
@@ -333,11 +354,17 @@ export async function executeDownloadRequest(
 			await assertArtifactSetUnchanged(artifactsDirectoryIdentity, artifacts);
 			const extension = extname(artifact.fileName).toLowerCase();
 			const mimeType = MIME_TYPES[extension] ?? 'application/octet-stream';
-			const binaryData = await execution.helpers.prepareBinaryData(
-				artifact.fileHandle.createReadStream({ autoClose: false }),
-				artifact.fileName,
-				mimeType,
-			);
+			let binaryData;
+			try {
+				binaryData = await execution.helpers.prepareBinaryData(
+					artifact.fileHandle.createReadStream({ autoClose: false }),
+					artifact.fileName,
+					mimeType,
+				);
+			} catch (error) {
+				// eslint-disable-next-line @n8n/community-nodes/require-node-api-error -- Request failures are converted at the node boundary.
+				throw new BinaryTransferError(error);
+			}
 			outputItems.push({
 				json: {
 					status: 'success',

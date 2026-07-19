@@ -18,6 +18,10 @@ import {
 	createDownloadRequest,
 } from './source-url';
 import {
+	BinaryTransferError,
+	InvalidArtifactSetError,
+} from './download';
+import {
 	DEFAULT_MAXIMUM_ARTIFACT_COUNT,
 	DEFAULT_MAXIMUM_ARTIFACT_SIZE_MIB,
 	DEFAULT_MAXIMUM_TOTAL_ARTIFACT_SIZE_MIB,
@@ -34,7 +38,10 @@ import {
 	createResourceEnvelope,
 	type ResourceEnvelope,
 } from './resource-envelope';
-import { YtDlpProcessError } from './process';
+import {
+	YtDlpProcessCancellationError,
+	YtDlpProcessError,
+} from './process';
 
 export type DownloadRequestExecutor = (
 	plan: YtDlpExecutionPlan,
@@ -44,6 +51,19 @@ export type DownloadRequestExecutor = (
 ) => Promise<INodeExecutionData[]>;
 
 const pendingDownloadRequestExecutor: DownloadRequestExecutor = () => Promise.resolve([]);
+
+const REQUEST_FAILURE_MESSAGES = {
+	INVALID_SOURCE_URL: 'The Source URL is invalid.',
+	INVALID_ARGUMENTS: 'The Arguments value is invalid.',
+	YTDLP_FAILED: 'yt-dlp could not complete the Download Request.',
+	REQUEST_TIMEOUT: 'The Download Request exceeded its timeout.',
+	PROCESS_OUTPUT_LIMIT: 'The Download Request exceeded the process output limit.',
+	RESOURCE_LIMIT: 'The Download Request exceeded its Resource Envelope.',
+	INVALID_ARTIFACT_SET: 'The Download Request produced an invalid Artifact set.',
+	BINARY_TRANSFER_FAILED: 'An Artifact could not be transferred to n8n binary storage.',
+} as const;
+
+type RequestFailureCode = keyof typeof REQUEST_FAILURE_MESSAGES;
 
 function executionResourceLimitError(execution: IExecuteFunctions, message: string): NodeOperationError {
 	const error = new NodeOperationError(
@@ -55,10 +75,13 @@ function executionResourceLimitError(execution: IExecuteFunctions, message: stri
 	return error;
 }
 
-function throwIfExecutionTimedOut(
+function throwIfExecutionTerminated(
 	execution: IExecuteFunctions,
 	terminationReason: 'cancelled' | 'timeout' | undefined,
 ): void {
+	if (terminationReason === 'cancelled') {
+		throw new NodeOperationError(execution.getNode(), new YtDlpProcessCancellationError());
+	}
 	if (terminationReason !== 'timeout') return;
 	throw executionResourceLimitError(
 		execution,
@@ -94,6 +117,7 @@ export async function executeYtDlpNode(
 	executionTimer.unref?.();
 
 	try {
+		throwIfExecutionTerminated(execution, executionTerminationReason);
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
 				const sourceUrl = execution.getNodeParameter('sourceUrl', itemIndex);
@@ -129,33 +153,33 @@ export async function executeYtDlpNode(
 					resourceEnvelope,
 					executionController.signal,
 				);
-				throwIfExecutionTimedOut(execution, executionTerminationReason);
+				throwIfExecutionTerminated(execution, executionTerminationReason);
 				outputItems.push(...requestOutput);
 			} catch (error) {
-				throwIfExecutionTimedOut(execution, executionTerminationReason);
-				if (
-					error instanceof YtDlpProcessError &&
-					(error.code === 'REQUEST_TIMEOUT' || error.code === RESOURCE_LIMIT)
-				) {
-					const nodeError = new NodeOperationError(execution.getNode(), error, {
-						description: error.code,
-						itemIndex,
-					});
-					nodeError.context.errorCode = error.code;
-					throw nodeError;
-				}
-				if (
-					error instanceof InvalidSourceUrlError ||
-					error instanceof InvalidArgumentsError ||
-					error instanceof YtDlpRequestResourceLimitError
-				) {
-					const errorCode =
-						error instanceof InvalidSourceUrlError
-							? INVALID_SOURCE_URL
-							: error instanceof InvalidArgumentsError
-								? INVALID_ARGUMENTS
-								: RESOURCE_LIMIT;
-					const nodeError = new NodeOperationError(execution.getNode(), error, {
+				throwIfExecutionTerminated(execution, executionTerminationReason);
+				let errorCode: RequestFailureCode | undefined;
+				if (error instanceof YtDlpProcessError) errorCode = error.code;
+				else if (error instanceof InvalidSourceUrlError) errorCode = INVALID_SOURCE_URL;
+				else if (error instanceof InvalidArgumentsError) errorCode = INVALID_ARGUMENTS;
+				else if (error instanceof YtDlpRequestResourceLimitError) errorCode = RESOURCE_LIMIT;
+				else if (error instanceof InvalidArtifactSetError) errorCode = error.code;
+				else if (error instanceof BinaryTransferError) errorCode = error.code;
+				if (errorCode !== undefined) {
+					if (execution.continueOnFail()) {
+						outputItems.push({
+							json: {
+								status: 'error',
+								errorCode,
+								errorMessage: REQUEST_FAILURE_MESSAGES[errorCode],
+							},
+							pairedItem: { item: itemIndex },
+						});
+						continue;
+					}
+
+					const cause =
+						error instanceof Error ? error : new Error(REQUEST_FAILURE_MESSAGES[errorCode]);
+					const nodeError = new NodeOperationError(execution.getNode(), cause, {
 						description: errorCode,
 						itemIndex,
 					});
@@ -163,8 +187,7 @@ export async function executeYtDlpNode(
 					throw nodeError;
 				}
 
-				const cause = error instanceof Error ? error : new Error('Unexpected request failure.');
-				throw new NodeOperationError(execution.getNode(), cause, { itemIndex });
+				throw error instanceof Error ? error : new Error('Unexpected request failure.');
 			}
 		}
 	} finally {

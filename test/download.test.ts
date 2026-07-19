@@ -167,6 +167,7 @@ function createExecutionContext(
 	};
 
 	return {
+		continueOnFail: vi.fn(() => false),
 		getInputData: vi.fn(() => [{ json: {} }]),
 		getNode: vi.fn(() => node),
 		getNodeParameter: vi.fn((name: string, _itemIndex: number, fallback?: unknown) => {
@@ -179,21 +180,37 @@ function createExecutionContext(
 	} as unknown as IExecuteFunctions;
 }
 
+function createDownloadRequestExecutor(
+	context: IExecuteFunctions,
+	executablePath: string,
+	workspaceParent: string,
+): DownloadRequestExecutor {
+	return async (plan, itemIndex, resourceEnvelope, signal) =>
+		await executeDownloadRequest(context, plan, itemIndex, {
+			executablePath,
+			resourceEnvelope,
+			signal,
+			workspaceParent,
+		});
+}
+
 async function expectInvalidArtifactFixture(fixtureSource: string): Promise<void> {
 	const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-invalid-set-test-'));
 	temporaryDirectories.push(workspaceParent);
 	const executablePath = await createArtifactFixtureExecutable(workspaceParent, fixtureSource);
 	const prepareBinaryData = vi.fn();
 	const context = createExecutionContext('https://example.com/playlist', prepareBinaryData);
+	const startRequest = createDownloadRequestExecutor(
+		context,
+		executablePath,
+		workspaceParent,
+	);
 
 	await expect(
-		executeDownloadRequest(
-			context,
-			{ argv: ['--', 'https://example.com/playlist'] },
-			0,
-			{ executablePath, workspaceParent },
-		),
-	).rejects.toThrow();
+		executeYtDlpNode(context, startRequest),
+	).rejects.toMatchObject({
+		context: { errorCode: 'INVALID_ARTIFACT_SET', itemIndex: 0 },
+	});
 	expect(prepareBinaryData).not.toHaveBeenCalled();
 }
 
@@ -251,18 +268,11 @@ describe('download request', () => {
 			undefined,
 			{ maximumTotalArtifactSizeMiB: 1 },
 		);
-		const startRequest: DownloadRequestExecutor = async (
-			plan,
-			itemIndex,
-			resourceEnvelope,
-			signal,
-		) =>
-			await executeDownloadRequest(context, plan, itemIndex, {
-				executablePath,
-				resourceEnvelope,
-				signal,
-				workspaceParent,
-			});
+		const startRequest = createDownloadRequestExecutor(
+			context,
+			executablePath,
+			workspaceParent,
+		);
 
 		await expect(executeYtDlpNode(context, startRequest)).rejects.toMatchObject({
 			context: { errorCode: 'RESOURCE_LIMIT', itemIndex: 0 },
@@ -517,6 +527,30 @@ describe('download request', () => {
 			'000001-audio.m4a',
 			'000002-video.webm',
 		]);
+	});
+
+	it('classifies binary storage rejection as an indexed request failure', async () => {
+		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-binary-failure-'));
+		temporaryDirectories.push(workspaceParent);
+		const executablePath = await createArtifactFixtureExecutable(
+			workspaceParent,
+			`await fs.writeFile(join(artifacts, '000001-video.mp4'), 'video');\n`,
+		);
+		const prepareBinaryData = vi.fn().mockRejectedValue(new Error('storage detail'));
+		const context = createExecutionContext(
+			'https://example.com/video',
+			prepareBinaryData,
+		);
+		const startRequest = createDownloadRequestExecutor(
+			context,
+			executablePath,
+			workspaceParent,
+		);
+
+		await expect(executeYtDlpNode(context, startRequest)).rejects.toMatchObject({
+			context: { errorCode: 'BINARY_TRANSFER_FAILED', itemIndex: 0 },
+		});
+		expect(prepareBinaryData).toHaveBeenCalledOnce();
 	});
 
 	it.each([
@@ -856,18 +890,11 @@ describe('download request', () => {
 			mimeType: mimeType ?? 'application/octet-stream',
 		})) as unknown as IExecuteFunctions['helpers']['prepareBinaryData'];
 		const context = createExecutionContext(sourceUrl, prepareBinaryData);
-		const startRequest: DownloadRequestExecutor = async (
-			plan,
-			itemIndex,
-			resourceEnvelope,
-			signal,
-		) =>
-			await executeDownloadRequest(context, plan, itemIndex, {
-				executablePath,
-				resourceEnvelope,
-				signal,
-				workspaceParent,
-			});
+		const startRequest = createDownloadRequestExecutor(
+			context,
+			executablePath,
+			workspaceParent,
+		);
 
 		const result = await executeYtDlpNode(context, startRequest);
 
