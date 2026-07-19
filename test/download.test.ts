@@ -1,4 +1,4 @@
-import { createServer, type Server } from 'node:http';
+import { createServer, request as httpRequest, type Server } from 'node:http';
 import {
 	mkdir,
 	mkdtemp,
@@ -185,8 +185,9 @@ function createDownloadRequestExecutor(
 	executablePath: string,
 	workspaceParent: string,
 ): DownloadRequestExecutor {
-	return async (plan, itemIndex, resourceEnvelope, signal) =>
+	return async (plan, itemIndex, resourceEnvelope, signal, authentication) =>
 		await executeDownloadRequest(context, plan, itemIndex, {
+			authentication,
 			executablePath,
 			resourceEnvelope,
 			signal,
@@ -215,7 +216,211 @@ async function expectInvalidArtifactFixture(fixtureSource: string): Promise<void
 }
 
 describe('download request', () => {
-	it('adds node-controlled byte, FFmpeg thread, and fragment concurrency limits', async () => {
+	it('uses cookie, site login, video password, and an authenticated synthetic proxy without exposing secrets', async () => {
+		const fixture = Buffer.from('authenticated synthetic media');
+		const siteUsername = 'site-user';
+		const sitePassword = 'site-password';
+		const videoPassword = 'video-password';
+		const cookieValue = 'cookie-secret';
+		const proxyUsername = 'proxy-user';
+		const proxyPassword = 'proxy-password';
+		const expectedSiteAuthorization = `Basic ${Buffer.from(`${siteUsername}:${sitePassword}`).toString('base64')}`;
+		const expectedProxyAuthorization = `Basic ${Buffer.from(`${proxyUsername}:${proxyPassword}`).toString('base64')}`;
+		const origin = createServer((request, response) => {
+			if (
+				request.headers.authorization !== expectedSiteAuthorization ||
+				request.headers.cookie !== `session=${cookieValue}`
+			) {
+				response.writeHead(401);
+				response.end('authentication required');
+				return;
+			}
+			response.writeHead(200, { 'content-type': 'video/mp4' });
+			response.end(fixture);
+		});
+		servers.push(origin);
+		await new Promise<void>((resolve, reject) => {
+			origin.once('error', reject);
+			origin.listen(0, '127.0.0.1', resolve);
+		});
+		const originAddress = origin.address() as AddressInfo;
+		const sourceUrl = `http://127.0.0.1:${originAddress.port}/fixture`;
+
+		const proxy = createServer((request, response) => {
+			if (
+				request.headers['proxy-authorization'] !== expectedProxyAuthorization ||
+				request.url === undefined
+			) {
+				response.writeHead(407);
+				response.end('proxy authentication required');
+				return;
+			}
+			const upstream = httpRequest(
+				new URL(request.url),
+				{
+					headers: {
+						authorization: request.headers.authorization,
+						cookie: request.headers.cookie,
+					},
+				},
+				(upstreamResponse) => {
+					response.writeHead(upstreamResponse.statusCode ?? 500, upstreamResponse.headers);
+					upstreamResponse.pipe(response);
+				},
+			);
+			upstream.once('error', (error) => response.destroy(error));
+			upstream.end();
+		});
+		servers.push(proxy);
+		await new Promise<void>((resolve, reject) => {
+			proxy.once('error', reject);
+			proxy.listen(0, '127.0.0.1', resolve);
+		});
+		const proxyAddress = proxy.address() as AddressInfo;
+		const proxyUrl = `http://${proxyUsername}:${proxyPassword}@127.0.0.1:${proxyAddress.port}`;
+
+		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-authenticated-'));
+		temporaryDirectories.push(workspaceParent);
+		const executablePath = join(workspaceParent, 'controlled-authenticated-yt-dlp');
+		await writeFile(
+			executablePath,
+			`#!${process.execPath}\n` +
+				`const fs = require('node:fs/promises');\n` +
+				`const http = require('node:http');\n` +
+				`const { join } = require('node:path');\n` +
+				`void (async () => {\n` +
+				`const argv = process.argv.slice(2);\n` +
+				`let stdin = ''; process.stdin.setEncoding('utf8'); for await (const chunk of process.stdin) stdin += chunk;\n` +
+				`const config = Object.fromEntries(stdin.trimEnd().split('\\n').map(line => { const separator = line.indexOf('='); return [line.slice(0, separator), line.slice(separator + 2, -1)]; }));\n` +
+				`const sentinels = ${JSON.stringify([siteUsername, sitePassword, videoPassword, cookieValue, proxyUsername, proxyPassword])};\n` +
+				`const publicProcessState = JSON.stringify({ argv, env: process.env });\n` +
+				`if (sentinels.some(secret => publicProcessState.includes(secret))) throw new Error('secret escaped through argv or environment');\n` +
+				`if (argv.slice(0, 3).join(' ') !== '--playlist-items 1:5 --ignore-config' || !argv.includes('--config-locations') || !argv.includes('-')) throw new Error('fixed config invocation missing');\n` +
+				`if (config['--video-password'] !== ${JSON.stringify(videoPassword)}) throw new Error('video password missing');\n` +
+				`const cookiePath = config['--cookies']; const cookieStat = await fs.stat(cookiePath); if ((cookieStat.mode & 0o777) !== 0o600) throw new Error('cookie mode');\n` +
+				`const cookieFields = (await fs.readFile(cookiePath, 'utf8')).trim().split('\\t');\n` +
+				`const proxy = new URL(config['--proxy']); const source = argv.at(-1);\n` +
+				`const body = await new Promise((resolve, reject) => { const request = http.request({ hostname: proxy.hostname, port: proxy.port, path: source, headers: { 'proxy-authorization': 'Basic ' + Buffer.from(decodeURIComponent(proxy.username) + ':' + decodeURIComponent(proxy.password)).toString('base64'), authorization: 'Basic ' + Buffer.from(config['--username'] + ':' + config['--password']).toString('base64'), cookie: cookieFields.at(-2) + '=' + cookieFields.at(-1) } }, response => { const chunks = []; response.on('data', chunk => chunks.push(chunk)); response.on('end', () => response.statusCode === 200 ? resolve(Buffer.concat(chunks)) : reject(new Error('request failed: ' + response.statusCode))); }); request.once('error', reject); request.end(); });\n` +
+				`const pathIndex = argv.indexOf('--paths'); const artifacts = argv[pathIndex + 1]; await fs.writeFile(join(artifacts, '000001-authenticated.mp4'), body);\n` +
+				`})().catch(error => { console.error(error); process.exitCode = 1; });\n`,
+			{ mode: 0o700 },
+		);
+		const prepareBinaryData = vi.fn(
+			async (data: Buffer | Readable, fileName?: string, mimeType?: string) => ({
+				data: (await collect(data as Readable)).toString('base64'),
+				fileName,
+				mimeType: mimeType ?? 'application/octet-stream',
+			}),
+		) as unknown as IExecuteFunctions['helpers']['prepareBinaryData'];
+		const context = createExecutionContext(sourceUrl, prepareBinaryData);
+		const cookies = `# Netscape HTTP Cookie File\r\n127.0.0.1\tFALSE\t/\tFALSE\t0\tsession\t${cookieValue}\r\n`;
+
+		const result = await executeDownloadRequest(
+			context,
+			{ argv: ['--playlist-items', '1:5', '--', sourceUrl] },
+			0,
+			{
+				authentication: {
+					cookies,
+					username: siteUsername,
+					password: sitePassword,
+					videoPassword,
+					proxyUrl,
+				},
+				executablePath,
+				workspaceParent,
+			},
+		);
+
+		expect(result[0].binary?.data.data).toBe(fixture.toString('base64'));
+		for (const secret of [cookies, siteUsername, sitePassword, videoPassword, proxyUrl]) {
+			expect(JSON.stringify(result)).not.toContain(secret);
+		}
+		expect(await readdir(workspaceParent)).toEqual(['controlled-authenticated-yt-dlp']);
+	});
+
+	it.each([
+		{ outcome: 'Secret Config parse failure', expected: { code: 'YTDLP_FAILED' } },
+		{ outcome: 'process failure', expected: { code: 'YTDLP_FAILED' } },
+		{ outcome: 'timeout', expected: { code: 'REQUEST_TIMEOUT' } },
+		{ outcome: 'cancellation', expected: { name: 'YtDlpProcessCancellationError' } },
+		{ outcome: 'binary transfer failure', expected: { code: 'BINARY_TRANSFER_FAILED' } },
+	])('removes sentinel secrets after $outcome', async ({ outcome, expected }) => {
+		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-secret-cleanup-'));
+		temporaryDirectories.push(workspaceParent);
+		const executablePath = join(workspaceParent, 'controlled-secret-cleanup-yt-dlp');
+		const startedPath = join(workspaceParent, 'started');
+		await writeFile(
+			executablePath,
+			`#!${process.execPath}\n` +
+				`const fs = require('node:fs/promises'); const { join } = require('node:path');\n` +
+				`void (async () => { const argv = process.argv.slice(2); let stdin = ''; process.stdin.setEncoding('utf8'); for await (const chunk of process.stdin) stdin += chunk; ` +
+				(outcome === 'Secret Config parse failure'
+					? `const config = Object.fromEntries(stdin.trimEnd().split('\\n').map(line => { const match = /^(--[a-z-]+)='([^']*)'$/.exec(line); if (match === null) throw new SyntaxError('Secret Config parse failure'); return [match[1], match[2]]; })); `
+					: `const config = Object.fromEntries(stdin.trimEnd().split('\\n').map(line => { const separator = line.indexOf('='); return [line.slice(0, separator), line.slice(separator + 2, -1)]; })); `) +
+				`const cookies = await fs.readFile(config['--cookies'], 'utf8');\n` +
+				(outcome === 'process failure'
+					? `process.stderr.write(stdin + cookies); process.exitCode = 2; return;\n`
+					: outcome === 'binary transfer failure'
+						? `const pathIndex = argv.indexOf('--paths'); await fs.writeFile(join(argv[pathIndex + 1], '000001-secret.mp4'), 'artifact'); return;\n`
+						: `await fs.writeFile(${JSON.stringify(startedPath)}, 'yes'); setInterval(() => {}, 1000);\n`) +
+				`})().catch(error => { console.error(error); process.exitCode = 1; });\n`,
+			{ mode: 0o700 },
+		);
+		const controller = new AbortController();
+		const prepareBinaryData =
+			outcome === 'binary transfer failure'
+				? vi.fn().mockRejectedValue(new Error('storage failure'))
+				: vi.fn();
+		const context = createExecutionContext(
+			'https://example.com/video',
+			prepareBinaryData,
+			controller.signal,
+		);
+		const cookieSecret = `cookie-secret-${outcome}`;
+		const authentication = {
+			cookies: `# Netscape HTTP Cookie File\nexample.test\tFALSE\t/\tFALSE\t0\tsession\t${cookieSecret}\n`,
+			username: `username-'${outcome}`,
+			password: `password-${outcome}`,
+			videoPassword: `video-password-${outcome}`,
+			proxyUrl: `http://proxy-user:proxy-password@proxy-${outcome.replace(/\s/g, '-')}.test`,
+		};
+		const resourceEnvelope = {
+			...createResourceEnvelope({}),
+			requestTimeoutMs: outcome === 'timeout' ? 25 : 60_000,
+		};
+
+		const request = executeDownloadRequest(
+			context,
+			{ argv: ['--', 'https://example.com/video'] },
+			0,
+			{
+				authentication,
+				executablePath,
+				resourceEnvelope,
+				signal: controller.signal,
+				workspaceParent,
+			},
+		);
+		if (outcome === 'cancellation') {
+			await waitForFile(startedPath);
+			controller.abort();
+		}
+		const error = await request.catch((cause: unknown) => cause);
+
+		expect(error).toMatchObject(expected);
+		for (const secret of Object.values(authentication)) {
+			expect(JSON.stringify(error)).not.toContain(secret);
+		}
+		if (outcome === 'process failure') {
+			expect(JSON.stringify(error)).not.toContain(`'"'"'`);
+		}
+		expect(
+			(await readdir(workspaceParent)).filter((name) => name.startsWith('n8n-nodes-yt-dlp-')),
+		).toEqual([]);
+	});
+
+	it('adds fixed config isolation and node-controlled resource limits', async () => {
 		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-resource-argv-'));
 		temporaryDirectories.push(workspaceParent);
 		const observedArgumentsPath = join(workspaceParent, 'observed-arguments.json');
@@ -242,6 +447,9 @@ describe('download request', () => {
 		) as string[];
 		expect(observedArguments).toEqual(
 			expect.arrayContaining([
+				'--ignore-config',
+				'--config-locations',
+				'-',
 				'--max-filesize',
 				String(128 * 1024 * 1024),
 				'--concurrent-fragments',
@@ -843,7 +1051,13 @@ describe('download request', () => {
 			context,
 			{ argv: ['--', 'https://example.com/video'] },
 			0,
-			{ executablePath, workspaceParent },
+			{
+				authentication: {
+					cookies: '# Netscape HTTP Cookie File\nexample.test\tFALSE\t/\tFALSE\t0\tsession\tlive-cookie-secret\n',
+				},
+				executablePath,
+				workspaceParent,
+			},
 		);
 		await waitForFile(startedPath);
 		const signalError = Object.assign(new Error('signal denied'), { code: 'EPERM' });
@@ -861,9 +1075,13 @@ describe('download request', () => {
 			kill.mockRestore();
 		}
 
-		expect(await readdir(workspaceParent)).toEqual(
-			expect.arrayContaining([expect.stringMatching(/^n8n-nodes-yt-dlp-/)]),
+		const requestWorkspace = (await readdir(workspaceParent)).find((name) =>
+			name.startsWith('n8n-nodes-yt-dlp-'),
 		);
+		expect(requestWorkspace).toBeDefined();
+		expect(
+			await readFile(join(workspaceParent, requestWorkspace!, 'control', 'cookies.txt'), 'utf8'),
+		).toContain('live-cookie-secret');
 	});
 
 	it.each([

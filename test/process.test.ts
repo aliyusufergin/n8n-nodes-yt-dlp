@@ -40,6 +40,19 @@ async function waitForPidFile(path: string): Promise<number[]> {
 	throw new Error('The controlled executable did not publish its PIDs.');
 }
 
+async function waitForFile(path: string): Promise<void> {
+	for (let attempt = 0; attempt < 100; attempt++) {
+		try {
+			await readFile(path);
+			return;
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code !== 'ENOENT') return Promise.reject(error);
+			await delay(20);
+		}
+	}
+	throw new Error('The controlled executable did not create its marker file.');
+}
+
 async function waitForProcessesToDisappear(pids: readonly number[]): Promise<void> {
 	for (let attempt = 0; attempt < 100; attempt++) {
 		let unexpectedError: unknown;
@@ -267,7 +280,7 @@ describe('yt-dlp process boundary', () => {
 	});
 
 	it(
-		'cancels an ignored-SIGTERM leader and descendant without leaving zombies',
+		'closes stdin and cancels an ignored-SIGTERM leader and descendant without leaving zombies',
 		async () => {
 			const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-cancellation-'));
 			temporaryDirectories.push(workspace);
@@ -295,7 +308,8 @@ describe('yt-dlp process boundary', () => {
 				{ cwd: workspace, signal: controller.signal },
 			);
 			const pids = await waitForPidFile(pidPath);
-			await expect(readFile(stdinClosedPath)).rejects.toMatchObject({ code: 'ENOENT' });
+			await waitForFile(stdinClosedPath);
+			expect(await readFile(stdinClosedPath, 'utf8')).toBe('yes');
 
 			const cancellationStartedAt = Date.now();
 			controller.abort();
@@ -304,7 +318,6 @@ describe('yt-dlp process boundary', () => {
 			});
 
 			expect(Date.now() - cancellationStartedAt).toBeGreaterThanOrEqual(4_900);
-			expect(await readFile(stdinClosedPath, 'utf8')).toBe('yes');
 			await waitForProcessesToDisappear(pids);
 		},
 		12_000,
@@ -339,6 +352,99 @@ describe('yt-dlp process boundary', () => {
 		expect(exitCode).toBe(0);
 		expect(observedStderr).toBe('');
 		expect(JSON.parse(observedArgv)).toEqual(plan.argv);
+	});
+
+	it('delivers Secret Config only through stdin and closes it after writing', async () => {
+		const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-stdin-config-'));
+		temporaryDirectories.push(workspace);
+		const executablePath = join(workspace, 'controlled-executable');
+		const observationPath = join(workspace, 'observation.json');
+		const secretConfig = "--username='stdin-user'\n--password='stdin-password'\n";
+		await writeFile(
+			executablePath,
+			`#!${process.execPath}\n` +
+				`const { writeFileSync } = require('node:fs');\n` +
+				`let stdin = ''; process.stdin.setEncoding('utf8');\n` +
+				`process.stdin.on('data', chunk => { stdin += chunk; });\n` +
+				`process.stdin.on('end', () => { writeFileSync(${JSON.stringify(observationPath)}, JSON.stringify({ argv: process.argv.slice(2), env: process.env, stdin })); });\n`,
+			{ mode: 0o700 },
+		);
+		const plan = {
+			argv: ['--ignore-config', '--config-locations', '-', '--', 'https://example.com/video'],
+		};
+
+		await superviseYtDlpExecutionPlan(executablePath, plan, {
+			cwd: workspace,
+			stdinData: secretConfig,
+			redactValues: ['stdin-user', 'stdin-password'],
+		});
+
+		const observation = JSON.parse(await readFile(observationPath, 'utf8')) as {
+			argv: string[];
+			env: Record<string, string>;
+			stdin: string;
+		};
+		expect(observation.argv).toEqual(plan.argv);
+		expect(observation.env).toEqual({
+			DENO_NO_UPDATE_CHECK: '1',
+			HOME: workspace,
+			LANG: 'C.UTF-8',
+			LC_ALL: 'C.UTF-8',
+			NO_COLOR: '1',
+			TMPDIR: workspace,
+		});
+		expect(observation.stdin).toBe(secretConfig);
+		expect(JSON.stringify({ argv: observation.argv, env: observation.env })).not.toContain(
+			'stdin-user',
+		);
+		expect(JSON.stringify({ argv: observation.argv, env: observation.env })).not.toContain(
+			'stdin-password',
+		);
+	});
+
+	it('redacts Secret Config values from a failed process tail', async () => {
+		const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-stdin-redaction-'));
+		temporaryDirectories.push(workspace);
+		const executablePath = join(workspace, 'controlled-executable');
+		const secret = "quote' whitespace \\ --option";
+		await writeFile(
+			executablePath,
+			`#!${process.execPath}\n` +
+				`let stdin = ''; process.stdin.setEncoding('utf8');\n` +
+				`process.stdin.on('data', chunk => { stdin += chunk; });\n` +
+				`process.stdin.on('end', () => { process.stderr.write(${JSON.stringify(secret)}); process.exitCode = 2; });\n`,
+			{ mode: 0o700 },
+		);
+
+		const error = await superviseYtDlpExecutionPlan(
+			executablePath,
+			{ argv: ['--ignore-config', '--config-locations', '-'] },
+			{ cwd: workspace, stdinData: `--password='value'\n`, redactValues: [secret] },
+		).catch((cause: unknown) => cause);
+
+		expect(error).toMatchObject({ code: 'YTDLP_FAILED', stderrTail: '<redacted>' });
+		expect(JSON.stringify(error)).not.toContain(secret);
+	});
+
+	it('redacts a credential value larger than the retained process tail', async () => {
+		const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-long-redaction-'));
+		temporaryDirectories.push(workspace);
+		const executablePath = join(workspace, 'controlled-executable');
+		const secret = 'long-secret'.repeat(PROCESS_STREAM_TAIL_BYTES);
+		await writeFile(
+			executablePath,
+			`#!${process.execPath}\nprocess.stderr.write(${JSON.stringify(secret)}); process.exitCode = 2;\n`,
+			{ mode: 0o700 },
+		);
+
+		const error = await superviseYtDlpExecutionPlan(
+			executablePath,
+			{ argv: [] },
+			{ cwd: workspace, redactValues: [secret] },
+		).catch((cause: unknown) => cause);
+
+		expect(error).toMatchObject({ code: 'YTDLP_FAILED' });
+		expect((error as YtDlpProcessError).stderrTail).not.toContain('long-secret');
 	});
 
 	it('spawns an absolute executable as a detached process group with a minimal environment', () => {

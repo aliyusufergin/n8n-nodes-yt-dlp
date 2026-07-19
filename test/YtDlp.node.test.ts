@@ -7,6 +7,7 @@ import {
 	executeYtDlpNode,
 	type DownloadRequestExecutor,
 } from '../nodes/YtDlp/YtDlp.node';
+import type { YtDlpAuthenticationData } from '../nodes/YtDlp/authentication';
 import { InvalidArgumentsError } from '../nodes/YtDlp/arguments';
 import {
 	BinaryTransferError,
@@ -33,6 +34,7 @@ function createExecutionContext(
 	parameters: NodeParameters[],
 	continueOnFail = false,
 	executionSignal?: AbortSignal,
+	authentication?: YtDlpAuthenticationData,
 ): IExecuteFunctions {
 	const node: INode = {
 		id: 'node-id',
@@ -41,6 +43,10 @@ function createExecutionContext(
 		typeVersion: 1,
 		position: [0, 0],
 		parameters: {},
+		credentials:
+			authentication === undefined
+				? undefined
+				: { ytDlpAuthentication: { id: 'credential-id', name: 'credential-name' } },
 	};
 
 	return {
@@ -48,6 +54,7 @@ function createExecutionContext(
 		getExecutionCancelSignal: vi.fn(() => executionSignal),
 		getInputData: vi.fn(() => parameters.map(() => ({ json: {} }))),
 		getNode: vi.fn(() => node),
+		getCredentials: vi.fn(async () => authentication ?? {}),
 		getNodeParameter: vi.fn((name: string, itemIndex: number) => parameters[itemIndex][name as keyof NodeParameters]),
 	} as unknown as IExecuteFunctions;
 }
@@ -61,7 +68,8 @@ describe('yt-dlp node metadata', () => {
 	});
 
 	it('declares Source URL separately from Arguments', () => {
-		const propertyNames = new YtDlp().description.properties.map(({ name }) => name);
+		const description = new YtDlp().description;
+		const propertyNames = description.properties.map(({ name }) => name);
 
 		expect(propertyNames).toEqual([
 			'sourceUrl',
@@ -71,10 +79,62 @@ describe('yt-dlp node metadata', () => {
 			'maximumArtifactSizeMiB',
 			'maximumTotalArtifactSizeMiB',
 		]);
+		expect(description.credentials).toEqual([
+			{ name: 'ytDlpAuthentication', required: false },
+		]);
 	});
 });
 
 describe('yt-dlp node adapter', () => {
+	it('resolves an optional credential by reference and passes only accepted authentication fields', async () => {
+		const authentication: YtDlpAuthenticationData = {
+			cookies: 'cookie-secret',
+			username: 'site-user',
+			password: 'site-password',
+			videoPassword: 'video-password',
+			proxyUrl: 'http://proxy-user:proxy-password@proxy.test:8080',
+		};
+		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([]);
+		const context = createExecutionContext(
+			[{ sourceUrl: 'https://example.com/video', arguments: '' }],
+			false,
+			undefined,
+			authentication,
+		);
+
+		await executeYtDlpNode(context, startRequest);
+
+		expect(context.getCredentials).toHaveBeenCalledWith('ytDlpAuthentication', 0);
+		expect(startRequest).toHaveBeenCalledWith(
+			expect.any(Object),
+			0,
+			expect.any(Object),
+			expect.any(AbortSignal),
+			authentication,
+		);
+		expect(JSON.stringify(context.getNode())).not.toContain('cookie-secret');
+		expect(JSON.stringify(context.getNode())).not.toContain('site-password');
+		expect(JSON.stringify(context.getNode())).not.toContain('proxy-password');
+	});
+
+	it('does not resolve credentials when the workflow has no credential reference', async () => {
+		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([]);
+		const context = createExecutionContext([
+			{ sourceUrl: 'https://example.com/video', arguments: '' },
+		]);
+
+		await executeYtDlpNode(context, startRequest);
+
+		expect(context.getCredentials).not.toHaveBeenCalled();
+		expect(startRequest).toHaveBeenCalledWith(
+			expect.any(Object),
+			0,
+			expect.any(Object),
+			expect.any(AbortSignal),
+			undefined,
+		);
+	});
+
 	it('stops globally when cancellation races with request settlement', async () => {
 		const controller = new AbortController();
 		const startRequest = ((...args: unknown[]) => {
@@ -335,6 +395,7 @@ describe('yt-dlp node adapter', () => {
 				maximumWorkspaceSizeBytes: 1088 * 1024 * 1024,
 			},
 			expect.any(AbortSignal),
+			undefined,
 		);
 	});
 
@@ -406,6 +467,7 @@ describe('yt-dlp node adapter', () => {
 				maximumWorkspaceSizeBytes: 576 * 1024 * 1024,
 			},
 			expect.any(AbortSignal),
+			undefined,
 		);
 	});
 

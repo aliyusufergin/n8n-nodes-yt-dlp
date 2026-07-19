@@ -21,6 +21,7 @@ export interface YtDlpSpawnContext {
 export interface YtDlpSupervisorContext extends YtDlpSpawnContext {
 	redactValues?: readonly string[];
 	signal?: AbortSignal;
+	stdinData?: string;
 	timeoutMs?: number;
 	workspaceLimitBytes?: number;
 }
@@ -68,6 +69,16 @@ export class YtDlpProcessTerminationError extends Error {
 }
 
 const REDACTION_MARKER = Buffer.from('<redacted>');
+const REDACTION_FRAGMENT_BYTES = PROCESS_STREAM_TAIL_BYTES / 2;
+
+function redactionFragments(value: string): Buffer[] {
+	const buffer = Buffer.from(value);
+	const fragments: Buffer[] = [];
+	for (let offset = 0; offset < buffer.length; offset += REDACTION_FRAGMENT_BYTES) {
+		fragments.push(buffer.subarray(offset, offset + REDACTION_FRAGMENT_BYTES));
+	}
+	return fragments;
+}
 
 class BoundedRedactedTail {
 	private readonly secrets: readonly Buffer[];
@@ -76,13 +87,13 @@ class BoundedRedactedTail {
 	private tail = Buffer.alloc(0);
 
 	constructor(redactValues: readonly string[]) {
-		this.secrets = redactValues
-			.map((value) => Buffer.from(value))
-			.filter((value) => value.length > 0)
-			.sort((left, right) => right.length - left.length);
-		if (this.secrets.some((value) => value.length > PROCESS_STREAM_TAIL_BYTES)) {
-			throw new Error('A process output redaction value exceeds the retained tail limit.');
+		const uniqueFragments = new Map<string, Buffer>();
+		for (const value of redactValues) {
+			for (const fragment of redactionFragments(value)) {
+				if (fragment.length > 0) uniqueFragments.set(fragment.toString('base64'), fragment);
+			}
 		}
+		this.secrets = [...uniqueFragments.values()].sort((left, right) => right.length - left.length);
 		this.maximumSecretBytes = this.secrets[0]?.length ?? 1;
 	}
 
@@ -372,6 +383,7 @@ export async function superviseYtDlpExecutionPlan(
 	const abortHandler = (): void => requestTermination('CANCELLED');
 	context.signal?.addEventListener('abort', abortHandler, { once: true });
 	if (isCancelled()) requestTermination('CANCELLED');
+	if (!child.stdin.writableEnded) child.stdin.end(context.stdinData ?? '');
 
 	let lifecycle: [
 		[number | null, NodeJS.Signals | null],
