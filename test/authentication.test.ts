@@ -11,6 +11,8 @@ import {
 	serializeSecretConfig,
 	type YtDlpAuthenticationData,
 } from '../nodes/YtDlp/authentication';
+import packageJson from '../package.json';
+import tsconfig from '../tsconfig.json';
 
 const temporaryDirectories: string[] = [];
 
@@ -23,6 +25,13 @@ afterEach(async () => {
 });
 
 describe('YT-DLP Authentication credential', () => {
+	it('is included in both the compiler input and n8n package manifest', () => {
+		expect(tsconfig.include).toContain('credentials/**/*');
+		expect(packageJson.n8n.credentials).toEqual([
+			'dist/credentials/YtDlpAuthentication.credentials.js',
+		]);
+	});
+
 	it('offers only the four accepted credential groups', () => {
 		const credential = new YtDlpAuthentication();
 
