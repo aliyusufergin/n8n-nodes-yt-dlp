@@ -1,0 +1,16 @@
+{
+	"name": "n8n-nodes-yt-dlp-linux-x64",
+	"version": "0.2.0",
+	"description": "Synthetic Linux x64 toolchain fixture for n8n-nodes-yt-dlp",
+	"license": "MIT",
+	"os": [
+		"linux"
+	],
+	"cpu": [
+		"x64"
+	],
+	"files": [
+		"bin",
+		"execution-manifest.json"
+	]
+}

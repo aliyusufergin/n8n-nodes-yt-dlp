@@ -1,5 +1,6 @@
 import type { IExecuteFunctions, INode } from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
+import { ToolchainAttestationError } from 'n8n-nodes-yt-dlp-platform';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -99,6 +100,37 @@ describe('yt-dlp node metadata', () => {
 });
 
 describe('yt-dlp node adapter', () => {
+	it('fails toolchain attestation before creating an Execution Workspace', async () => {
+		const attestationError = new ToolchainAttestationError();
+		const resolveToolchain = vi.fn().mockRejectedValue(attestationError);
+		const startWorkspace = vi.fn(createTestWorkspace);
+		const context = createExecutionContext([
+			{ sourceUrl: 'https://example.com/video', arguments: '' },
+		]);
+
+		await expect(
+			executeYtDlpNode(context, undefined, startWorkspace, resolveToolchain),
+		).rejects.toBe(attestationError);
+		expect(startWorkspace).not.toHaveBeenCalled();
+		expect(context.logger.info).toHaveBeenCalledWith(
+			'yt-dlp execution summary',
+			expect.objectContaining({
+				errorCode: 'TOOLCHAIN_ATTESTATION_FAILED',
+				outcome: 'failure',
+			}),
+		);
+	});
+
+	it('uses the attested packaged synthetic yt-dlp for the default request executor', async () => {
+		const context = createExecutionContext([
+			{ sourceUrl: 'https://example.com/video', arguments: '' },
+		]);
+
+		await expect(executeYtDlpNode(context)).rejects.toMatchObject({
+			context: { errorCode: 'YTDLP_FAILED', itemIndex: 0 },
+		});
+	});
+
 	it('logs one bounded success terminal event and one execution summary', async () => {
 		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([
 			{

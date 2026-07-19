@@ -21,6 +21,9 @@
 	"cpu": [
 		"x64"
 	],
+	"workspaces": [
+		"packages/*"
+	],
 	"files": [
 		"dist"
 	],
@@ -43,6 +46,9 @@
 		"nodes": [
 			"dist/nodes/YtDlp/YtDlp.node.js"
 		]
+	},
+	"dependencies": {
+		"n8n-nodes-yt-dlp-platform": "0.2.0"
 	},
 	"devDependencies": {
 		"@n8n/node-cli": "0.39.3",

@@ -5,6 +5,11 @@ import type {
 	INodeTypeDescription,
 } from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
+import {
+	ToolchainAttestationError,
+	getVerifiedToolchain,
+	type VerifiedToolchain,
+} from 'n8n-nodes-yt-dlp-platform';
 
 import packageMetadata from '../../package.json';
 
@@ -26,6 +31,7 @@ import {
 import {
 	BinaryTransferError,
 	InvalidArtifactSetError,
+	executeDownloadRequest,
 } from './download';
 import {
 	DEFAULT_MAXIMUM_ARTIFACT_COUNT,
@@ -66,7 +72,7 @@ export type DownloadRequestExecutor = (
 
 export type ExecutionWorkspaceFactory = () => Promise<ExecutionWorkspace>;
 
-const pendingDownloadRequestExecutor: DownloadRequestExecutor = () => Promise.resolve([]);
+export type ToolchainResolver = () => Promise<VerifiedToolchain>;
 
 const REQUEST_FAILURE_MESSAGES = {
 	INVALID_SOURCE_URL: 'The Source URL is invalid.',
@@ -145,6 +151,7 @@ function logRequestTerminal(
 }
 
 function globalErrorCode(error: unknown): string {
+	if (error instanceof ToolchainAttestationError) return error.code;
 	if (error instanceof WorkspaceCleanupError) return error.code;
 	if (error instanceof YtDlpExecutionResourceLimitError) return error.code;
 	if (error instanceof YtDlpProcessTerminationError) return 'PROCESS_TERMINATION_FAILED';
@@ -194,8 +201,9 @@ function throwIfExecutionTerminated(
 
 export async function executeYtDlpNode(
 	execution: IExecuteFunctions,
-	startRequest: DownloadRequestExecutor = pendingDownloadRequestExecutor,
+	startRequest: DownloadRequestExecutor | undefined = undefined,
 	startWorkspace: ExecutionWorkspaceFactory = createExecutionWorkspace,
+	resolveToolchain: ToolchainResolver = getVerifiedToolchain,
 ): Promise<INodeExecutionData[][]> {
 	const executionStartedAt = Date.now();
 	const items = execution.getInputData();
@@ -221,6 +229,26 @@ export async function executeYtDlpNode(
 	executionTimer.unref?.();
 
 	try {
+		if (startRequest === undefined) {
+			await resolveToolchain();
+			startRequest = async (
+				plan,
+				itemIndex,
+				resourceEnvelope,
+				signal,
+				authentication,
+				workspaceParent,
+			) => {
+				const toolchain = await resolveToolchain();
+				return await executeDownloadRequest(execution, plan, itemIndex, {
+					authentication,
+					executablePath: toolchain.ytDlp,
+					resourceEnvelope,
+					signal,
+					workspaceParent,
+				});
+			};
+		}
 		executionWorkspace = await startWorkspace();
 		throwIfExecutionTerminated(execution, executionTerminationReason);
 		if (items.length > MAXIMUM_EXECUTION_INPUTS) {
