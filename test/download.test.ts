@@ -13,7 +13,7 @@ import {
 	writeFile,
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import type { Readable } from 'node:stream';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -475,7 +475,9 @@ describe('download request', () => {
 			{ argv: ['--', 'https://example.com/video'] },
 			0,
 			{
+				denoPath: '/opt/n8n-yt-dlp/bin/deno',
 				executablePath,
+				ffmpegPath: '/opt/n8n-yt-dlp/bin/ffmpeg',
 				workspaceParent,
 				resourceEnvelope: createResourceEnvelope({}),
 			},
@@ -489,6 +491,14 @@ describe('download request', () => {
 				'--ignore-config',
 				'--config-locations',
 				'-',
+				'--no-update',
+				'--no-plugin-dirs',
+				'--no-js-runtimes',
+				'--js-runtimes',
+				'deno:/opt/n8n-yt-dlp/bin/deno',
+				'--no-remote-components',
+				'--ffmpeg-location',
+				'/opt/n8n-yt-dlp/bin/ffmpeg',
 				'--max-filesize',
 				String(128 * 1024 * 1024),
 				'--concurrent-fragments',
@@ -1186,4 +1196,63 @@ describe('download request', () => {
 		expect(JSON.stringify(result)).not.toContain('process-output-must-not-be-returned');
 		expect(JSON.stringify(result)).not.toContain(workspaceParent);
 	});
+
+	it('returns a packaged yt-dlp direct download from a local synthetic origin as one Artifact Item', async () => {
+		const fixture = Buffer.from('packaged yt-dlp direct media');
+		const sourceUrl = await startSyntheticOrigin(fixture);
+		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-packaged-test-'));
+		temporaryDirectories.push(workspaceParent);
+		const prepareBinaryData = vi.fn(
+			async (data: Buffer | Readable, fileName?: string, mimeType?: string) => ({
+				data: (await collect(data as Readable)).toString('base64'),
+				fileName,
+				mimeType: mimeType ?? 'application/octet-stream',
+			}),
+		) as unknown as IExecuteFunctions['helpers']['prepareBinaryData'];
+		const context = createExecutionContext(sourceUrl, prepareBinaryData);
+		const packagedToolchainDirectory = resolve('packages', 'linux-x64', 'bin');
+		const startRequest: DownloadRequestExecutor = async (
+			plan,
+			itemIndex,
+			resourceEnvelope,
+			signal,
+			authentication,
+			executionWorkspace,
+		) =>
+			await executeDownloadRequest(context, plan, itemIndex, {
+				authentication,
+				denoPath: join(packagedToolchainDirectory, 'deno'),
+				executablePath: join(packagedToolchainDirectory, 'yt-dlp'),
+				ffmpegPath: join(packagedToolchainDirectory, 'ffmpeg'),
+				resourceEnvelope,
+				signal,
+				workspaceParent: executionWorkspace ?? workspaceParent,
+			});
+
+		const result = await executeYtDlpNode(context, startRequest);
+
+		expect(result).toEqual([
+			[
+				{
+					json: {
+						status: 'success',
+						artifactIndex: 1,
+						artifactCount: 1,
+						fileName: '000001-fixture.mp4',
+						mimeType: 'video/mp4',
+						sizeBytes: fixture.byteLength,
+					},
+					binary: {
+						data: {
+							data: fixture.toString('base64'),
+							fileName: '000001-fixture.mp4',
+							mimeType: 'video/mp4',
+						},
+					},
+					pairedItem: { item: 0 },
+				},
+			],
+		]);
+		expect(await readdir(workspaceParent)).toEqual([]);
+	}, 30_000);
 });

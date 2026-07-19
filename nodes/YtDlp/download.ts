@@ -78,7 +78,9 @@ const MIME_TYPES: Readonly<Record<string, string>> = {
 
 export interface DownloadRequestOptions {
 	authentication?: YtDlpAuthenticationData;
+	denoPath?: string;
 	executablePath: string;
+	ffmpegPath?: string;
 	resourceEnvelope?: ResourceEnvelope;
 	signal?: AbortSignal;
 	workspaceParent?: string;
@@ -255,6 +257,8 @@ function createWorkspacePlan(
 	artifactsDirectory: string,
 	tempDirectory: string,
 	resourceEnvelope: ResourceEnvelope,
+	denoPath: string,
+	ffmpegPath: string,
 ): YtDlpExecutionPlan {
 	const sourceSeparatorIndex = plan.argv.lastIndexOf('--');
 	if (sourceSeparatorIndex < 0) throw new Error('The execution plan has no Source URL separator.');
@@ -265,6 +269,14 @@ function createWorkspacePlan(
 			'--ignore-config',
 			'--config-locations',
 			'-',
+			'--no-update',
+			'--no-plugin-dirs',
+			'--no-js-runtimes',
+			'--js-runtimes',
+			`deno:${denoPath}`,
+			'--no-remote-components',
+			'--ffmpeg-location',
+			ffmpegPath,
 			'--abort-on-error',
 			'--no-progress',
 			'--max-filesize',
@@ -321,6 +333,8 @@ export async function executeDownloadRequest(
 			artifactsDirectory,
 			tempDirectory,
 			resourceEnvelope,
+			options.denoPath ?? join(dirname(options.executablePath), 'deno'),
+			options.ffmpegPath ?? join(dirname(options.executablePath), 'ffmpeg'),
 		);
 		const authenticationTransport = await createAuthenticationTransport(
 			controlDirectory,

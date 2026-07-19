@@ -41,7 +41,7 @@ export default [
 		},
 	},
 	{
-		files: ['nodes/YtDlp/process.ts'],
+		files: ['nodes/YtDlp/process.ts', 'test/platform-packages.test.ts'],
 		rules: {
 			'@n8n/community-nodes/no-dangerous-functions': 'off',
 		},

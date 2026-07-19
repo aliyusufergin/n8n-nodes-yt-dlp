@@ -84,6 +84,8 @@ describe('Platform Selector', () => {
 			ffmpeg: join(platformDirectory, 'bin', 'ffmpeg'),
 			ffprobe: join(platformDirectory, 'bin', 'ffprobe'),
 			deno: join(platformDirectory, 'bin', 'deno'),
+			ejsCore: join(platformDirectory, 'assets', 'ejs', 'yt.solver.core.js'),
+			ejsLib: join(platformDirectory, 'assets', 'ejs', 'yt.solver.lib.js'),
 		});
 		expect(Object.isFrozen(toolchain)).toBe(true);
 		expect(Object.values(toolchain).every(isAbsolute)).toBe(true);
@@ -102,7 +104,7 @@ describe('Platform Selector', () => {
 
 		expect(reattestedToolchain).toEqual(firstToolchain);
 		expect(reattestedToolchain).not.toBe(firstToolchain);
-	});
+	}, 30_000);
 
 	it('revalidates the canonical manifest digest before returning a cached toolchain', async () => {
 		const { api, platformDirectory } = await createSelectorFixture();

@@ -1,5 +1,7 @@
 export interface VerifiedToolchain {
 	readonly deno: string;
+	readonly ejsCore: string;
+	readonly ejsLib: string;
 	readonly ffmpeg: string;
 	readonly ffprobe: string;
 	readonly ytDlp: string;
