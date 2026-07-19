@@ -31,9 +31,10 @@ vi.mock('node:fs/promises', async (importOriginal) => {
 	return {
 		...actual,
 		lstat: async (path: string) => {
-			await artifactRaceControl.beforeLstat?.(path);
+			const isArtifactDescriptorPath = path.startsWith('/proc/self/fd/');
+			if (isArtifactDescriptorPath) await artifactRaceControl.beforeLstat?.(path);
 			const result = await actual.lstat(path);
-			await artifactRaceControl.afterLstat?.(path);
+			if (isArtifactDescriptorPath) await artifactRaceControl.afterLstat?.(path);
 			return result;
 		},
 		open: async (path: string, flags: number) => {
@@ -49,6 +50,10 @@ import {
 	type DownloadRequestExecutor,
 } from '../nodes/YtDlp/YtDlp.node';
 import { executeDownloadRequest } from '../nodes/YtDlp/download';
+import {
+	createResourceEnvelope,
+	type ResourceEnvelopeConfiguration,
+} from '../nodes/YtDlp/resource-envelope';
 
 const temporaryDirectories: string[] = [];
 const servers: Server[] = [];
@@ -150,6 +155,7 @@ function createExecutionContext(
 	sourceUrl: string,
 	prepareBinaryData: (data: Buffer | Readable, fileName?: string, mimeType?: string) => Promise<IBinaryData>,
 	signal?: AbortSignal,
+	resourceConfiguration: ResourceEnvelopeConfiguration = {},
 ): IExecuteFunctions {
 	const node: INode = {
 		id: 'node-id',
@@ -163,7 +169,11 @@ function createExecutionContext(
 	return {
 		getInputData: vi.fn(() => [{ json: {} }]),
 		getNode: vi.fn(() => node),
-		getNodeParameter: vi.fn((name: string) => (name === 'sourceUrl' ? sourceUrl : '')),
+		getNodeParameter: vi.fn((name: string, _itemIndex: number, fallback?: unknown) => {
+			if (name === 'sourceUrl') return sourceUrl;
+			if (name === 'arguments') return '';
+			return resourceConfiguration[name as keyof ResourceEnvelopeConfiguration] ?? fallback;
+		}),
 		getExecutionCancelSignal: vi.fn(() => signal),
 		helpers: { prepareBinaryData },
 	} as unknown as IExecuteFunctions;
@@ -188,6 +198,257 @@ async function expectInvalidArtifactFixture(fixtureSource: string): Promise<void
 }
 
 describe('download request', () => {
+	it('adds node-controlled byte, FFmpeg thread, and fragment concurrency limits', async () => {
+		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-resource-argv-'));
+		temporaryDirectories.push(workspaceParent);
+		const observedArgumentsPath = join(workspaceParent, 'observed-arguments.json');
+		const executablePath = await createArtifactFixtureExecutable(
+			workspaceParent,
+			`await fs.writeFile(${JSON.stringify(observedArgumentsPath)}, JSON.stringify(argv));\n` +
+				`await fs.writeFile(join(artifacts, '000001-video.mp4'), 'bytes');\n`,
+		);
+		const context = createExecutionContext('https://example.com/video', vi.fn());
+
+		await executeDownloadRequest(
+			context,
+			{ argv: ['--', 'https://example.com/video'] },
+			0,
+			{
+				executablePath,
+				workspaceParent,
+				resourceEnvelope: createResourceEnvelope({}),
+			},
+		);
+
+		const observedArguments = JSON.parse(
+			await readFile(observedArgumentsPath, 'utf8'),
+		) as string[];
+		expect(observedArguments).toEqual(
+			expect.arrayContaining([
+				'--max-filesize',
+				String(128 * 1024 * 1024),
+				'--concurrent-fragments',
+				'1',
+				'--postprocessor-args',
+				'ffmpeg:-threads 1',
+			]),
+		);
+	});
+
+	it('classifies a real workspace overshoot as an indexed request failure', async () => {
+		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-workspace-envelope-'));
+		temporaryDirectories.push(workspaceParent);
+		const executablePath = await createArtifactFixtureExecutable(
+			workspaceParent,
+			`await fs.writeFile(join(artifacts, '000001-video.mp4'), 'valid');\n` +
+				`await fs.writeFile(join(temp, 'overshoot.part'), '');\n` +
+				`await fs.truncate(join(temp, 'overshoot.part'), ${67 * 1024 * 1024});\n`,
+		);
+		const prepareBinaryData = vi.fn();
+		const context = createExecutionContext(
+			'https://example.com/video',
+			prepareBinaryData,
+			undefined,
+			{ maximumTotalArtifactSizeMiB: 1 },
+		);
+		const startRequest: DownloadRequestExecutor = async (
+			plan,
+			itemIndex,
+			resourceEnvelope,
+			signal,
+		) =>
+			await executeDownloadRequest(context, plan, itemIndex, {
+				executablePath,
+				resourceEnvelope,
+				signal,
+				workspaceParent,
+			});
+
+		await expect(executeYtDlpNode(context, startRequest)).rejects.toMatchObject({
+			context: { errorCode: 'RESOURCE_LIMIT', itemIndex: 0 },
+		});
+		expect(prepareBinaryData).not.toHaveBeenCalled();
+	});
+
+	it.each([
+		{ configuredLimit: 20, artifactCount: 20, accepted: true },
+		{ configuredLimit: 20, artifactCount: 21, accepted: false },
+		{ configuredLimit: 50, artifactCount: 50, accepted: true },
+		{ configuredLimit: 50, artifactCount: 51, accepted: false },
+	])(
+		'enforces $configuredLimit configured Artifacts at $artifactCount files',
+		async ({ configuredLimit, artifactCount, accepted }) => {
+			const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-artifact-count-'));
+			temporaryDirectories.push(workspaceParent);
+			const executablePath = await createArtifactFixtureExecutable(
+				workspaceParent,
+				`for (let index = 1; index <= ${artifactCount}; index++) {\n` +
+					`  await fs.writeFile(join(artifacts, String(index).padStart(6, '0') + '-file.mp4'), 'x');\n` +
+					`}\n`,
+			);
+			const prepareBinaryData = vi.fn(async () => ({
+				data: 'stored',
+				mimeType: 'video/mp4',
+			}));
+			const context = createExecutionContext(
+				'https://example.com/playlist',
+				prepareBinaryData,
+			);
+			const request = executeDownloadRequest(
+				context,
+				{ argv: ['--', 'https://example.com/playlist'] },
+				0,
+				{
+					executablePath,
+					workspaceParent,
+					resourceEnvelope: createResourceEnvelope({
+						maximumArtifactCount: configuredLimit,
+					}),
+				},
+			);
+
+			if (accepted) {
+				await expect(request).resolves.toHaveLength(artifactCount);
+				expect(prepareBinaryData).toHaveBeenCalledTimes(artifactCount);
+			} else {
+				await expect(request).rejects.toMatchObject({
+					name: 'YtDlpRequestResourceLimitError',
+					code: 'RESOURCE_LIMIT',
+				});
+				expect(prepareBinaryData).not.toHaveBeenCalled();
+			}
+		},
+	);
+
+	it.each([
+		{ configuredLimitMiB: 128, artifactSizeBytes: 128 * 1024 * 1024, accepted: true },
+		{ configuredLimitMiB: 128, artifactSizeBytes: 128 * 1024 * 1024 + 1, accepted: false },
+		{ configuredLimitMiB: 256, artifactSizeBytes: 256 * 1024 * 1024, accepted: true },
+		{ configuredLimitMiB: 256, artifactSizeBytes: 256 * 1024 * 1024 + 1, accepted: false },
+	])(
+		'enforces a $configuredLimitMiB MiB single-Artifact limit at $artifactSizeBytes bytes',
+		async ({ configuredLimitMiB, artifactSizeBytes, accepted }) => {
+			const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-artifact-size-'));
+			temporaryDirectories.push(workspaceParent);
+			const executablePath = await createArtifactFixtureExecutable(
+				workspaceParent,
+				`await fs.writeFile(join(artifacts, '000001-file.mp4'), '');\n` +
+					`await fs.truncate(join(artifacts, '000001-file.mp4'), ${artifactSizeBytes});\n`,
+			);
+			const prepareBinaryData = vi.fn(async () => ({
+				data: 'stored',
+				mimeType: 'video/mp4',
+			}));
+			const context = createExecutionContext(
+				'https://example.com/video',
+				prepareBinaryData,
+			);
+			const request = executeDownloadRequest(
+				context,
+				{ argv: ['--', 'https://example.com/video'] },
+				0,
+				{
+					executablePath,
+					workspaceParent,
+					resourceEnvelope: createResourceEnvelope({
+						maximumArtifactSizeMiB: configuredLimitMiB,
+					}),
+				},
+			);
+
+			if (accepted) {
+				await expect(request).resolves.toHaveLength(1);
+				expect(prepareBinaryData).toHaveBeenCalledOnce();
+			} else {
+				await expect(request).rejects.toMatchObject({
+					name: 'YtDlpRequestResourceLimitError',
+					code: 'RESOURCE_LIMIT',
+				});
+				expect(prepareBinaryData).not.toHaveBeenCalled();
+			}
+		},
+	);
+
+	it.each([
+		{
+			configuredLimitMiB: 256,
+			artifactSizesBytes: [100 * 1024 * 1024, 100 * 1024 * 1024, 56 * 1024 * 1024],
+			accepted: true,
+		},
+		{
+			configuredLimitMiB: 256,
+			artifactSizesBytes: [
+				100 * 1024 * 1024,
+				100 * 1024 * 1024,
+				56 * 1024 * 1024 + 1,
+			],
+			accepted: false,
+		},
+		{
+			configuredLimitMiB: 512,
+			artifactSizesBytes: [200 * 1024 * 1024, 200 * 1024 * 1024, 112 * 1024 * 1024],
+			accepted: true,
+		},
+		{
+			configuredLimitMiB: 512,
+			artifactSizesBytes: [
+				200 * 1024 * 1024,
+				200 * 1024 * 1024,
+				112 * 1024 * 1024 + 1,
+			],
+			accepted: false,
+		},
+	])(
+		'enforces a $configuredLimitMiB MiB final-total limit',
+		async ({ configuredLimitMiB, artifactSizesBytes, accepted }) => {
+			const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-total-size-'));
+			temporaryDirectories.push(workspaceParent);
+			const fixtureSource = artifactSizesBytes
+				.map(
+					(size, index) =>
+						`await fs.writeFile(join(artifacts, '${String(index + 1).padStart(6, '0')}-file.mp4'), '');\n` +
+						`await fs.truncate(join(artifacts, '${String(index + 1).padStart(6, '0')}-file.mp4'), ${size});\n`,
+				)
+				.join('');
+			const executablePath = await createArtifactFixtureExecutable(
+				workspaceParent,
+				fixtureSource,
+			);
+			const prepareBinaryData = vi.fn(async () => ({
+				data: 'stored',
+				mimeType: 'video/mp4',
+			}));
+			const context = createExecutionContext(
+				'https://example.com/playlist',
+				prepareBinaryData,
+			);
+			const request = executeDownloadRequest(
+				context,
+				{ argv: ['--', 'https://example.com/playlist'] },
+				0,
+				{
+					executablePath,
+					workspaceParent,
+					resourceEnvelope: createResourceEnvelope({
+						maximumArtifactSizeMiB: 256,
+						maximumTotalArtifactSizeMiB: configuredLimitMiB,
+					}),
+				},
+			);
+
+			if (accepted) {
+				await expect(request).resolves.toHaveLength(artifactSizesBytes.length);
+				expect(prepareBinaryData).toHaveBeenCalledTimes(artifactSizesBytes.length);
+			} else {
+				await expect(request).rejects.toMatchObject({
+					name: 'YtDlpRequestResourceLimitError',
+					code: 'RESOURCE_LIMIT',
+				});
+				expect(prepareBinaryData).not.toHaveBeenCalled();
+			}
+		},
+	);
+
 	it('returns every Artifact Item in deterministic basename order', async () => {
 		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-multi-test-'));
 		temporaryDirectories.push(workspaceParent);
@@ -595,9 +856,16 @@ describe('download request', () => {
 			mimeType: mimeType ?? 'application/octet-stream',
 		})) as unknown as IExecuteFunctions['helpers']['prepareBinaryData'];
 		const context = createExecutionContext(sourceUrl, prepareBinaryData);
-		const startRequest: DownloadRequestExecutor = async (plan, itemIndex) =>
+		const startRequest: DownloadRequestExecutor = async (
+			plan,
+			itemIndex,
+			resourceEnvelope,
+			signal,
+		) =>
 			await executeDownloadRequest(context, plan, itemIndex, {
 				executablePath,
+				resourceEnvelope,
+				signal,
 				workspaceParent,
 			});
 

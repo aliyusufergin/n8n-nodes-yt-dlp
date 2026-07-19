@@ -3,11 +3,16 @@ import {
 	type ChildProcessWithoutNullStreams,
 	type SpawnOptionsWithoutStdio,
 } from 'node:child_process';
-import { isAbsolute } from 'node:path';
+import { lstat, opendir } from 'node:fs/promises';
+import { isAbsolute, join } from 'node:path';
 import { finished } from 'node:stream/promises';
 import { setTimeout as delay } from 'node:timers/promises';
 
 import type { YtDlpExecutionPlan } from './arguments';
+import {
+	DEFAULT_REQUEST_TIMEOUT_MINUTES,
+	MAXIMUM_REQUEST_TIMEOUT_MINUTES,
+} from './resource-envelope';
 
 export interface YtDlpSpawnContext {
 	cwd: string;
@@ -17,16 +22,19 @@ export interface YtDlpSupervisorContext extends YtDlpSpawnContext {
 	redactValues?: readonly string[];
 	signal?: AbortSignal;
 	timeoutMs?: number;
+	workspaceLimitBytes?: number;
 }
 
 export const PROCESS_STREAM_TAIL_BYTES = 64 * 1024;
 export const PROCESS_OUTPUT_LIMIT_BYTES = 8 * 1024 * 1024;
-export const DEFAULT_REQUEST_TIMEOUT_MS = 30 * 60 * 1000;
-export const MAXIMUM_REQUEST_TIMEOUT_MS = 60 * 60 * 1000;
+export const DEFAULT_REQUEST_TIMEOUT_MS = DEFAULT_REQUEST_TIMEOUT_MINUTES * 60 * 1000;
+export const MAXIMUM_REQUEST_TIMEOUT_MS = MAXIMUM_REQUEST_TIMEOUT_MINUTES * 60 * 1000;
 export const PROCESS_TERMINATION_GRACE_MS = 5_000;
+export const WORKSPACE_POLL_INTERVAL_MS = 1_000;
 
 export type YtDlpProcessErrorCode =
 	| 'PROCESS_OUTPUT_LIMIT'
+	| 'RESOURCE_LIMIT'
 	| 'REQUEST_TIMEOUT'
 	| 'YTDLP_FAILED';
 
@@ -142,6 +150,29 @@ export type SpawnProcess = (
 
 const spawnProcess: SpawnProcess = (command, args, options) => spawn(command, [...args], options);
 
+function workspaceMeasurementError(cause: unknown): Error {
+	return new Error('The yt-dlp workspace could not be measured.', { cause });
+}
+
+async function workspaceApparentSize(path: string, maximumBytes: number): Promise<number> {
+	let stat;
+	try {
+		stat = await lstat(path);
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code === 'ENOENT') return 0;
+		throw workspaceMeasurementError(error);
+	}
+	let size = stat.size;
+	if (!stat.isDirectory()) return size;
+
+	const directory = await opendir(path);
+	for await (const entry of directory) {
+		size += await workspaceApparentSize(join(path, entry.name), maximumBytes - size);
+		if (size > maximumBytes) return size;
+	}
+	return size;
+}
+
 export function spawnYtDlpExecutionPlan(
 	executablePath: string,
 	plan: YtDlpExecutionPlan,
@@ -180,14 +211,24 @@ export async function superviseYtDlpExecutionPlan(
 	if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > MAXIMUM_REQUEST_TIMEOUT_MS) {
 		throw new Error('The request timeout is outside the supported range.');
 	}
+	if (
+		context.workspaceLimitBytes !== undefined &&
+		(!Number.isSafeInteger(context.workspaceLimitBytes) || context.workspaceLimitBytes < 1)
+	) {
+		throw new Error('The workspace limit is outside the supported range.');
+	}
 
 	const stdoutTail = new BoundedRedactedTail(context.redactValues ?? []);
 	const stderrTail = new BoundedRedactedTail(context.redactValues ?? []);
 	const child = spawnYtDlpExecutionPlan(executablePath, plan, context);
 	let outputBytes = 0;
 	type TerminationReason =
-		| Extract<YtDlpProcessErrorCode, 'PROCESS_OUTPUT_LIMIT' | 'REQUEST_TIMEOUT'>
-		| 'CANCELLED';
+		| Extract<
+				YtDlpProcessErrorCode,
+				'PROCESS_OUTPUT_LIMIT' | 'REQUEST_TIMEOUT' | 'RESOURCE_LIMIT'
+		  >
+		| 'CANCELLED'
+		| 'WORKSPACE_MONITOR_FAILURE';
 	let terminationReason: TerminationReason | undefined;
 	let terminationPromise: Promise<void> | undefined;
 	let childError: Error | undefined;
@@ -267,6 +308,37 @@ export async function superviseYtDlpExecutionPlan(
 		else terminationReason ??= reason;
 		void startTermination();
 	};
+	let workspaceMonitorError: Error | undefined;
+	let workspaceMeasurementRunning = false;
+	let workspaceMeasurementPending = false;
+	let latestWorkspaceMeasurement = Promise.resolve();
+	const measureWorkspace = (): void => {
+		if (context.workspaceLimitBytes === undefined) return;
+		if (workspaceMeasurementRunning) {
+			workspaceMeasurementPending = true;
+			return;
+		}
+		workspaceMeasurementRunning = true;
+		latestWorkspaceMeasurement = (async () => {
+			try {
+				const size = await workspaceApparentSize(context.cwd, context.workspaceLimitBytes!);
+				if (size > context.workspaceLimitBytes!) requestTermination('RESOURCE_LIMIT');
+			} catch (error) {
+				workspaceMonitorError =
+					error instanceof Error ? error : new Error('The workspace could not be measured.');
+				requestTermination('WORKSPACE_MONITOR_FAILURE');
+			} finally {
+				workspaceMeasurementRunning = false;
+				if (workspaceMeasurementPending) {
+					workspaceMeasurementPending = false;
+					measureWorkspace();
+				}
+			}
+		})();
+	};
+	measureWorkspace();
+	const workspaceTimer = setInterval(measureWorkspace, WORKSPACE_POLL_INTERVAL_MS);
+	workspaceTimer.unref?.();
 
 	const consumeOutput = (tail: BoundedRedactedTail, chunk: Buffer | string): void => {
 		const value = Buffer.from(chunk);
@@ -312,6 +384,11 @@ export async function superviseYtDlpExecutionPlan(
 			Promise.all([closed, stdinFinished, stdoutFinished, stderrFinished]),
 			terminationFailure,
 		]);
+		clearInterval(workspaceTimer);
+		workspaceMeasurementPending = false;
+		await latestWorkspaceMeasurement;
+		measureWorkspace();
+		await latestWorkspaceMeasurement;
 		const orphanedProcessGroup = terminationPromise === undefined && !processGroupIsGone();
 		if (orphanedProcessGroup) await startTermination();
 		else if (terminationPromise !== undefined) await terminationPromise;
@@ -322,6 +399,8 @@ export async function superviseYtDlpExecutionPlan(
 			);
 		}
 	} finally {
+		clearInterval(workspaceTimer);
+		workspaceMeasurementPending = false;
 		clearTimeout(timeoutTimer);
 		context.signal?.removeEventListener('abort', abortHandler);
 	}
@@ -333,13 +412,24 @@ export async function superviseYtDlpExecutionPlan(
 	if (streamError !== undefined) {
 		throw new Error('A yt-dlp process stream failed.', { cause: streamError });
 	}
+	if (workspaceMonitorError !== undefined) {
+		throw new Error('The request workspace could not be measured safely.', {
+			cause: workspaceMonitorError,
+		});
+	}
 	if (terminationReason === 'CANCELLED') throw new YtDlpProcessCancellationError();
-	if (terminationReason !== undefined) {
+	if (
+		terminationReason === 'PROCESS_OUTPUT_LIMIT' ||
+		terminationReason === 'REQUEST_TIMEOUT' ||
+		terminationReason === 'RESOURCE_LIMIT'
+	) {
 		throw new YtDlpProcessError(
 			terminationReason,
 			terminationReason === 'PROCESS_OUTPUT_LIMIT'
 				? 'yt-dlp exceeded the process output limit.'
-				: 'yt-dlp exceeded the request timeout.',
+				: terminationReason === 'REQUEST_TIMEOUT'
+					? 'yt-dlp exceeded the request timeout.'
+					: 'yt-dlp exceeded the request workspace limit.',
 			stdoutTail.finish(),
 			stderrTail.finish(),
 		);

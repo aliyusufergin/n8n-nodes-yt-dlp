@@ -16,6 +16,11 @@ import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 
 import type { YtDlpExecutionPlan } from './arguments';
 import { YtDlpProcessTerminationError, superviseYtDlpExecutionPlan } from './process';
+import {
+	YtDlpRequestResourceLimitError,
+	createResourceEnvelope,
+	type ResourceEnvelope,
+} from './resource-envelope';
 
 const MIME_TYPES: Readonly<Record<string, string>> = {
 	'.aac': 'audio/aac',
@@ -48,6 +53,8 @@ const MIME_TYPES: Readonly<Record<string, string>> = {
 
 export interface DownloadRequestOptions {
 	executablePath: string;
+	resourceEnvelope?: ResourceEnvelope;
+	signal?: AbortSignal;
 	workspaceParent?: string;
 }
 
@@ -66,6 +73,10 @@ interface PinnedDirectory {
 
 function invalidArtifactSet(): Error {
 	return new Error('The download request produced an invalid Artifact set.');
+}
+
+function requestResourceLimit(message: string): YtDlpRequestResourceLimitError {
+	return new YtDlpRequestResourceLimitError(message);
 }
 
 async function closeArtifacts(artifacts: readonly ValidatedArtifact[]): Promise<void> {
@@ -111,13 +122,20 @@ async function assertDirectoryIdentity(directory: PinnedDirectory): Promise<void
 	}
 }
 
-async function validateArtifactSet(directory: PinnedDirectory): Promise<ValidatedArtifact[]> {
+async function validateArtifactSet(
+	directory: PinnedDirectory,
+	resourceEnvelope: ResourceEnvelope,
+): Promise<ValidatedArtifact[]> {
 	const artifacts: ValidatedArtifact[] = [];
+	let totalArtifactSizeBytes = 0;
 	try {
 		await assertDirectoryIdentity(directory);
 		const descriptorDirectoryPath = descriptorPath(directory);
 		const artifactNames = (await readdir(descriptorDirectoryPath)).sort();
 		if (artifactNames.length === 0) throw invalidArtifactSet();
+		if (artifactNames.length > resourceEnvelope.maximumArtifactCount) {
+			throw new YtDlpRequestResourceLimitError();
+		}
 
 		for (const fileName of artifactNames) {
 			await assertDirectoryIdentity(directory);
@@ -141,10 +159,20 @@ async function validateArtifactSet(directory: PinnedDirectory): Promise<Validate
 				) {
 					throw invalidArtifactSet();
 				}
+				if (descriptorStat.size > resourceEnvelope.maximumArtifactSizeBytes) {
+					throw new YtDlpRequestResourceLimitError();
+				}
+				totalArtifactSizeBytes += descriptorStat.size;
+				if (totalArtifactSizeBytes > resourceEnvelope.maximumTotalArtifactSizeBytes) {
+					throw new YtDlpRequestResourceLimitError();
+				}
 				await assertDirectoryIdentity(directory);
 				artifacts.push({ fileName, fileHandle, stat: descriptorStat });
-			} catch {
+			} catch (error) {
 				await fileHandle.close();
+				if (error instanceof YtDlpRequestResourceLimitError) {
+					throw requestResourceLimit(error.message);
+				}
 				throw invalidArtifactSet();
 			}
 		}
@@ -154,8 +182,11 @@ async function validateArtifactSet(directory: PinnedDirectory): Promise<Validate
 		}
 		await assertDirectoryIdentity(directory);
 		return artifacts;
-	} catch {
+	} catch (error) {
 		await closeArtifacts(artifacts);
+		if (error instanceof YtDlpRequestResourceLimitError) {
+			throw requestResourceLimit(error.message);
+		}
 		throw invalidArtifactSet();
 	}
 }
@@ -197,6 +228,7 @@ function createWorkspacePlan(
 	plan: YtDlpExecutionPlan,
 	artifactsDirectory: string,
 	tempDirectory: string,
+	resourceEnvelope: ResourceEnvelope,
 ): YtDlpExecutionPlan {
 	const sourceSeparatorIndex = plan.argv.lastIndexOf('--');
 	if (sourceSeparatorIndex < 0) throw new Error('The execution plan has no Source URL separator.');
@@ -206,6 +238,12 @@ function createWorkspacePlan(
 			...plan.argv.slice(0, sourceSeparatorIndex),
 			'--abort-on-error',
 			'--no-progress',
+			'--max-filesize',
+			String(resourceEnvelope.maximumArtifactSizeBytes),
+			'--concurrent-fragments',
+			'1',
+			'--postprocessor-args',
+			'ffmpeg:-threads 1',
 			'--paths',
 			artifactsDirectory,
 			'--paths',
@@ -226,6 +264,7 @@ export async function executeDownloadRequest(
 	itemIndex: number,
 	options: DownloadRequestOptions,
 ): Promise<INodeExecutionData[]> {
+	const resourceEnvelope = options.resourceEnvelope ?? createResourceEnvelope({});
 	const workspace = await mkdtemp(
 		join(options.workspaceParent ?? tmpdir(), 'n8n-nodes-yt-dlp-'),
 	);
@@ -248,10 +287,17 @@ export async function executeDownloadRequest(
 		pinnedDirectories.push(tempDirectoryIdentity);
 		const controlDirectoryIdentity = await pinDirectory(controlDirectory);
 		pinnedDirectories.push(controlDirectoryIdentity);
-		const workspacePlan = createWorkspacePlan(plan, artifactsDirectory, tempDirectory);
+		const workspacePlan = createWorkspacePlan(
+			plan,
+			artifactsDirectory,
+			tempDirectory,
+			resourceEnvelope,
+		);
 		await superviseYtDlpExecutionPlan(options.executablePath, workspacePlan, {
 			cwd: workspace,
-			signal: execution.getExecutionCancelSignal(),
+			signal: options.signal ?? execution.getExecutionCancelSignal(),
+			timeoutMs: resourceEnvelope.requestTimeoutMs,
+			workspaceLimitBytes: resourceEnvelope.maximumWorkspaceSizeBytes,
 		}).catch((error: unknown) => {
 			if (error instanceof YtDlpProcessTerminationError && !error.processClosed) {
 				cleanupAllowed = false;
@@ -281,7 +327,7 @@ export async function executeDownloadRequest(
 			assertDirectoryIdentity(controlDirectoryIdentity),
 		]);
 
-		artifacts = await validateArtifactSet(artifactsDirectoryIdentity);
+		artifacts = await validateArtifactSet(artifactsDirectoryIdentity, resourceEnvelope);
 		const outputItems: INodeExecutionData[] = [];
 		for (const [artifactIndex, artifact] of artifacts.entries()) {
 			await assertArtifactSetUnchanged(artifactsDirectoryIdentity, artifacts);

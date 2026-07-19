@@ -117,6 +117,7 @@ describe('V1 argument execution plan', () => {
 		],
 		['--merge-output-format mp4/mkv', ['--merge-output-format', 'mp4/mkv']],
 		['-I 1,3-5,7:11:2', ['--playlist-items', '1,3-5,7:11:2']],
+		['-I 1-20', ['--playlist-items', '1-20']],
 		['--playlist-items :5', ['--playlist-items', ':5']],
 		['--yes-playlist', ['--yes-playlist']],
 		['--no-playlist', ['--no-playlist']],

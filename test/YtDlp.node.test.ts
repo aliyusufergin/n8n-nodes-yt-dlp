@@ -7,10 +7,15 @@ import {
 	executeYtDlpNode,
 	type DownloadRequestExecutor,
 } from '../nodes/YtDlp/YtDlp.node';
+import { YtDlpProcessError } from '../nodes/YtDlp/process';
 
 interface NodeParameters {
 	sourceUrl: string;
 	arguments: string;
+	requestTimeoutMinutes?: number;
+	maximumArtifactCount?: number;
+	maximumArtifactSizeMiB?: number;
+	maximumTotalArtifactSizeMiB?: number;
 }
 
 function createExecutionContext(parameters: NodeParameters[]): IExecuteFunctions {
@@ -41,11 +46,74 @@ describe('yt-dlp node metadata', () => {
 	it('declares Source URL separately from Arguments', () => {
 		const propertyNames = new YtDlp().description.properties.map(({ name }) => name);
 
-		expect(propertyNames).toEqual(['sourceUrl', 'arguments']);
+		expect(propertyNames).toEqual([
+			'sourceUrl',
+			'arguments',
+			'requestTimeoutMinutes',
+			'maximumArtifactCount',
+			'maximumArtifactSizeMiB',
+			'maximumTotalArtifactSizeMiB',
+		]);
 	});
 });
 
 describe('yt-dlp node adapter', () => {
+	it('accepts exactly 20 input items', async () => {
+		const parameters = Array.from({ length: 20 }, (_, index) => ({
+			sourceUrl: `https://example.com/video-${index}`,
+			arguments: '',
+		}));
+		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([]);
+		const context = createExecutionContext(parameters);
+
+		await expect(executeYtDlpNode(context, startRequest)).resolves.toEqual([[]]);
+		expect(startRequest).toHaveBeenCalledTimes(20);
+	});
+
+	it('rejects 21 input items as a global Resource Envelope failure', async () => {
+		const parameters = Array.from({ length: 21 }, (_, index) => ({
+			sourceUrl: `https://example.com/video-${index}`,
+			arguments: '',
+		}));
+		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([]);
+		const context = createExecutionContext(parameters);
+
+		await expect(executeYtDlpNode(context, startRequest)).rejects.toMatchObject({
+			context: { errorCode: 'RESOURCE_LIMIT' },
+		});
+		expect(startRequest).not.toHaveBeenCalled();
+	});
+
+	it('aborts an execution at the two-hour hard cap as a global failure', async () => {
+		vi.useFakeTimers();
+		let observedSignal: AbortSignal | undefined;
+		const startRequest = ((...args: unknown[]) => {
+			observedSignal = args[3] as AbortSignal | undefined;
+			return new Promise<[]>(resolve => {
+				observedSignal?.addEventListener('abort', () => resolve([]), {
+					once: true,
+				});
+			});
+		}) as DownloadRequestExecutor;
+		const context = createExecutionContext([
+			{ sourceUrl: 'https://example.com/video', arguments: '' },
+		]);
+
+		try {
+			const execution = executeYtDlpNode(context, startRequest).catch(
+				(cause: unknown) => cause,
+			);
+			await vi.advanceTimersByTimeAsync(2 * 60 * 60 * 1000);
+
+			expect(observedSignal?.aborted).toBe(true);
+			const error = await execution;
+			expect(error).toMatchObject({ context: { errorCode: 'RESOURCE_LIMIT' } });
+			expect((error as { context: { itemIndex?: number } }).context.itemIndex).toBeUndefined();
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	it('rejects an invalid Source URL before starting a child process', async () => {
 		const startRequest = vi.fn<DownloadRequestExecutor>();
 		const context = createExecutionContext([{ sourceUrl: 'file:///tmp/video.mp4', arguments: '' }]);
@@ -55,6 +123,67 @@ describe('yt-dlp node adapter', () => {
 		});
 		expect(startRequest).not.toHaveBeenCalled();
 	});
+
+	it('passes accepted hard-cap request limits to the request executor', async () => {
+		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([]);
+		const context = createExecutionContext([
+			{
+				sourceUrl: 'https://example.com/video',
+				arguments: '',
+				requestTimeoutMinutes: 60,
+				maximumArtifactCount: 50,
+				maximumArtifactSizeMiB: 256,
+				maximumTotalArtifactSizeMiB: 512,
+			},
+		]);
+
+		await executeYtDlpNode(context, startRequest);
+
+		expect(startRequest).toHaveBeenCalledWith(
+			expect.any(Object),
+			0,
+			{
+				requestTimeoutMs: 60 * 60 * 1000,
+				maximumArtifactCount: 50,
+				maximumArtifactSizeBytes: 256 * 1024 * 1024,
+				maximumTotalArtifactSizeBytes: 512 * 1024 * 1024,
+				maximumWorkspaceSizeBytes: 1088 * 1024 * 1024,
+			},
+			expect.any(AbortSignal),
+		);
+	});
+
+	it('classifies above-hard-cap request limits as an indexed request failure', async () => {
+		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([]);
+		const context = createExecutionContext([
+			{
+				sourceUrl: 'https://example.com/video',
+				arguments: '',
+				maximumArtifactCount: 51,
+			},
+		]);
+
+		await expect(executeYtDlpNode(context, startRequest)).rejects.toMatchObject({
+			context: { errorCode: 'RESOURCE_LIMIT', itemIndex: 0 },
+		});
+		expect(startRequest).not.toHaveBeenCalled();
+	});
+
+	it.each(['REQUEST_TIMEOUT', 'RESOURCE_LIMIT'] as const)(
+		'classifies %s process termination as an indexed request failure',
+		async (errorCode) => {
+			const startRequest = vi
+				.fn<DownloadRequestExecutor>()
+				.mockRejectedValue(new YtDlpProcessError(errorCode, 'request failed', '', ''));
+			const context = createExecutionContext([
+				{ sourceUrl: 'https://example.com/video', arguments: '' },
+			]);
+
+			await expect(executeYtDlpNode(context, startRequest)).rejects.toMatchObject({
+				context: { errorCode, itemIndex: 0 },
+			});
+		},
+	);
 
 	it('associates an invalid Source URL with the correct input index', async () => {
 		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([]);
@@ -79,6 +208,14 @@ describe('yt-dlp node adapter', () => {
 				],
 			},
 			0,
+			{
+				requestTimeoutMs: 30 * 60 * 1000,
+				maximumArtifactCount: 20,
+				maximumArtifactSizeBytes: 128 * 1024 * 1024,
+				maximumTotalArtifactSizeBytes: 256 * 1024 * 1024,
+				maximumWorkspaceSizeBytes: 576 * 1024 * 1024,
+			},
+			expect.any(AbortSignal),
 		);
 	});
 

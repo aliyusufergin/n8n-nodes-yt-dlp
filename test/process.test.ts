@@ -123,6 +123,29 @@ describe('yt-dlp process boundary', () => {
 		).rejects.toMatchObject({ code: 'PROCESS_OUTPUT_LIMIT' });
 	});
 
+	it('terminates a Process Group when workspace apparent size overshoots', async () => {
+		const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-workspace-overshoot-'));
+		temporaryDirectories.push(workspace);
+		const executablePath = join(workspace, 'controlled-executable');
+		await writeFile(
+			executablePath,
+			`#!${process.execPath}\n` +
+				`const { writeFileSync } = require('node:fs');\n` +
+				`const { join } = require('node:path');\n` +
+				`writeFileSync(join(process.cwd(), 'overshoot'), Buffer.alloc(2 * 1024 * 1024));\n` +
+				`setInterval(() => {}, 1000);\n`,
+			{ mode: 0o700 },
+		);
+
+		await expect(
+			superviseYtDlpExecutionPlan(
+				executablePath,
+				{ argv: [] },
+				{ cwd: workspace, timeoutMs: 1_500, workspaceLimitBytes: 1024 * 1024 },
+			),
+		).rejects.toMatchObject({ code: 'RESOURCE_LIMIT' });
+	});
+
 	it('emits one cancellation classification when cancellation races an output flood', async () => {
 		const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-output-cancel-race-'));
 		temporaryDirectories.push(workspace);
