@@ -15,6 +15,10 @@ import { dirname, extname, join } from 'node:path';
 import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 
 import type { YtDlpExecutionPlan } from './arguments';
+import {
+	createAuthenticationTransport,
+	type YtDlpAuthenticationData,
+} from './authentication';
 import { YtDlpProcessTerminationError, superviseYtDlpExecutionPlan } from './process';
 import {
 	YtDlpRequestResourceLimitError,
@@ -73,6 +77,7 @@ const MIME_TYPES: Readonly<Record<string, string>> = {
 };
 
 export interface DownloadRequestOptions {
+	authentication?: YtDlpAuthenticationData;
 	executablePath: string;
 	resourceEnvelope?: ResourceEnvelope;
 	signal?: AbortSignal;
@@ -257,6 +262,9 @@ function createWorkspacePlan(
 	return {
 		argv: [
 			...plan.argv.slice(0, sourceSeparatorIndex),
+			'--ignore-config',
+			'--config-locations',
+			'-',
 			'--abort-on-error',
 			'--no-progress',
 			'--max-filesize',
@@ -314,17 +322,27 @@ export async function executeDownloadRequest(
 			tempDirectory,
 			resourceEnvelope,
 		);
-		await superviseYtDlpExecutionPlan(options.executablePath, workspacePlan, {
-			cwd: workspace,
-			signal: options.signal ?? execution.getExecutionCancelSignal(),
-			timeoutMs: resourceEnvelope.requestTimeoutMs,
-			workspaceLimitBytes: resourceEnvelope.maximumWorkspaceSizeBytes,
-		}).catch((error: unknown) => {
-			if (error instanceof YtDlpProcessTerminationError && !error.processClosed) {
-				cleanupAllowed = false;
-			}
-			return Promise.reject(error);
-		});
+		const authenticationTransport = await createAuthenticationTransport(
+			controlDirectory,
+			options.authentication ?? {},
+		);
+		try {
+			await superviseYtDlpExecutionPlan(options.executablePath, workspacePlan, {
+				cwd: workspace,
+				redactValues: authenticationTransport.redactValues,
+				signal: options.signal ?? execution.getExecutionCancelSignal(),
+				stdinData: authenticationTransport.secretConfig,
+				timeoutMs: resourceEnvelope.requestTimeoutMs,
+				workspaceLimitBytes: resourceEnvelope.maximumWorkspaceSizeBytes,
+			}).catch((error: unknown) => {
+				if (error instanceof YtDlpProcessTerminationError && !error.processClosed) {
+					cleanupAllowed = false;
+				}
+				return Promise.reject(error);
+			});
+		} finally {
+			await authenticationTransport.removeCookieFile();
+		}
 
 		await Promise.all([
 			assertDirectoryIdentity(artifactsDirectoryIdentity),

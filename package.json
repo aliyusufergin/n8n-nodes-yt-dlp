@@ -37,6 +37,9 @@
 	"n8n": {
 		"n8nNodesApiVersion": 1,
 		"strict": false,
+		"credentials": [
+			"dist/credentials/YtDlpAuthentication.credentials.js"
+		],
 		"nodes": [
 			"dist/nodes/YtDlp/YtDlp.node.js"
 		]

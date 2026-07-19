@@ -21,6 +21,7 @@ export interface YtDlpSpawnContext {
 export interface YtDlpSupervisorContext extends YtDlpSpawnContext {
 	redactValues?: readonly string[];
 	signal?: AbortSignal;
+	stdinData?: string;
 	timeoutMs?: number;
 	workspaceLimitBytes?: number;
 }
@@ -372,6 +373,7 @@ export async function superviseYtDlpExecutionPlan(
 	const abortHandler = (): void => requestTermination('CANCELLED');
 	context.signal?.addEventListener('abort', abortHandler, { once: true });
 	if (isCancelled()) requestTermination('CANCELLED');
+	if (!child.stdin.writableEnded) child.stdin.end(context.stdinData ?? '');
 
 	let lifecycle: [
 		[number | null, NodeJS.Signals | null],

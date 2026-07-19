@@ -13,6 +13,10 @@ import {
 	type YtDlpExecutionPlan,
 } from './arguments';
 import {
+	parseAuthenticationCredential,
+	type YtDlpAuthenticationData,
+} from './authentication';
+import {
 	INVALID_SOURCE_URL,
 	InvalidSourceUrlError,
 	createDownloadRequest,
@@ -48,6 +52,7 @@ export type DownloadRequestExecutor = (
 	itemIndex: number,
 	resourceEnvelope: ResourceEnvelope,
 	signal: AbortSignal,
+	authentication?: YtDlpAuthenticationData,
 ) => Promise<INodeExecutionData[]>;
 
 const pendingDownloadRequestExecutor: DownloadRequestExecutor = () => Promise.resolve([]);
@@ -147,11 +152,19 @@ export async function executeYtDlpNode(
 					) as number,
 				});
 
+				const authentication =
+					execution.getNode().credentials?.ytDlpAuthentication === undefined
+						? undefined
+						: parseAuthenticationCredential(
+								await execution.getCredentials('ytDlpAuthentication', itemIndex),
+							);
+
 				const requestOutput = await startRequest(
 					plan,
 					itemIndex,
 					resourceEnvelope,
 					executionController.signal,
+					authentication,
 				);
 				throwIfExecutionTerminated(execution, executionTerminationReason);
 				outputItems.push(...requestOutput);
@@ -212,6 +225,7 @@ export class YtDlp implements INodeType {
 		},
 		inputs: [NodeConnectionTypes.Main],
 		outputs: [NodeConnectionTypes.Main],
+		credentials: [{ name: 'ytDlpAuthentication', required: false }],
 		properties: [
 			{
 				displayName: 'Source URL',
