@@ -1,0 +1,21 @@
+{
+	"name": "n8n-nodes-yt-dlp-platform",
+	"version": "0.2.0",
+	"description": "Platform selector for n8n-nodes-yt-dlp",
+	"license": "MIT",
+	"os": [
+		"linux"
+	],
+	"cpu": [
+		"x64"
+	],
+	"main": "index.js",
+	"types": "index.d.ts",
+	"files": [
+		"index.js",
+		"index.d.ts"
+	],
+	"optionalDependencies": {
+		"n8n-nodes-yt-dlp-linux-x64": "0.2.0"
+	}
+}
