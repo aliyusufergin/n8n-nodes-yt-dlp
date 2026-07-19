@@ -1,7 +1,18 @@
 import { createServer, type Server } from 'node:http';
-import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import {
+	mkdir,
+	mkdtemp,
+	readFile,
+	readdir,
+	realpath,
+	rename,
+	rm,
+	symlink,
+	unlink,
+	writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import type { Readable } from 'node:stream';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -9,16 +20,43 @@ import { setTimeout as delay } from 'node:timers/promises';
 import type { IBinaryData, IExecuteFunctions, INode } from 'n8n-workflow';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+const artifactRaceControl = vi.hoisted(() => ({
+	beforeLstat: undefined as ((path: string) => Promise<void>) | undefined,
+	afterLstat: undefined as ((path: string) => Promise<void>) | undefined,
+	afterOpen: undefined as ((path: string) => Promise<void>) | undefined,
+}));
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('node:fs/promises')>();
+	return {
+		...actual,
+		lstat: async (path: string) => {
+			await artifactRaceControl.beforeLstat?.(path);
+			const result = await actual.lstat(path);
+			await artifactRaceControl.afterLstat?.(path);
+			return result;
+		},
+		open: async (path: string, flags: number) => {
+			const result = await actual.open(path, flags);
+			await artifactRaceControl.afterOpen?.(path);
+			return result;
+		},
+	};
+});
+
 import {
 	executeYtDlpNode,
 	type DownloadRequestExecutor,
 } from '../nodes/YtDlp/YtDlp.node';
-import { executeSingleFileDownload } from '../nodes/YtDlp/download';
+import { executeDownloadRequest } from '../nodes/YtDlp/download';
 
 const temporaryDirectories: string[] = [];
 const servers: Server[] = [];
 
 afterEach(async () => {
+	artifactRaceControl.beforeLstat = undefined;
+	artifactRaceControl.afterLstat = undefined;
+	artifactRaceControl.afterOpen = undefined;
 	await Promise.all(servers.splice(0).map(async (server) => await new Promise<void>((resolve) => server.close(() => resolve()))));
 	await Promise.all(
 		temporaryDirectories.splice(0).map(async (directory) => await rm(directory, { recursive: true })),
@@ -85,6 +123,29 @@ async function createControlledExecutable(directory: string, extension: string):
 	return executablePath;
 }
 
+async function createArtifactFixtureExecutable(
+	directory: string,
+	fixtureSource: string,
+): Promise<string> {
+	const executablePath = join(directory, 'controlled-artifact-fixture');
+	await writeFile(
+		executablePath,
+		`#!${process.execPath}\n` +
+			`const fs = require('node:fs/promises');\n` +
+			`const { join } = require('node:path');\n` +
+			`void (async () => {\n` +
+			`const argv = process.argv.slice(2);\n` +
+			`const pathIndexes = argv.flatMap((value, index) => value === '--paths' ? [index] : []);\n` +
+			`const artifacts = argv[pathIndexes[0] + 1];\n` +
+			`const temp = argv[pathIndexes[1] + 1].slice('temp:'.length);\n` +
+			`const control = join(process.cwd(), 'control');\n` +
+			fixtureSource +
+			`})().catch((error) => { console.error(error); process.exitCode = 1; });\n`,
+		{ mode: 0o700 },
+	);
+	return executablePath;
+}
+
 function createExecutionContext(
 	sourceUrl: string,
 	prepareBinaryData: (data: Buffer | Readable, fileName?: string, mimeType?: string) => Promise<IBinaryData>,
@@ -108,7 +169,316 @@ function createExecutionContext(
 	} as unknown as IExecuteFunctions;
 }
 
-describe('single-file download request', () => {
+async function expectInvalidArtifactFixture(fixtureSource: string): Promise<void> {
+	const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-invalid-set-test-'));
+	temporaryDirectories.push(workspaceParent);
+	const executablePath = await createArtifactFixtureExecutable(workspaceParent, fixtureSource);
+	const prepareBinaryData = vi.fn();
+	const context = createExecutionContext('https://example.com/playlist', prepareBinaryData);
+
+	await expect(
+		executeDownloadRequest(
+			context,
+			{ argv: ['--', 'https://example.com/playlist'] },
+			0,
+			{ executablePath, workspaceParent },
+		),
+	).rejects.toThrow();
+	expect(prepareBinaryData).not.toHaveBeenCalled();
+}
+
+describe('download request', () => {
+	it('returns every Artifact Item in deterministic basename order', async () => {
+		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-multi-test-'));
+		temporaryDirectories.push(workspaceParent);
+		const executablePath = await createArtifactFixtureExecutable(
+			workspaceParent,
+			`await fs.writeFile(join(artifacts, '000002-video.webm'), 'video bytes');\n` +
+				`await fs.writeFile(join(artifacts, '000001-audio.m4a'), 'audio bytes');\n`,
+		);
+		const prepareBinaryDataMock = vi.fn(
+			async (data: Buffer | Readable, fileName?: string, mimeType?: string) => ({
+				data: (await collect(data as Readable)).toString('utf8'),
+				fileName,
+				mimeType: mimeType ?? 'application/octet-stream',
+			}),
+		);
+		const prepareBinaryData =
+			prepareBinaryDataMock as unknown as IExecuteFunctions['helpers']['prepareBinaryData'];
+		const context = createExecutionContext('https://example.com/playlist', prepareBinaryData);
+
+		const result = await executeDownloadRequest(
+			context,
+			{ argv: ['--', 'https://example.com/playlist'] },
+			3,
+			{ executablePath, workspaceParent },
+		);
+
+		expect(result).toEqual([
+			{
+				json: {
+					status: 'success',
+					artifactIndex: 1,
+					artifactCount: 2,
+					fileName: '000001-audio.m4a',
+					mimeType: 'audio/mp4',
+					sizeBytes: 11,
+				},
+				binary: {
+					data: {
+						data: 'audio bytes',
+						fileName: '000001-audio.m4a',
+						mimeType: 'audio/mp4',
+					},
+				},
+				pairedItem: { item: 3 },
+			},
+			{
+				json: {
+					status: 'success',
+					artifactIndex: 2,
+					artifactCount: 2,
+					fileName: '000002-video.webm',
+					mimeType: 'video/webm',
+					sizeBytes: 11,
+				},
+				binary: {
+					data: {
+						data: 'video bytes',
+						fileName: '000002-video.webm',
+						mimeType: 'video/webm',
+					},
+				},
+				pairedItem: { item: 3 },
+			},
+		]);
+		expect(prepareBinaryDataMock.mock.calls.map(([, fileName]) => fileName)).toEqual([
+			'000001-audio.m4a',
+			'000002-video.webm',
+		]);
+	});
+
+	it.each([
+		{
+			kind: 'symlink',
+			fixtureSource:
+				`await fs.writeFile(join(artifacts, '000001-valid.mp4'), 'valid');\n` +
+				`await fs.writeFile(join(process.cwd(), '..', 'outside.mp4'), 'outside');\n` +
+				`await fs.symlink(join(process.cwd(), '..', 'outside.mp4'), join(artifacts, '000002-link.mp4'));\n`,
+		},
+		{
+			kind: 'hardlink',
+			fixtureSource:
+				`await fs.writeFile(join(artifacts, '000001-valid.mp4'), 'valid');\n` +
+				`await fs.writeFile(join(process.cwd(), '..', 'outside.mp4'), 'outside');\n` +
+				`await fs.link(join(process.cwd(), '..', 'outside.mp4'), join(artifacts, '000002-hardlink.mp4'));\n`,
+		},
+	])('publishes no Artifact Item when the set contains a $kind', async ({ fixtureSource }) => {
+		await expectInvalidArtifactFixture(fixtureSource);
+	});
+
+	it.each([
+		{
+			name: 'zero final files',
+			fixtureSource: '',
+		},
+		{
+			name: 'a nested directory',
+			fixtureSource: `await fs.mkdir(join(artifacts, 'nested'));\n`,
+		},
+		{
+			name: 'a FIFO',
+			fixtureSource:
+				`require('node:child_process').execFileSync('mkfifo', [join(artifacts, 'pipe')]);\n`,
+		},
+		{
+			name: 'a traversal outside the Artifact Directory',
+			fixtureSource:
+				`await fs.writeFile(join(artifacts, '000001-valid.mp4'), 'valid');\n` +
+				`await fs.writeFile(join(artifacts, '..', 'escaped.mp4'), 'escaped');\n`,
+		},
+		{
+			name: 'temporary residue',
+			fixtureSource:
+				`await fs.writeFile(join(artifacts, '000001-valid.mp4'), 'valid');\n` +
+				`await fs.writeFile(join(temp, 'partial.part'), 'partial');\n`,
+		},
+		{
+			name: 'control residue',
+			fixtureSource:
+				`await fs.writeFile(join(artifacts, '000001-valid.mp4'), 'valid');\n` +
+				`await fs.writeFile(join(control, 'unexpected'), 'unexpected');\n`,
+		},
+	])('publishes no Artifact Item when the request leaves $name', async ({ fixtureSource }) => {
+		await expectInvalidArtifactFixture(fixtureSource);
+	});
+
+	it.each(['regular-file replacement', 'symlink replacement'])(
+		'rejects a %s between lstat and descriptor validation',
+		async (replacementKind) => {
+			const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-race-test-'));
+			temporaryDirectories.push(workspaceParent);
+			const executablePath = await createArtifactFixtureExecutable(
+				workspaceParent,
+				`await fs.writeFile(join(artifacts, '000001-race.mp4'), 'original');\n`,
+			);
+			const replacementPath = join(workspaceParent, 'replacement.mp4');
+			await writeFile(replacementPath, 'replacement');
+			artifactRaceControl.afterLstat = async (artifactPath) => {
+				if (!artifactPath.endsWith('000001-race.mp4')) return;
+				artifactRaceControl.afterLstat = undefined;
+				await unlink(artifactPath);
+				if (replacementKind === 'symlink replacement') {
+					await symlink(replacementPath, artifactPath);
+				} else {
+					await writeFile(artifactPath, 'replacement');
+				}
+			};
+			const prepareBinaryData = vi.fn();
+			const context = createExecutionContext(
+				'https://example.com/video',
+				prepareBinaryData,
+			);
+
+			await expect(
+				executeDownloadRequest(
+					context,
+					{ argv: ['--', 'https://example.com/video'] },
+					0,
+					{ executablePath, workspaceParent },
+				),
+			).rejects.toThrow();
+			expect(prepareBinaryData).not.toHaveBeenCalled();
+		},
+	);
+
+	it('rejects an earlier Artifact inode swap during later-candidate validation', async () => {
+		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-late-race-test-'));
+		temporaryDirectories.push(workspaceParent);
+		const executablePath = await createArtifactFixtureExecutable(
+			workspaceParent,
+			`await fs.writeFile(join(artifacts, '000001-first.mp4'), 'first');\n` +
+				`await fs.writeFile(join(artifacts, '000002-second.mp4'), 'second');\n`,
+		);
+		artifactRaceControl.afterLstat = async (artifactPath) => {
+			if (!artifactPath.endsWith('000002-second.mp4')) return;
+			artifactRaceControl.afterLstat = undefined;
+			const artifactsDirectory = await realpath(dirname(artifactPath));
+			const earlierArtifact = join(artifactsDirectory, '000001-first.mp4');
+			await unlink(earlierArtifact);
+			await writeFile(earlierArtifact, 'replacement');
+		};
+		const prepareBinaryData = vi.fn();
+		const context = createExecutionContext(
+			'https://example.com/playlist',
+			prepareBinaryData,
+		);
+
+		await expect(
+			executeDownloadRequest(
+				context,
+				{ argv: ['--', 'https://example.com/playlist'] },
+				0,
+				{ executablePath, workspaceParent },
+			),
+		).rejects.toThrow();
+		expect(prepareBinaryData).not.toHaveBeenCalled();
+	});
+
+	it.each(['temp', 'control'])(
+		'rejects residue hidden by replacing the %s directory',
+		async (directoryName) => {
+			await expectInvalidArtifactFixture(
+				`await fs.writeFile(join(artifacts, '000001-valid.mp4'), 'valid');\n` +
+					`const residueDirectory = ${directoryName};\n` +
+					`await fs.writeFile(join(residueDirectory, 'hidden'), 'hidden');\n` +
+					`await fs.rename(residueDirectory, join(process.cwd(), '..', 'hidden-${directoryName}'));\n` +
+					`await fs.mkdir(residueDirectory, { mode: 0o700 });\n`,
+			);
+		},
+	);
+
+	it('rejects an Artifact Directory parent symlink swap', async () => {
+		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-parent-race-test-'));
+		temporaryDirectories.push(workspaceParent);
+		const executablePath = await createArtifactFixtureExecutable(
+			workspaceParent,
+			`await fs.writeFile(join(artifacts, '000001-race.mp4'), 'original');\n`,
+		);
+		const replacementDirectory = join(workspaceParent, 'replacement-artifacts');
+		await mkdir(replacementDirectory);
+		artifactRaceControl.afterLstat = async (artifactPath) => {
+			if (!artifactPath.endsWith('000001-race.mp4')) return;
+			artifactRaceControl.afterLstat = undefined;
+			const artifactsDirectory = await realpath(dirname(artifactPath));
+			await rename(artifactPath, join(replacementDirectory, '000001-race.mp4'));
+			await rename(artifactsDirectory, join(workspaceParent, 'original-artifacts'));
+			await symlink(replacementDirectory, artifactsDirectory, 'dir');
+		};
+		const prepareBinaryData = vi.fn();
+		const context = createExecutionContext(
+			'https://example.com/video',
+			prepareBinaryData,
+		);
+
+		await expect(
+			executeDownloadRequest(
+				context,
+				{ argv: ['--', 'https://example.com/video'] },
+				0,
+				{ executablePath, workspaceParent },
+			),
+		).rejects.toThrow();
+		expect(prepareBinaryData).not.toHaveBeenCalled();
+	});
+
+	it('keeps reads anchored during a temporary Artifact Directory symlink swap', async () => {
+		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-parent-anchor-test-'));
+		temporaryDirectories.push(workspaceParent);
+		const executablePath = await createArtifactFixtureExecutable(
+			workspaceParent,
+			`await fs.writeFile(join(artifacts, '000001-race.mp4'), 'original');\n`,
+		);
+		const replacementDirectory = join(workspaceParent, 'replacement-artifacts');
+		const savedDirectory = join(workspaceParent, 'saved-artifacts');
+		await mkdir(replacementDirectory);
+		await writeFile(join(replacementDirectory, '000001-race.mp4'), 'external');
+		let artifactsDirectory = '';
+		artifactRaceControl.beforeLstat = async (artifactPath) => {
+			if (!artifactPath.endsWith('000001-race.mp4')) return;
+			artifactRaceControl.beforeLstat = undefined;
+			artifactsDirectory = await realpath(dirname(artifactPath));
+			await rename(artifactsDirectory, savedDirectory);
+			await symlink(replacementDirectory, artifactsDirectory, 'dir');
+		};
+		artifactRaceControl.afterOpen = async (artifactPath) => {
+			if (!artifactPath.endsWith('000001-race.mp4')) return;
+			artifactRaceControl.afterOpen = undefined;
+			await unlink(artifactsDirectory);
+			await rename(savedDirectory, artifactsDirectory);
+		};
+		const prepareBinaryData = vi.fn(
+			async (data: Buffer | Readable, fileName?: string, mimeType?: string) => ({
+				data: (await collect(data as Readable)).toString('utf8'),
+				fileName,
+				mimeType: mimeType ?? 'application/octet-stream',
+			}),
+		);
+		const context = createExecutionContext(
+			'https://example.com/video',
+			prepareBinaryData,
+		);
+
+		const result = await executeDownloadRequest(
+			context,
+			{ argv: ['--', 'https://example.com/video'] },
+			0,
+			{ executablePath, workspaceParent },
+		);
+
+		expect(result[0].binary?.data.data).toBe('original');
+	});
+
 	it('forwards n8n cancellation and cleans up only after process close', async () => {
 		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-cancel-test-'));
 		temporaryDirectories.push(workspaceParent);
@@ -131,7 +501,7 @@ describe('single-file download request', () => {
 			vi.fn(),
 			controller.signal,
 		);
-		const request = executeSingleFileDownload(
+		const request = executeDownloadRequest(
 			context,
 			{ argv: ['--', 'https://example.com/video'] },
 			0,
@@ -174,7 +544,7 @@ describe('single-file download request', () => {
 			vi.fn(),
 			controller.signal,
 		);
-		const request = executeSingleFileDownload(
+		const request = executeDownloadRequest(
 			context,
 			{ argv: ['--', 'https://example.com/video'] },
 			0,
@@ -226,7 +596,7 @@ describe('single-file download request', () => {
 		})) as unknown as IExecuteFunctions['helpers']['prepareBinaryData'];
 		const context = createExecutionContext(sourceUrl, prepareBinaryData);
 		const startRequest: DownloadRequestExecutor = async (plan, itemIndex) =>
-			await executeSingleFileDownload(context, plan, itemIndex, {
+			await executeDownloadRequest(context, plan, itemIndex, {
 				executablePath,
 				workspaceParent,
 			});

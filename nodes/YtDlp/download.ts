@@ -1,7 +1,16 @@
-import { createReadStream } from 'node:fs';
-import { mkdir, mkdtemp, readdir, rm, stat } from 'node:fs/promises';
+import { constants, type Stats } from 'node:fs';
+import {
+	lstat,
+	mkdir,
+	mkdtemp,
+	open,
+	readdir,
+	realpath,
+	rm,
+	type FileHandle,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { extname, join } from 'node:path';
+import { dirname, extname, join } from 'node:path';
 
 import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 
@@ -37,9 +46,151 @@ const MIME_TYPES: Readonly<Record<string, string>> = {
 	'.webp': 'image/webp',
 };
 
-export interface SingleFileDownloadOptions {
+export interface DownloadRequestOptions {
 	executablePath: string;
 	workspaceParent?: string;
+}
+
+interface ValidatedArtifact {
+	fileName: string;
+	fileHandle: FileHandle;
+	stat: Stats;
+}
+
+interface PinnedDirectory {
+	path: string;
+	fileHandle: FileHandle;
+	realPath: string;
+	stat: Stats;
+}
+
+function invalidArtifactSet(): Error {
+	return new Error('The download request produced an invalid Artifact set.');
+}
+
+async function closeArtifacts(artifacts: readonly ValidatedArtifact[]): Promise<void> {
+	await Promise.all(artifacts.map(async ({ fileHandle }) => await fileHandle.close()));
+}
+
+function descriptorPath(directory: PinnedDirectory): string {
+	return `/proc/self/fd/${directory.fileHandle.fd}`;
+}
+
+async function pinDirectory(path: string): Promise<PinnedDirectory> {
+	const realPath = await realpath(path);
+	const fileHandle = await open(
+		path,
+		constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW,
+	);
+	try {
+		const stat = await fileHandle.stat();
+		if (!stat.isDirectory()) throw invalidArtifactSet();
+		return { path, fileHandle, realPath, stat };
+	} catch {
+		await fileHandle.close();
+		throw invalidArtifactSet();
+	}
+}
+
+async function assertDirectoryIdentity(directory: PinnedDirectory): Promise<void> {
+	const [pathStat, descriptorStat, currentRealPath] = await Promise.all([
+		lstat(directory.path),
+		directory.fileHandle.stat(),
+		realpath(directory.path),
+	]);
+	if (
+		!pathStat.isDirectory() ||
+		!descriptorStat.isDirectory() ||
+		pathStat.dev !== directory.stat.dev ||
+		pathStat.ino !== directory.stat.ino ||
+		descriptorStat.dev !== directory.stat.dev ||
+		descriptorStat.ino !== directory.stat.ino ||
+		currentRealPath !== directory.realPath
+	) {
+		throw invalidArtifactSet();
+	}
+}
+
+async function validateArtifactSet(directory: PinnedDirectory): Promise<ValidatedArtifact[]> {
+	const artifacts: ValidatedArtifact[] = [];
+	try {
+		await assertDirectoryIdentity(directory);
+		const descriptorDirectoryPath = descriptorPath(directory);
+		const artifactNames = (await readdir(descriptorDirectoryPath)).sort();
+		if (artifactNames.length === 0) throw invalidArtifactSet();
+
+		for (const fileName of artifactNames) {
+			await assertDirectoryIdentity(directory);
+			const artifactPath = join(descriptorDirectoryPath, fileName);
+
+			const pathStat = await lstat(artifactPath);
+			if (!pathStat.isFile() || pathStat.nlink !== 1) throw invalidArtifactSet();
+
+			const fileHandle = await open(
+				artifactPath,
+				constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
+			);
+			try {
+				const descriptorStat = await fileHandle.stat();
+				if (
+					!descriptorStat.isFile() ||
+					descriptorStat.nlink !== 1 ||
+					descriptorStat.dev !== pathStat.dev ||
+					descriptorStat.ino !== pathStat.ino ||
+					(await realpath(dirname(artifactPath))) !== directory.realPath
+				) {
+					throw invalidArtifactSet();
+				}
+				await assertDirectoryIdentity(directory);
+				artifacts.push({ fileName, fileHandle, stat: descriptorStat });
+			} catch {
+				await fileHandle.close();
+				throw invalidArtifactSet();
+			}
+		}
+
+		if ((await readdir(descriptorDirectoryPath)).sort().join('\0') !== artifactNames.join('\0')) {
+			throw invalidArtifactSet();
+		}
+		await assertDirectoryIdentity(directory);
+		return artifacts;
+	} catch {
+		await closeArtifacts(artifacts);
+		throw invalidArtifactSet();
+	}
+}
+
+async function assertArtifactSetUnchanged(
+	directory: PinnedDirectory,
+	artifacts: readonly ValidatedArtifact[],
+): Promise<void> {
+	await assertDirectoryIdentity(directory);
+	const directoryPath = descriptorPath(directory);
+	const expectedNames = artifacts.map(({ fileName }) => fileName);
+	if ((await readdir(directoryPath)).sort().join('\0') !== expectedNames.join('\0')) {
+		throw invalidArtifactSet();
+	}
+
+	for (const artifact of artifacts) {
+		const [pathStat, descriptorStat] = await Promise.all([
+			lstat(join(directoryPath, artifact.fileName)),
+			artifact.fileHandle.stat(),
+		]);
+		if (
+			!pathStat.isFile() ||
+			!descriptorStat.isFile() ||
+			pathStat.nlink !== 1 ||
+			descriptorStat.nlink !== 1 ||
+			pathStat.dev !== artifact.stat.dev ||
+			pathStat.ino !== artifact.stat.ino ||
+			descriptorStat.dev !== artifact.stat.dev ||
+			descriptorStat.ino !== artifact.stat.ino ||
+			descriptorStat.size !== artifact.stat.size
+		) {
+			throw invalidArtifactSet();
+		}
+	}
+	await assertDirectoryIdentity(directory);
 }
 
 function createWorkspacePlan(
@@ -69,11 +220,11 @@ function createWorkspacePlan(
 	};
 }
 
-export async function executeSingleFileDownload(
+export async function executeDownloadRequest(
 	execution: IExecuteFunctions,
 	plan: YtDlpExecutionPlan,
 	itemIndex: number,
-	options: SingleFileDownloadOptions,
+	options: DownloadRequestOptions,
 ): Promise<INodeExecutionData[]> {
 	const workspace = await mkdtemp(
 		join(options.workspaceParent ?? tmpdir(), 'n8n-nodes-yt-dlp-'),
@@ -82,6 +233,8 @@ export async function executeSingleFileDownload(
 	const tempDirectory = join(workspace, 'temp');
 	const controlDirectory = join(workspace, 'control');
 	let cleanupAllowed = true;
+	let artifacts: ValidatedArtifact[] = [];
+	const pinnedDirectories: PinnedDirectory[] = [];
 
 	try {
 		await Promise.all(
@@ -89,6 +242,12 @@ export async function executeSingleFileDownload(
 				async (directory) => await mkdir(directory, { mode: 0o700 }),
 			),
 		);
+		const artifactsDirectoryIdentity = await pinDirectory(artifactsDirectory);
+		pinnedDirectories.push(artifactsDirectoryIdentity);
+		const tempDirectoryIdentity = await pinDirectory(tempDirectory);
+		pinnedDirectories.push(tempDirectoryIdentity);
+		const controlDirectoryIdentity = await pinDirectory(controlDirectory);
+		pinnedDirectories.push(controlDirectoryIdentity);
 		const workspacePlan = createWorkspacePlan(plan, artifactsDirectory, tempDirectory);
 		await superviseYtDlpExecutionPlan(options.executablePath, workspacePlan, {
 			cwd: workspace,
@@ -100,41 +259,66 @@ export async function executeSingleFileDownload(
 			return Promise.reject(error);
 		});
 
-		const artifactNames = await readdir(artifactsDirectory);
-		if (artifactNames.length !== 1) {
-			throw new Error('The download request did not produce exactly one Artifact.');
+		await Promise.all([
+			assertDirectoryIdentity(artifactsDirectoryIdentity),
+			assertDirectoryIdentity(tempDirectoryIdentity),
+			assertDirectoryIdentity(controlDirectoryIdentity),
+		]);
+		const [workspaceNames, temporaryNames, controlNames] = await Promise.all([
+			readdir(workspace),
+			readdir(descriptorPath(tempDirectoryIdentity)),
+			readdir(descriptorPath(controlDirectoryIdentity)),
+		]);
+		if (
+			workspaceNames.sort().join('\0') !== 'artifacts\0control\0temp' ||
+			temporaryNames.length > 0 ||
+			controlNames.length > 0
+		) {
+			throw new Error('The download request left unexpected workspace residue.');
 		}
+		await Promise.all([
+			assertDirectoryIdentity(tempDirectoryIdentity),
+			assertDirectoryIdentity(controlDirectoryIdentity),
+		]);
 
-		const fileName = artifactNames[0];
-		const artifactPath = join(artifactsDirectory, fileName);
-		const artifactStat = await stat(artifactPath);
-		if (!artifactStat.isFile()) throw new Error('The download request produced an invalid Artifact.');
-
-		const extension = extname(fileName).toLowerCase();
-		const mimeType = MIME_TYPES[extension] ?? 'application/octet-stream';
-		const binaryData = await execution.helpers.prepareBinaryData(
-			createReadStream(artifactPath),
-			fileName,
-			mimeType,
-		);
-
-		return [
-			{
+		artifacts = await validateArtifactSet(artifactsDirectoryIdentity);
+		const outputItems: INodeExecutionData[] = [];
+		for (const [artifactIndex, artifact] of artifacts.entries()) {
+			await assertArtifactSetUnchanged(artifactsDirectoryIdentity, artifacts);
+			const extension = extname(artifact.fileName).toLowerCase();
+			const mimeType = MIME_TYPES[extension] ?? 'application/octet-stream';
+			const binaryData = await execution.helpers.prepareBinaryData(
+				artifact.fileHandle.createReadStream({ autoClose: false }),
+				artifact.fileName,
+				mimeType,
+			);
+			outputItems.push({
 				json: {
 					status: 'success',
-					artifactIndex: 1,
-					artifactCount: 1,
-					fileName,
+					artifactIndex: artifactIndex + 1,
+					artifactCount: artifacts.length,
+					fileName: artifact.fileName,
 					mimeType,
-					sizeBytes: artifactStat.size,
+					sizeBytes: artifact.stat.size,
 				},
 				binary: { data: binaryData },
 				pairedItem: { item: itemIndex },
-			},
-		];
+			});
+		}
+		return outputItems;
 	} finally {
-		if (cleanupAllowed) {
-			await rm(workspace, { recursive: true, maxRetries: 2, retryDelay: 50 });
+		try {
+			await closeArtifacts(artifacts);
+		} finally {
+			try {
+				await Promise.all(
+					pinnedDirectories.map(async ({ fileHandle }) => await fileHandle.close()),
+				);
+			} finally {
+				if (cleanupAllowed) {
+					await rm(workspace, { recursive: true, maxRetries: 2, retryDelay: 50 });
+				}
+			}
 		}
 	}
 }
