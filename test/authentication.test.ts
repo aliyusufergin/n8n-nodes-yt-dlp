@@ -116,7 +116,7 @@ describe('Authentication transport', () => {
 			'# Netscape HTTP Cookie File\r\nexample.test\tFALSE\t/\tFALSE\t0\tsession\tcookie-secret\r\n';
 		const authentication: YtDlpAuthenticationData = {
 			cookies,
-			username: 'site-user',
+			username: "site'user",
 			password: 'site-password',
 			videoPassword: 'video-password',
 			proxyUrl: 'http://proxy-user:proxy-password@proxy.test:8080',
@@ -128,13 +128,21 @@ describe('Authentication transport', () => {
 		expect(await readFile(cookiePath, 'utf8')).toBe(cookies);
 		expect((await stat(cookiePath)).mode & 0o777).toBe(0o600);
 		expect(transport.secretConfig).toContain(`--cookies='${cookiePath}'\n`);
-		expect(transport.redactValues).toEqual([
-			cookies,
-			'site-user',
-			'site-password',
-			'video-password',
-			'http://proxy-user:proxy-password@proxy.test:8080',
-		]);
+		expect(transport.redactValues).toEqual(
+			expect.arrayContaining([
+				cookies,
+				'example.test\tFALSE\t/\tFALSE\t0\tsession\tcookie-secret',
+				'session',
+				'cookie-secret',
+				"site'user",
+				`'site'"'"'user'`,
+				'site-password',
+				'video-password',
+				'http://proxy-user:proxy-password@proxy.test:8080',
+				'proxy-user',
+				'proxy-password',
+			]),
+		);
 		await expect(
 			createAuthenticationTransport(controlDirectory, authentication),
 		).rejects.toMatchObject({

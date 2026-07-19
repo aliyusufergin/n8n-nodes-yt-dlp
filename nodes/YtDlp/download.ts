@@ -341,7 +341,7 @@ export async function executeDownloadRequest(
 				return Promise.reject(error);
 			});
 		} finally {
-			await authenticationTransport.removeCookieFile();
+			if (cleanupAllowed) await authenticationTransport.removeCookieFile();
 		}
 
 		await Promise.all([

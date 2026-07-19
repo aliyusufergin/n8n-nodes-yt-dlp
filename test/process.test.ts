@@ -40,6 +40,19 @@ async function waitForPidFile(path: string): Promise<number[]> {
 	throw new Error('The controlled executable did not publish its PIDs.');
 }
 
+async function waitForFile(path: string): Promise<void> {
+	for (let attempt = 0; attempt < 100; attempt++) {
+		try {
+			await readFile(path);
+			return;
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code !== 'ENOENT') return Promise.reject(error);
+			await delay(20);
+		}
+	}
+	throw new Error('The controlled executable did not create its marker file.');
+}
+
 async function waitForProcessesToDisappear(pids: readonly number[]): Promise<void> {
 	for (let attempt = 0; attempt < 100; attempt++) {
 		let unexpectedError: unknown;
@@ -295,6 +308,7 @@ describe('yt-dlp process boundary', () => {
 				{ cwd: workspace, signal: controller.signal },
 			);
 			const pids = await waitForPidFile(pidPath);
+			await waitForFile(stdinClosedPath);
 			expect(await readFile(stdinClosedPath, 'utf8')).toBe('yes');
 
 			const cancellationStartedAt = Date.now();
@@ -410,6 +424,27 @@ describe('yt-dlp process boundary', () => {
 
 		expect(error).toMatchObject({ code: 'YTDLP_FAILED', stderrTail: '<redacted>' });
 		expect(JSON.stringify(error)).not.toContain(secret);
+	});
+
+	it('redacts a credential value larger than the retained process tail', async () => {
+		const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-long-redaction-'));
+		temporaryDirectories.push(workspace);
+		const executablePath = join(workspace, 'controlled-executable');
+		const secret = 'long-secret'.repeat(PROCESS_STREAM_TAIL_BYTES);
+		await writeFile(
+			executablePath,
+			`#!${process.execPath}\nprocess.stderr.write(${JSON.stringify(secret)}); process.exitCode = 2;\n`,
+			{ mode: 0o700 },
+		);
+
+		const error = await superviseYtDlpExecutionPlan(
+			executablePath,
+			{ argv: [] },
+			{ cwd: workspace, redactValues: [secret] },
+		).catch((cause: unknown) => cause);
+
+		expect(error).toMatchObject({ code: 'YTDLP_FAILED' });
+		expect((error as YtDlpProcessError).stderrTail).not.toContain('long-secret');
 	});
 
 	it('spawns an absolute executable as a detached process group with a minimal environment', () => {

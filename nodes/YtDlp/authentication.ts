@@ -42,6 +42,70 @@ function quoteSecretConfigValue(value: string): string {
 	return `'${value.replace(/'/g, `'"'"'`)}'`;
 }
 
+function addRedactionValue(values: Set<string>, value: string | undefined): void {
+	if (value !== undefined && value !== '') values.add(value);
+}
+
+function parseUrl(value: string): URL | undefined {
+	try {
+		return new URL(value);
+	} catch {
+		return undefined;
+	}
+}
+
+function decodeUrlComponent(value: string): string | undefined {
+	try {
+		return decodeURIComponent(value);
+	} catch {
+		return undefined;
+	}
+}
+
+function authenticationRedactionValues(
+	authentication: YtDlpAuthenticationData,
+): readonly string[] {
+	const values = new Set<string>();
+	const addSecretConfigValue = (value: string | undefined): void => {
+		addRedactionValue(values, value);
+		if (value !== undefined && value !== '') {
+			addRedactionValue(values, quoteSecretConfigValue(value));
+		}
+	};
+
+	const cookies = authentication.cookies;
+	addRedactionValue(values, cookies);
+	for (const line of cookies?.split(/\r?\n/) ?? []) {
+		addRedactionValue(values, line);
+		const fields = line.split('\t');
+		if (fields.length >= 7) {
+			addRedactionValue(values, fields[5]);
+			addRedactionValue(values, fields[6]);
+		}
+	}
+
+	for (const value of [
+		authentication.username,
+		authentication.password,
+		authentication.videoPassword,
+		authentication.proxyUrl,
+	]) {
+		addSecretConfigValue(value);
+	}
+
+	if (authentication.proxyUrl !== undefined && authentication.proxyUrl !== '') {
+		const proxy = parseUrl(authentication.proxyUrl);
+		if (proxy !== undefined) {
+			for (const value of [proxy.href, proxy.username, proxy.password]) {
+				addRedactionValue(values, value);
+				addRedactionValue(values, decodeUrlComponent(value));
+			}
+		}
+	}
+
+	return [...values];
+}
+
 export function serializeSecretConfig(
 	authentication: YtDlpAuthenticationData,
 	cookiePath?: string,
@@ -87,17 +151,9 @@ export async function createAuthenticationTransport(
 		}
 	}
 
-	const redactValues = [
-		cookies,
-		authentication.username,
-		authentication.password,
-		authentication.videoPassword,
-		authentication.proxyUrl,
-	].filter((value): value is string => value !== undefined && value !== '');
-
 	return {
 		secretConfig,
-		redactValues,
+		redactValues: authenticationRedactionValues(authentication),
 		removeCookieFile: async () => {
 			if (cookiePath !== undefined) await rm(cookiePath, { force: true });
 		},

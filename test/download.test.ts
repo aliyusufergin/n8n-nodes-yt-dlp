@@ -340,7 +340,8 @@ describe('download request', () => {
 	});
 
 	it.each([
-		{ outcome: 'Secret Config parse failure', expected: { code: 'YTDLP_FAILED' } },
+		{ outcome: 'Secret Config parse failure', expected: { name: 'InvalidAuthenticationError' } },
+		{ outcome: 'process failure', expected: { code: 'YTDLP_FAILED' } },
 		{ outcome: 'timeout', expected: { code: 'REQUEST_TIMEOUT' } },
 		{ outcome: 'cancellation', expected: { name: 'YtDlpProcessCancellationError' } },
 		{ outcome: 'binary transfer failure', expected: { code: 'BINARY_TRANSFER_FAILED' } },
@@ -354,7 +355,7 @@ describe('download request', () => {
 			`#!${process.execPath}\n` +
 				`const fs = require('node:fs/promises'); const { join } = require('node:path');\n` +
 				`void (async () => { const argv = process.argv.slice(2); let stdin = ''; process.stdin.setEncoding('utf8'); for await (const chunk of process.stdin) stdin += chunk; const config = Object.fromEntries(stdin.trimEnd().split('\\n').map(line => { const separator = line.indexOf('='); return [line.slice(0, separator), line.slice(separator + 2, -1)]; })); const cookies = await fs.readFile(config['--cookies'], 'utf8');\n` +
-				(outcome === 'Secret Config parse failure'
+				(outcome === 'process failure'
 					? `process.stderr.write(stdin + cookies); process.exitCode = 2; return;\n`
 					: outcome === 'binary transfer failure'
 						? `const pathIndex = argv.indexOf('--paths'); await fs.writeFile(join(argv[pathIndex + 1], '000001-secret.mp4'), 'artifact'); return;\n`
@@ -375,7 +376,10 @@ describe('download request', () => {
 		const cookieSecret = `cookie-secret-${outcome}`;
 		const authentication = {
 			cookies: `# Netscape HTTP Cookie File\nexample.test\tFALSE\t/\tFALSE\t0\tsession\t${cookieSecret}\n`,
-			username: `username-${outcome}`,
+			username:
+				outcome === 'Secret Config parse failure'
+					? `username-line\nfeed-${outcome}`
+					: `username-'${outcome}`,
 			password: `password-${outcome}`,
 			videoPassword: `video-password-${outcome}`,
 			proxyUrl: `http://proxy-user:proxy-password@proxy-${outcome.replace(/\s/g, '-')}.test`,
@@ -406,6 +410,9 @@ describe('download request', () => {
 		expect(error).toMatchObject(expected);
 		for (const secret of Object.values(authentication)) {
 			expect(JSON.stringify(error)).not.toContain(secret);
+		}
+		if (outcome === 'process failure') {
+			expect(JSON.stringify(error)).not.toContain(`'"'"'`);
 		}
 		expect(
 			(await readdir(workspaceParent)).filter((name) => name.startsWith('n8n-nodes-yt-dlp-')),
@@ -1043,7 +1050,13 @@ describe('download request', () => {
 			context,
 			{ argv: ['--', 'https://example.com/video'] },
 			0,
-			{ executablePath, workspaceParent },
+			{
+				authentication: {
+					cookies: '# Netscape HTTP Cookie File\nexample.test\tFALSE\t/\tFALSE\t0\tsession\tlive-cookie-secret\n',
+				},
+				executablePath,
+				workspaceParent,
+			},
 		);
 		await waitForFile(startedPath);
 		const signalError = Object.assign(new Error('signal denied'), { code: 'EPERM' });
@@ -1061,9 +1074,13 @@ describe('download request', () => {
 			kill.mockRestore();
 		}
 
-		expect(await readdir(workspaceParent)).toEqual(
-			expect.arrayContaining([expect.stringMatching(/^n8n-nodes-yt-dlp-/)]),
+		const requestWorkspace = (await readdir(workspaceParent)).find((name) =>
+			name.startsWith('n8n-nodes-yt-dlp-'),
 		);
+		expect(requestWorkspace).toBeDefined();
+		expect(
+			await readFile(join(workspaceParent, requestWorkspace!, 'control', 'cookies.txt'), 'utf8'),
+		).toContain('live-cookie-secret');
 	});
 
 	it.each([
