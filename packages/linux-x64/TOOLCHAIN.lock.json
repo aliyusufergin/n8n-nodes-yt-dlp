@@ -30,6 +30,27 @@
 			}
 		},
 		{
+			"name": "ffmpeg",
+			"upstream": {
+				"repository": "yt-dlp/FFmpeg-Builds",
+				"tag": "autobuild-2026-07-12-15-07",
+				"commit": "832dd2f333d919790f117b054f628756c515adce",
+				"ffmpegCommit": "a09be9b91e8e1219f297586873b0d7322b47df96"
+			},
+			"assets": [
+				{
+					"name": "ffmpeg-N-125551-ga09be9b91e-linux64-gpl.tar.xz",
+					"sha256": "7a19456683e31d937ae48d51e23dfb869dbb9db1e4d6e1b6881d7fed168fa5cf"
+				}
+			],
+			"license": "GPL-3.0-or-later AND LicenseRef-FFmpeg-static-components",
+			"sourceBundle": {
+				"name": "n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz",
+				"sha256": "6576eef8e990c7da69b18d37f17f318ebc832365c50fd62a8a473240a6e62d54",
+				"url": "https://github.com/aliyusufergin/n8n-nodes-yt-dlp/releases/download/v0.2.0/n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz"
+			}
+		},
+		{
 			"name": "deno",
 			"upstream": {
 				"repository": "denoland/deno",

@@ -9,7 +9,7 @@ const { dirname, isAbsolute, join, relative } = require('node:path');
 const PLATFORM_PACKAGE_NAME = 'n8n-nodes-yt-dlp-linux-x64';
 const PLATFORM_PACKAGE_VERSION = '0.2.0';
 const EXECUTION_MANIFEST_DIGEST =
-	'643de48d480a1328fbfb00abf0405c15bd6ae4a11bb546664adad308b26db214';
+	'1aaf9c783b170af2e2bd07288012c3c8a4944894a732ccc458d469da6d47581a';
 const EXECUTION_MANIFEST_NAME = 'execution-manifest.json';
 const EXPECTED_FILES = [
 	{ name: 'ytDlp', executable: true },

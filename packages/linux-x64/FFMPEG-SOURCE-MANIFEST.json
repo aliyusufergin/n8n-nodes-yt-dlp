@@ -1,0 +1,1091 @@
+{
+	"schemaVersion": 1,
+	"binaryBuild": {
+		"asset": "ffmpeg-N-125551-ga09be9b91e-linux64-gpl.tar.xz",
+		"assetSha256": "7a19456683e31d937ae48d51e23dfb869dbb9db1e4d6e1b6881d7fed168fa5cf",
+		"ffmpegBuildsCommit": "832dd2f333d919790f117b054f628756c515adce",
+		"ffmpegCommit": "a09be9b91e8e1219f297586873b0d7322b47df96",
+		"releaseTag": "autobuild-2026-07-12-15-07",
+		"workflowRun": 29196749904
+	},
+	"buildContainer": {
+		"baseImage": "ghcr.io/yt-dlp/ffmpeg-builds/base-linux64@sha256:0fe9fc0b0831bc8c5a54705af7d8db2aac69c69e399c44f61d28989109a961cf",
+		"dependencyImage": "ghcr.io/yt-dlp/ffmpeg-builds/linux64-gpl@sha256:59abf3d43b3ae3acc15c2d3a04e9fc3c863292d38c233d878ef7070696a9c6c5"
+	},
+	"manualReview": {
+		"path": "toolchain/ffmpeg/MANUAL-LICENSE-REVIEW.md",
+		"status": "approved"
+	},
+	"primarySources": [
+		{
+			"name": "FFmpeg-a09be9b91e8e1219f297586873b0d7322b47df96.tar.gz",
+			"sha256": "3fe15a719da7d3da25e56eabb5d27153bf1a096a44b58f327dda172f421c6309"
+		},
+		{
+			"name": "FFmpeg-Builds-832dd2f333d919790f117b054f628756c515adce.tar.gz",
+			"sha256": "d8c8cbe110050b995600ed3a897c71b7e3c00ade2830caf2f9bad9b28dbf9dae"
+		}
+	],
+	"sourceArchives": [
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/10-xcbproto/COPYING"
+			],
+			"name": "10-xcbproto_aecb3156bc10c1a8bae6c1bb11f21b8d7f768876cddde7302804c9e8ffba7484.tar.xz",
+			"sha256": "e3d62cc682ede66b22db9d2da0b73aa79d9a62893d8d55ecfa630467e32d9a21"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/10-xorg-macros/COPYING"
+			],
+			"name": "10-xorg-macros_73cab126efc5f728ed3cb980e6fdd5847c562d4e8ec405f6fc1f371b9c83317e.tar.xz",
+			"sha256": "82ca4e318336dfcfd9e8ff34731c10f4716acaceb1e123c8bea6afb967146c72"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-applewmproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-bigreqsproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-compositeproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-damageproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-dmxproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-dri2proto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-dri3proto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-evieproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-fixesproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-fontcacheproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-fontsproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-glproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-inputproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-kbproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-lg3dproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-pmproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-presentproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-printproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-randrproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-recordproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-renderproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-resourceproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-scrnsaverproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-trapproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-videoproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-windowswmproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-x11proto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-xcmiscproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-xextproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-xf86bigfontproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-xf86dgaproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-xf86driproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-xf86miscproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-xf86rushproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-xf86vidmodeproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-xineramaproto",
+				"LICENSES/ffmpeg-static/10-xproto/COPYING-xwaylandproto"
+			],
+			"name": "10-xproto_8688412b2a40b6260fc6bc9e8f1a511b48c97addfe0af743af7cee19a31bd4c6.tar.xz",
+			"sha256": "b9b763475e38ae4cf27452a32da57b58d0daac708adbdabf817b671a8fc05c01"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/10-xtrans/COPYING"
+			],
+			"name": "10-xtrans_0e6176d565fd1b18f5d6be8707e25768b7bf69f9579fa3ad3cba95af4f630a9d.tar.xz",
+			"sha256": "f3a96cd650d840acd06d11e279bdd7168aeb5942662fcfe3f5a9fb0153a6de55"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/20-libiconv/COPYING",
+				"LICENSES/ffmpeg-static/20-libiconv/COPYING.LIB",
+				"LICENSES/ffmpeg-static/20-libiconv/gnulib/COPYING",
+				"LICENSES/ffmpeg-static/20-libiconv/gnulib/doc/COPYING.LESSERv2",
+				"LICENSES/ffmpeg-static/20-libiconv/gnulib/doc/COPYING.LESSERv3",
+				"LICENSES/ffmpeg-static/20-libiconv/gnulib/modules/COPYING",
+				"LICENSES/ffmpeg-static/20-libiconv/libcharset/COPYING.LIB"
+			],
+			"name": "20-libiconv_7632ad3d8024eb671bb3476463440e9292ca281778dbc4058d77354a9da21371.tar.xz",
+			"sha256": "0594916625bbb0bd03f59eb0e17d327695812886b4f57e0bca6617e03ed0bda8"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/20-libxau/COPYING"
+			],
+			"name": "20-libxau_a77e4289ff59cebb0e2033eea922d179ad283dda050de5b6778de2a6e922e4eb.tar.xz",
+			"sha256": "8bb4f58462e73c03764b8a4ae784d0afc094f672bfcbc9141488744befa4e016"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/20-zlib/LICENSE",
+				"LICENSES/ffmpeg-static/20-zlib/contrib/dotzlib/LICENSE_1_0.txt",
+				"LICENSES/ffmpeg-static/20-zlib/contrib/minizip/LICENSE.Info-Zip"
+			],
+			"name": "20-zlib_132d135e890f221364f5e66a4293ae247c65dd02d42b44d3ea02af0eeb35154a.tar.xz",
+			"sha256": "d9523232320260542523b6b094258b839b9afb8e8b867230573023bce5bd87f5"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/25-fftw3/COPYING",
+				"LICENSES/ffmpeg-static/25-fftw3/COPYRIGHT",
+				"LICENSES/ffmpeg-static/25-fftw3/doc/license.texi"
+			],
+			"name": "25-fftw3_f590d55efb2139d10bea09f7f3542f648290d35fc2ecb3122d6896bf2af049e3.tar.xz",
+			"sha256": "2ac909c71ef6c848606cbf4830e041a30c95bb0c70db049d2f423d0d44e84582"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/25-freetype/LICENSE.TXT"
+			],
+			"name": "25-freetype_96c668248b384fe3a2875e4a9c9092cb746d1d243943f1367fdf9bee541681ff.tar.xz",
+			"sha256": "282ec662fe205af227353f68dc8ff6ec89c7d0d73249aa961b8a7dc85409ce81"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/25-fribidi/COPYING"
+			],
+			"name": "25-fribidi_6478bc05fa723ee7ffb8888fd59d15915b9b17b706a5d92e106f369491025d7c.tar.xz",
+			"sha256": "7479089e8246e521dc8f0c12c7c8b61064ea9a2813756162135a277972f360d6"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/25-gmp/COPYING.LESSERv3"
+			],
+			"name": "25-gmp_4b555c079737ef0f01f15976d7bbbff9d0dc94d7a06edd45d08a6cd2b60bdb86.tar.xz",
+			"sha256": "6313185a60834792ec9a29bbe16a10bcea50fd3c7ee7421df244a28d544a71e9"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/25-libogg/COPYING"
+			],
+			"name": "25-libogg_bdea5ee518d129340be457dcc11c2cef63053ac3c827e71311caff1dd3c43339.tar.xz",
+			"sha256": "b9439b556b17d2459f38b262b9fbad0678e883a6e4b990f329cec9d1d9d99107"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/25-libpng/LICENSE.md",
+				"LICENSES/ffmpeg-static/25-libpng/contrib/gregbook/COPYING",
+				"LICENSES/ffmpeg-static/25-libpng/contrib/gregbook/LICENSE",
+				"LICENSES/ffmpeg-static/25-libpng/contrib/pngexif/LICENSE_MIT.txt",
+				"LICENSES/ffmpeg-static/25-libpng/contrib/pngminus/LICENSE.txt"
+			],
+			"name": "25-libpng_f695ee41ddfc411ac8050d7d4ee5ec37a63db25183186f120bcfa6056d5e8b07.tar.xz",
+			"sha256": "58733257118265a2954815cf1fe87031c650ff639611b7af66f1eb1746f777f5"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/25-libxml2/Copyright",
+				"LICENSES/ffmpeg-static/25-libxml2/result/html-tokenizer/NOTICE",
+				"LICENSES/ffmpeg-static/25-libxml2/test/html-tokenizer/NOTICE"
+			],
+			"name": "25-libxml2_13f01fe8bcf29c21f1357f29e928f2dba6f0643d7371f692bfa68b473e3b1952.tar.xz",
+			"sha256": "a49665400bf4308c5489bde8a5feea6f542624954001070e9807d950cf34c2a3"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/25-openssl/LICENSE.txt",
+				"LICENSES/ffmpeg-static/25-openssl/cloudflare-quiche/COPYING",
+				"LICENSES/ffmpeg-static/25-openssl/cloudflare-quiche/quiche/COPYING",
+				"LICENSES/ffmpeg-static/25-openssl/cloudflare-quiche/quiche/deps/boringssl/LICENSE",
+				"LICENSES/ffmpeg-static/25-openssl/cloudflare-quiche/quiche/deps/boringssl/src/third_party/fiat/LICENSE",
+				"LICENSES/ffmpeg-static/25-openssl/cloudflare-quiche/quiche/deps/boringssl/src/third_party/googletest/LICENSE",
+				"LICENSES/ffmpeg-static/25-openssl/cloudflare-quiche/quiche/deps/boringssl/src/third_party/wycheproof_testvectors/LICENSE",
+				"LICENSES/ffmpeg-static/25-openssl/external/perl/Text-Template-1.56/LICENSE",
+				"LICENSES/ffmpeg-static/25-openssl/fuzz/corpora/LICENSE.txt",
+				"LICENSES/ffmpeg-static/25-openssl/gost-engine/LICENSE",
+				"LICENSES/ffmpeg-static/25-openssl/gost-engine/libprov/LICENSE",
+				"LICENSES/ffmpeg-static/25-openssl/krb5/NOTICE",
+				"LICENSES/ffmpeg-static/25-openssl/krb5/doc/copyright.rst",
+				"LICENSES/ffmpeg-static/25-openssl/krb5/doc/notice.rst",
+				"LICENSES/ffmpeg-static/25-openssl/krb5/src/include/copyright.h",
+				"LICENSES/ffmpeg-static/25-openssl/krb5/src/lib/gssapi/LICENSE",
+				"LICENSES/ffmpeg-static/25-openssl/krb5/src/util/ss/copyright.h",
+				"LICENSES/ffmpeg-static/25-openssl/krb5/src/windows/installer/wix/lang/license.rtf",
+				"LICENSES/ffmpeg-static/25-openssl/oqs-provider/LICENSE.txt",
+				"LICENSES/ffmpeg-static/25-openssl/pkcs11-provider/COPYING",
+				"LICENSES/ffmpeg-static/25-openssl/pkcs11-provider/python-ecdsa/LICENSE",
+				"LICENSES/ffmpeg-static/25-openssl/pkcs11-provider/tlsfuzzer/LICENSE",
+				"LICENSES/ffmpeg-static/25-openssl/pkcs11-provider/tlslite-ng/LICENSE",
+				"LICENSES/ffmpeg-static/25-openssl/pkcs11-provider/tlslite-ng/tlslite/utils/brotlidecpy/LICENCE",
+				"LICENSES/ffmpeg-static/25-openssl/pyca-cryptography/LICENSE",
+				"LICENSES/ffmpeg-static/25-openssl/pyca-cryptography/LICENSE.APACHE",
+				"LICENSES/ffmpeg-static/25-openssl/pyca-cryptography/LICENSE.BSD",
+				"LICENSES/ffmpeg-static/25-openssl/pyca-cryptography/vectors/LICENSE",
+				"LICENSES/ffmpeg-static/25-openssl/pyca-cryptography/vectors/LICENSE.APACHE",
+				"LICENSES/ffmpeg-static/25-openssl/pyca-cryptography/vectors/LICENSE.BSD",
+				"LICENSES/ffmpeg-static/25-openssl/python-ecdsa/LICENSE",
+				"LICENSES/ffmpeg-static/25-openssl/tlsfuzzer/LICENSE",
+				"LICENSES/ffmpeg-static/25-openssl/tlslite-ng/LICENSE",
+				"LICENSES/ffmpeg-static/25-openssl/util/perl/OpenSSL/copyright.pm",
+				"LICENSES/ffmpeg-static/25-openssl/wycheproof/LICENSE"
+			],
+			"name": "25-openssl_9b34fe90db7bf8486ec3d2bb51d8a347e64cdcbf340f615f8db1755c77156e65.tar.xz",
+			"sha256": "89ee3ed8f3991427235f85bb6f780c9b478d625dcc6d4b0c0258ed07c1504417"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/25-xz/COPYING",
+				"LICENSES/ffmpeg-static/25-xz/COPYING.0BSD",
+				"LICENSES/ffmpeg-static/25-xz/COPYING.GPLv2",
+				"LICENSES/ffmpeg-static/25-xz/COPYING.GPLv3",
+				"LICENSES/ffmpeg-static/25-xz/COPYING.LGPLv2.1",
+				"LICENSES/ffmpeg-static/25-xz/build-aux/license-check.sh"
+			],
+			"name": "25-xz_f1b8892c4df66e1919abf7c488ea1ca25f3da29825922eb00cd9aa56f43fab12.tar.xz",
+			"sha256": "4079df160adf9d2fd25edb707e4474ffff20f6cb6f1bacd7e9b1f98131f82aab"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/30-libdvdcss/COPYING"
+			],
+			"name": "30-libdvdcss_2dbef6f0ef468ff5fce4f92338bd473ce020038258634c6b763a5a4f9dcc91d8.tar.xz",
+			"sha256": "cebdfb45f24d26e44b38b15517fe4808a5841837bcd2101133cac0f46d029246"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/30-libpciaccess/COPYING"
+			],
+			"name": "30-libpciaccess_7e6e74a7ea243214bf8b5e16e9bdfe5b22f577c4daba8ee93b59b3e5dfa8c1ad.tar.xz",
+			"sha256": "fd289f20dc694aef2038e454c695dfe235cfd8a48d23c5a41875e4822978b5b4"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/30-libxcb/COPYING"
+			],
+			"name": "30-libxcb_62bd452054480ef97d75bc7acc47dae36fcb32c4ef00ca7883430c528003eab9.tar.xz",
+			"sha256": "f51369c973853eb72e5f5c4b892946953bbd2c7a27398002de99a234cdddb89f"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/35-fontconfig/COPYING"
+			],
+			"name": "35-fontconfig_6925d420707b3f02eb6a2ada8305f471c8ba7ffe2ecac3d85451d624a68f321f.tar.xz",
+			"sha256": "d859bbff2c93932d56ca4da9e5fa68ad355cf12384eb84e02d5e6a0335bc4156"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/40-libdrm/include/drm/drm.h",
+				"LICENSES/ffmpeg-static/40-libdrm/xf86drm.c",
+				"LICENSES/ffmpeg-static/40-libdrm/xf86drmMode.c"
+			],
+			"name": "40-libdrm_39bc4757be55014bc28a499573fede501d5ae1bcdf89a9d79df8d16f2071d478.tar.xz",
+			"sha256": "4252c7804793206a449a824c4171b3fc13037a2b1bb71a4314f7f63374bf919d"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/40-libdvdread/COPYING"
+			],
+			"name": "40-libdvdread_f114ee19435b2f286be2eb819f9900b7fd737761beb1003583f494d717835273.tar.xz",
+			"sha256": "3cbb88da64e7af31c76f5bd50047fab132d854f67aa1595893aba3bff979ad85"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/40-libx11/COPYING",
+				"LICENSES/ffmpeg-static/40-libx11/src/xlibi18n/lcUniConv/COPYRIGHT"
+			],
+			"name": "40-libx11_d65260f4da4c64cffa0b527ea71d53daceb74021283b5492b5c5505e75890658.tar.xz",
+			"sha256": "831be21b885eea0d75bf8175e0ab91ffdc30feb11892dafda8d394b20fd923e1"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/40-mbedtls/LICENSE",
+				"LICENSES/ffmpeg-static/40-mbedtls/framework/LICENSE",
+				"LICENSES/ffmpeg-static/40-mbedtls/tf-psa-crypto/LICENSE",
+				"LICENSES/ffmpeg-static/40-mbedtls/tf-psa-crypto/drivers/pqcp/mldsa-native/LICENSE",
+				"LICENSES/ffmpeg-static/40-mbedtls/tf-psa-crypto/drivers/pqcp/mldsa-native/examples/custom_backend/mldsa_native/src/fips202/native/custom/src/LICENSE",
+				"LICENSES/ffmpeg-static/40-mbedtls/tf-psa-crypto/framework/LICENSE"
+			],
+			"name": "40-mbedtls_3b771d3c02673da6b96186969b7543643ed54c80cbf805d2b4d604160641f57a.tar.xz",
+			"sha256": "21cd6c01455a69e692bdceebe3da9dafc00e130db823f73fe35b15c2e80358a2"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/40-vulkan-headers/LICENSE.md"
+			],
+			"name": "40-vulkan-headers_cb5b4cb744b3a876829819b0d217f29eca3b112da30543d45567a8765ee7996b.tar.xz",
+			"sha256": "f1e5c02a2796a589ad2ec5683e40a98779745a356aa3b8290ea5b41db9460964"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/45-brotli/LICENSE"
+			],
+			"name": "45-brotli_62e458e07a4ffe9afc4b1e108241bc82e6ac2c402fa714a836835095831a578e.tar.xz",
+			"sha256": "942380d44375ad399cfea2dd25df5c82972c9f5e395de90258d80e034dc6f58f"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/45-harfbuzz/COPYING",
+				"LICENSES/ffmpeg-static/45-harfbuzz/src/ms-use/COPYING",
+				"LICENSES/ffmpeg-static/45-harfbuzz/test/COPYING",
+				"LICENSES/ffmpeg-static/45-harfbuzz/test/shape/data/aots/COPYING",
+				"LICENSES/ffmpeg-static/45-harfbuzz/test/shape/data/text-rendering-tests/COPYING"
+			],
+			"name": "45-harfbuzz_40b219118341b7fe074d8aff2f0f9a07f811141c1743a14ec25f10258a7c0a62.tar.xz",
+			"sha256": "12decd56e7898db833b79e23daaebfb33afe3f28a9582c6a10ed4a7921d9f63a"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/45-lcms2/LICENSE",
+				"LICENSES/ffmpeg-static/45-lcms2/plugins/fast_float/COPYING.GPL3",
+				"LICENSES/ffmpeg-static/45-lcms2/plugins/threaded/COPYING.GPL3",
+				"LICENSES/ffmpeg-static/45-lcms2/utils/jpgicc/LICENSE_iccjpeg"
+			],
+			"name": "45-lcms2_d43c67c74ecc9d90604f38ff13c0435f5ad1c40bac958861eeb6141f11d319a1.tar.xz",
+			"sha256": "0c207b9c7706d29941a8cea21f85137ae60a71ca4f6de7279bfb4a15da725ae2"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/45-libsamplerate/COPYING",
+				"LICENSES/ffmpeg-static/45-libsamplerate/docs/license.md"
+			],
+			"name": "45-libsamplerate_3ae5a3324e89da0d7254873085ad23e2b1a0cb22c1e330b8d3beb1da0a0c0273.tar.xz",
+			"sha256": "321c1a5d05352e7ce5caf6f3622c113649ea9990d4d15f7ef9d195f95df651a7"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/45-libudfread/COPYING"
+			],
+			"name": "45-libudfread_96846906ad23aa725778f07ec9cd966348205b22a9b4bed927e1986305b95c7e.tar.xz",
+			"sha256": "2f74cd586ccb5abcdefd53e048fa9a76f8daf155bc0c57f2ebac89700631ef17"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/45-libunibreak/LICENCE"
+			],
+			"name": "45-libunibreak_b853ebf9bfeb5a24db32ac3024fcb2b90a1f6906e146295a9611ea367ef90197.tar.xz",
+			"sha256": "d1be9031a7553232fa672691da110ceb4433fbe5479f4a144d6afe1ac1db224e"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/45-libvorbis/COPYING",
+				"LICENSES/ffmpeg-static/45-libvorbis/debian/copyright"
+			],
+			"name": "45-libvorbis_85e9110fb9a64a78e7b3709ea3458dba4793832034c2618145881beb9471fd8e.tar.xz",
+			"sha256": "ca7f7d0931a4d9ab0feeb7765e2d8fde8d3458eb23093580f611f640d3a6611d"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/45-opencl/headers/LICENSE",
+				"LICENSES/ffmpeg-static/45-opencl/loader/LICENSE"
+			],
+			"name": "45-opencl_307a126734a117d083bda73796a2c9e70a452f6478fc348addd903ebd58156ab.tar.xz",
+			"sha256": "0b614082a448937547662221d79d41e5a0205653c4229c95dfe13a1d2c7a702c"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/45-pulseaudio/LICENSE",
+				"LICENSES/ffmpeg-static/45-pulseaudio/src/pulsecore/filter/LICENSE.WEBKIT"
+			],
+			"name": "45-pulseaudio_5195fafb7d113a61f6eb8a1d86b17b7dec582bca129b6e620445a9534f357757.tar.xz",
+			"sha256": "3b4eeb8b4127d7c4e0b011833334f6fa8c3ef758380f500193ff4ed8a41be340"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/45-vmaf/LICENSE"
+			],
+			"name": "45-vmaf_a212e3c9e675f67b7862a0717c618308e75f69391385122f9dd9042fe6628882.tar.xz",
+			"sha256": "9c27f368ff638669216804df0d345e80d57b71e533b49b4e329f256a4d793d5b"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/45-vulkan-loader/LICENSE",
+				"LICENSES/ffmpeg-static/45-vulkan-loader/Vulkan-Headers/LICENSE.md"
+			],
+			"name": "45-vulkan-loader_93172c27a5edb69388618deed21b34eed48404fef3ea16616d52d6d45f83ba7f.tar.xz",
+			"sha256": "55613158a8d3de49a042d025616caa9d722e700664a960e9e1527bada35fc32e"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-amf/LICENSE.txt"
+			],
+			"name": "50-amf_c83454c32a56aff71532a12b2f184b5f58c5864875aa44c0e4375aa98b7ad8f5.tar.xz",
+			"sha256": "a18a7e7493acaa762f677e223720f1002270e29a2240048ffaa5048bbd90bcf9"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-aom/LICENSE",
+				"LICENSES/ffmpeg-static/50-aom/PATENTS",
+				"LICENSES/ffmpeg-static/50-aom/third_party/fastfeat/LICENSE",
+				"LICENSES/ffmpeg-static/50-aom/third_party/googletest/src/LICENSE",
+				"LICENSES/ffmpeg-static/50-aom/third_party/highway/LICENSE-BSD3",
+				"LICENSES/ffmpeg-static/50-aom/third_party/libwebm/LICENSE.TXT",
+				"LICENSES/ffmpeg-static/50-aom/third_party/libwebm/PATENTS.TXT",
+				"LICENSES/ffmpeg-static/50-aom/third_party/libyuv/LICENSE",
+				"LICENSES/ffmpeg-static/50-aom/third_party/vector/LICENSE",
+				"LICENSES/ffmpeg-static/50-aom/third_party/x86inc/LICENSE"
+			],
+			"name": "50-aom_a0d7214a9128484e43242384adde49ae981b12fa85b940d49f5fe5e9013b2a59.tar.xz",
+			"sha256": "cf0453cd265370019fce9bb5a62b5f9fdaf692dc6a1f7ed8211427cf9e49bb24"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-avisynth/distrib/docs/english/source/avisynthdoc/license.rst"
+			],
+			"name": "50-avisynth_38862222396fc25c9a022f0fa5687a46a9e772d8ea3dd962dc6020adaee33ac3.tar.xz",
+			"sha256": "84fc3402749bed6612e0924578dbd6cd02ac01e1e570ec38fa1709beb8a42827"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-chromaprint/LICENSE.md",
+				"LICENSES/ffmpeg-static/50-chromaprint/src/3rdparty/googletest/LICENSE",
+				"LICENSES/ffmpeg-static/50-chromaprint/src/3rdparty/kissfft/COPYING"
+			],
+			"name": "50-chromaprint_011e02218acc30fa6ea919e4ac8906fa1bd92171597c681f78dd7daf3457a1cb.tar.xz",
+			"sha256": "b21b7df989d23840ce120436156fa63cdbc27128ac38e1705c9584871446d628"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-dav1d/COPYING",
+				"LICENSES/ffmpeg-static/50-dav1d/doc/PATENTS"
+			],
+			"name": "50-dav1d_befba75ab0276c040d9b64ec5c2e9fd9ef747b2aa8cb6b949895a07939d1431c.tar.xz",
+			"sha256": "cab2005b8c47deedab0d36ef32f3fd3d87fe79f4e3159e440a02cb4cf83ccb3b"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-davs2/COPYING"
+			],
+			"name": "50-davs2_a2d3a5d05dbd810e7a33f41ca77f70f1775ab8318ffe3e1b365105e8ad813d7e.tar.xz",
+			"sha256": "516a89b4d50dad3c7875e5f250ef9798b4ba73677c5e85a1715a629365473ddf"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-ffnvcodec/ffnvcodec/include/ffnvcodec/dynlink_cuda.h",
+				"LICENSES/ffmpeg-static/50-ffnvcodec/ffnvcodec/include/ffnvcodec/dynlink_cuviddec.h",
+				"LICENSES/ffmpeg-static/50-ffnvcodec/ffnvcodec/include/ffnvcodec/dynlink_loader.h",
+				"LICENSES/ffmpeg-static/50-ffnvcodec/ffnvcodec/include/ffnvcodec/dynlink_nvcuvid.h",
+				"LICENSES/ffmpeg-static/50-ffnvcodec/ffnvcodec/include/ffnvcodec/nvEncodeAPI.h"
+			],
+			"name": "50-ffnvcodec_728e3f3bf6ba23ff4e2656c95b339091c7adfb2321e9cec494236c660f2e2c5a.tar.xz",
+			"sha256": "236f7f73c636786d09c5517d66514af7b287851d557c25a5ef9b5048bf95697b"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-freetype/LICENSE.TXT"
+			],
+			"name": "50-freetype_96c668248b384fe3a2875e4a9c9092cb746d1d243943f1367fdf9bee541681ff.tar.xz",
+			"sha256": "0a63de5f0a39d5537a59ff3a6f4acf905329235de124f9df26bc561d9f7f3d06"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-frei0r/COPYING"
+			],
+			"name": "50-frei0r_133425a6de12ece3f31f1fab0e5e228703fdffa3d347dcac946a9621531acbe7.tar.xz",
+			"sha256": "51a08f9014f5e9c87fe10012967e7ca311d6b88a5bd4473e7fe482e96848f398"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-gme/gme/ext/LICENSE",
+				"LICENSES/ffmpeg-static/50-gme/license.gpl2.txt",
+				"LICENSES/ffmpeg-static/50-gme/license.txt"
+			],
+			"name": "50-gme_40bc50336a9ccf45b553298baabdfd193f173b1b1f89bc02531e5946fac0387a.tar.xz",
+			"sha256": "0ca5e38b41c8a872c527bab3a5164d7ea8a97da76e25aa28e30dd9d967382a46"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-kvazaar/LICENSE",
+				"LICENSES/ffmpeg-static/50-kvazaar/LICENSE.EXT.greatest",
+				"LICENSES/ffmpeg-static/50-kvazaar/src/threadwrapper/LICENSE"
+			],
+			"name": "50-kvazaar_36ba4fecb23c3c52d829030be410feb99cf26cb09ddecc0108d24aa538a0f99c.tar.xz",
+			"sha256": "0f0b4ac6c9852493041d3b51ef501e990d142a5c6e61600df6df4df21b0c6251"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-lcevcdec/COPYING",
+				"LICENSES/ffmpeg-static/50-lcevcdec/LICENSE.md",
+				"LICENSES/ffmpeg-static/50-lcevcdec/licenses/FFmpeg/LICENSE.md",
+				"LICENSES/ffmpeg-static/50-lcevcdec/licenses/conan-center-index/LICENSE.txt",
+				"LICENSES/ffmpeg-static/50-lcevcdec/licenses/emscripten/licence.txt",
+				"LICENSES/ffmpeg-static/50-lcevcdec/licenses/fmt/LICENSE",
+				"LICENSES/ffmpeg-static/50-lcevcdec/licenses/gradle/LICENSE",
+				"LICENSES/ffmpeg-static/50-lcevcdec/licenses/ios-cmake/license.md",
+				"LICENSES/ffmpeg-static/50-lcevcdec/licenses/nlohmann_json/LICENSE.MIT",
+				"LICENSES/ffmpeg-static/50-lcevcdec/licenses/vma/LICENSE.txt"
+			],
+			"name": "50-lcevcdec_74a493e06a33c4de0c2adcc72118cd80f1f80ed756ba9948c92ac5d0e369f1c9.tar.xz",
+			"sha256": "3e4ae8831cc02ab0e9d8c5b0144ef242f0e75725b18e87587d0f1a072a26c732"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libaribb24/COPYING"
+			],
+			"name": "50-libaribb24_3dd74ffb861f7ef9133dab074b9845408d84ebc49db9aee5d91829efba6d52ce.tar.xz",
+			"sha256": "f69fc3d0e202e9717169515257c4c44e99a600d92a40a7bd11a915f8d5730bf1"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libaribcaption/LICENSE"
+			],
+			"name": "50-libaribcaption_ee3a695dd6aa684d2f1180eef7a8d6c41de01bbce8c185e74edf8472e03d495e.tar.xz",
+			"sha256": "38bb0ceda88441a540a095dc81b4647545a9dfdcaffcc0e503353b618deccc59"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libass/COPYING"
+			],
+			"name": "50-libass_f16ff8332a2c175333f24db916c7d6b038e7fa7116fdfb303159a9dd25e95bd2.tar.xz",
+			"sha256": "db0f42bbc25ecd1fe73dfc73b9d655db93352c516d8e2a4e0f4c86f5fae6e7cb"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libbluray/COPYING",
+				"LICENSES/ffmpeg-static/50-libbluray/contrib/asm/LICENSE.txt"
+			],
+			"name": "50-libbluray_eced7494d18fc32c91e7664e9106cf1b1211645ab13cc31eb6f4f8ccbe2a6032.tar.xz",
+			"sha256": "a17390247e05d84785e4ca2fc1bd628cb620d0bafe546044efce70614eb28620"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libcurl/COPYING"
+			],
+			"name": "50-libcurl_c58158045892b58c1898357e7b3fcd4144e51796b7584acc322ed9b12c51f124.tar.xz",
+			"sha256": "953e439a1f1795045932e050e325661decc29e06c347c2bfbe5154fb6de9d095"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libdvdnav/COPYING"
+			],
+			"name": "50-libdvdnav_1b6528010490a41cb276f9a5772c7cf6667ec2fb8665058f727866a93761b263.tar.xz",
+			"sha256": "d15602014517d87293059ab8e074d7a82a5b19bdf8f4145cf248e8c7f272e370"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libjxl/LICENSE",
+				"LICENSES/ffmpeg-static/50-libjxl/PATENTS",
+				"LICENSES/ffmpeg-static/50-libjxl/debian/copyright",
+				"LICENSES/ffmpeg-static/50-libjxl/lib/extras/LICENSE.apngdis",
+				"LICENSES/ffmpeg-static/50-libjxl/third_party/HEVCSoftware/cfg/LICENSE",
+				"LICENSES/ffmpeg-static/50-libjxl/third_party/highway/LICENSE",
+				"LICENSES/ffmpeg-static/50-libjxl/third_party/highway/LICENSE-BSD3",
+				"LICENSES/ffmpeg-static/50-libjxl/third_party/highway/debian/copyright"
+			],
+			"name": "50-libjxl_587b4b1e8d35fe19f85fce75dafafff781a8f008e1a0f861e33c733adb092c03.tar.xz",
+			"sha256": "244af2557be03db5b1b9e8148ccffdba095f046fbe24806652372a384a408bd7"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libmp3lame/COPYING",
+				"LICENSES/ffmpeg-static/50-libmp3lame/LICENSE",
+				"LICENSES/ffmpeg-static/50-libmp3lame/debian/copyright"
+			],
+			"name": "50-libmp3lame_572043a74090d765071c155bc1b107920cde3add6ff61932e789f12d75e0c887.tar.xz",
+			"sha256": "47960944a9e761bef0d797c61a79e5001858121db8dab6dae1b4e2660b59a081"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libopus/COPYING",
+				"LICENSES/ffmpeg-static/50-libopus/LICENSE_PLEASE_READ.txt"
+			],
+			"name": "50-libopus_d5d6bff35ed4cca25b341844c0f89c9f98b625b904750bdd960722ea107e9a60.tar.xz",
+			"sha256": "d66a8cea464ee80fff8709c4df952b618018551de57fd60787b41a86665b42aa"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libplacebo/3rdparty/Vulkan-Headers/LICENSE.md",
+				"LICENSES/ffmpeg-static/50-libplacebo/3rdparty/fast_float/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-libplacebo/3rdparty/fast_float/LICENSE-BOOST",
+				"LICENSES/ffmpeg-static/50-libplacebo/3rdparty/fast_float/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-libplacebo/3rdparty/glad/LICENSE",
+				"LICENSES/ffmpeg-static/50-libplacebo/3rdparty/jinja/LICENSE.txt",
+				"LICENSES/ffmpeg-static/50-libplacebo/3rdparty/jinja/docs/license.rst",
+				"LICENSES/ffmpeg-static/50-libplacebo/3rdparty/markupsafe/LICENSE.txt",
+				"LICENSES/ffmpeg-static/50-libplacebo/3rdparty/markupsafe/docs/license.rst",
+				"LICENSES/ffmpeg-static/50-libplacebo/LICENSE",
+				"LICENSES/ffmpeg-static/50-libplacebo/demos/3rdparty/nuklear/LICENSE",
+				"LICENSES/ffmpeg-static/50-libplacebo/demos/3rdparty/nuklear/src/LICENSE",
+				"LICENSES/ffmpeg-static/50-libplacebo/demos/LICENSE"
+			],
+			"name": "50-libplacebo_742888aa9930c21390aea4bfa68e1b1e535876fd7c2207b8a5d338c6b7ed47a9.tar.xz",
+			"sha256": "4298225ae48c2df458ceb9f9d93d63e04bb7c4e75e547f791f7147a72cce7d5a"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-librist/COPYING",
+				"LICENSES/ffmpeg-static/50-librist/contrib/mbedtls/LICENSE"
+			],
+			"name": "50-librist_224cb7e74ef26cf87ac20c05976046cb5a628c7cf64bff7a64f0ed792951d8e6.tar.xz",
+			"sha256": "eab8588f21d12654aa75b0e84c1bdeeffa570a3b800eae516516ea14e76ed30c"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libssh/COPYING",
+				"LICENSES/ffmpeg-static/50-libssh/cmake/Modules/COPYING-CMAKE-SCRIPTS"
+			],
+			"name": "50-libssh_067e02269d642d7889c16c309daee3cffcaa735f3a39259230c2ec2297ea7e00.tar.xz",
+			"sha256": "ad7ecb40217b8408bcedf601bb5692cc28c43ecef356565c26f4d7c84904d902"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libtheora/COPYING",
+				"LICENSES/ffmpeg-static/50-libtheora/LICENSE"
+			],
+			"name": "50-libtheora_c5b1505081f2493a61c94a64ef8eef6de9b851447fab834bd5f9b6e35ee1d008.tar.xz",
+			"sha256": "1fc08ec419cc447aaac29cece2ebbba770aeb1f49c6f391829263e9f922c6b1d"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libva/COPYING"
+			],
+			"name": "50-libva_dd96c4de22d3925da87a52c9ac4e8d6e611dc6b7979315b1bcdc24cd21529a3b.tar.xz",
+			"sha256": "eef613445c35239fd1acffd47d737ce178a4367a5d14d887d8a5e16fba983c5c"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libvpx/LICENSE",
+				"LICENSES/ffmpeg-static/50-libvpx/PATENTS",
+				"LICENSES/ffmpeg-static/50-libvpx/third_party/googletest/src/LICENSE",
+				"LICENSES/ffmpeg-static/50-libvpx/third_party/libwebm/LICENSE.TXT",
+				"LICENSES/ffmpeg-static/50-libvpx/third_party/libwebm/PATENTS.TXT",
+				"LICENSES/ffmpeg-static/50-libvpx/third_party/libyuv/LICENSE",
+				"LICENSES/ffmpeg-static/50-libvpx/third_party/nalloc/LICENSE",
+				"LICENSES/ffmpeg-static/50-libvpx/third_party/x86inc/LICENSE"
+			],
+			"name": "50-libvpx_7a8108f9e13a53453845471936a9705f28e2bf6aa9dac42ede1e5384288ac4f0.tar.xz",
+			"sha256": "c953fdf151a314274eb02ea329293fc3feca4214b257319eb0fc7364ef174e2d"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libwebp/COPYING",
+				"LICENSES/ffmpeg-static/50-libwebp/PATENTS"
+			],
+			"name": "50-libwebp_b28181b353109eab229202e473a127aec9dd0844f1ad260a357f96c36f9fcd6e.tar.xz",
+			"sha256": "95a9c12ffa00130567cf9deb3090bc8b04d934908eb846fcca161aa49165615e"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libxext/COPYING"
+			],
+			"name": "50-libxext_7a34fd4eccf5c92fa1873189fb11045fae39876d1600c65a436f32a13a47f912.tar.xz",
+			"sha256": "0439c35b45ea015ed7e7f2b597f73155d8d77de9c0704e443faed1afa707ee93"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libxfixes/COPYING"
+			],
+			"name": "50-libxfixes_b0399b879cf10da97be556a7d224dc7e04f3caad8b63a46fcc683e8507fb1495.tar.xz",
+			"sha256": "cc309ee9e24b5eb9bad218ea950a370a09fca15a1001ff742e2b226a401a8b21"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libxi/COPYING"
+			],
+			"name": "50-libxi_a1edf30e31ce9cc9e27eb1dae07bde7eb49ccf6892c4d3ad5482fbb4b184e345.tar.xz",
+			"sha256": "26bc595555d2679d4732ddc6b15c646f5db6be91cbca379bcd193fabcb392438"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libxinerama/COPYING"
+			],
+			"name": "50-libxinerama_ba0cdf4b001e4bcb597ff1724ca04a818f15665b64bf9241c52047031c063f79.tar.xz",
+			"sha256": "7dd06ecaebf6954b724ee3574b2c3d33cde465052911cc3db414cbf1b66a768d"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libxrender/COPYING"
+			],
+			"name": "50-libxrender_7d6e7a256b86772c0becc40b1a7b8e980f33a155dd1ae4266480c05406712bf6.tar.xz",
+			"sha256": "df6ea1856512d8f2a75e4cac84fe1ed1fd9107539929488b7af21705010671f0"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libxscrnsaver/COPYING"
+			],
+			"name": "50-libxscrnsaver_5c9dcd646e93ff51cbd135d4e0985d88853f250ce626ab0889723b8bee770e3d.tar.xz",
+			"sha256": "7425d5bd2bee998666f842df06d117c6b791526494fe97bcbb03625ebf021e64"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libxxf86vm/COPYING"
+			],
+			"name": "50-libxxf86vm_03e86e2ea8e466bee1b235888c6ce6a6239689b2dd3d8f1f2a8c2f1ce5abdadc.tar.xz",
+			"sha256": "9ec0f6141b6be62cb0a54780a7e7122cfd92f67c344f8be0ced318c21edb201a"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-libzmq/LICENSE",
+				"LICENSES/ffmpeg-static/50-libzmq/external/sha1/license.txt",
+				"LICENSES/ffmpeg-static/50-libzmq/external/unity/license.txt",
+				"LICENSES/ffmpeg-static/50-libzmq/external/wepoll/license.txt",
+				"LICENSES/ffmpeg-static/50-libzmq/packaging/debian/copyright"
+			],
+			"name": "50-libzmq_bda82769efa7aabb2af501e3be7804b449eea433a8e10a7ccec399a8de326379.tar.xz",
+			"sha256": "7a79c70a1a29c984601fcaaf331da56fd458721fe9f8e6c7789618aaa89ac2e3"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-onevpl/LICENSE",
+				"LICENSES/ffmpeg-static/50-onevpl/examples/api1x_core/legacy-decode/License.txt",
+				"LICENSES/ffmpeg-static/50-onevpl/examples/api1x_core/legacy-encode/License.txt",
+				"LICENSES/ffmpeg-static/50-onevpl/examples/api1x_core/legacy-vpp/License.txt",
+				"LICENSES/ffmpeg-static/50-onevpl/examples/api2x/hello-decode/License.txt",
+				"LICENSES/ffmpeg-static/50-onevpl/examples/api2x/hello-decvpp/License.txt",
+				"LICENSES/ffmpeg-static/50-onevpl/examples/api2x/hello-encode-jpeg/License.txt",
+				"LICENSES/ffmpeg-static/50-onevpl/examples/api2x/hello-encode/License.txt",
+				"LICENSES/ffmpeg-static/50-onevpl/examples/api2x/hello-sharing-dx11/License.txt",
+				"LICENSES/ffmpeg-static/50-onevpl/examples/api2x/hello-sharing-ocl/License.txt",
+				"LICENSES/ffmpeg-static/50-onevpl/examples/api2x/hello-sharing-vaapi/License.txt",
+				"LICENSES/ffmpeg-static/50-onevpl/examples/api2x/hello-transcode/License.txt",
+				"LICENSES/ffmpeg-static/50-onevpl/examples/api2x/hello-vpp/License.txt",
+				"LICENSES/ffmpeg-static/50-onevpl/examples/interop/vpl-infer/License.txt",
+				"LICENSES/ffmpeg-static/50-onevpl/examples/tutorials/01_transition/License.txt",
+				"LICENSES/ffmpeg-static/50-onevpl/libvpl/test/ext/googletest/LICENSE"
+			],
+			"name": "50-onevpl_5d941b3a41ffe48ef8cecf80d28e0f16d7fbc8fe796aa02c426fb5280a1bc708.tar.xz",
+			"sha256": "5fc4467033d9bd9ce52f0dc8c73b3d78b0eb8c3e630af8fd5535db8a7a272c7b"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-openal/COPYING",
+				"LICENSES/ffmpeg-static/50-openal/LICENSE-pffft",
+				"LICENSES/ffmpeg-static/50-openal/fmt-11.2.0/LICENSE",
+				"LICENSES/ffmpeg-static/50-openal/gsl/LICENSE"
+			],
+			"name": "50-openal_f95981d6e68858a6f0e5b3a4cecf6ebebc80c9d233d654345c9a3da57ba11887.tar.xz",
+			"sha256": "7ac217c794d9564b020ab638bb12817b55c6b358fb47aa51c71ce7415fa70362"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-openapv/LICENSE"
+			],
+			"name": "50-openapv_2948b5717bd2cb82f152768efd31189b5cfdc8b03a592a9d2a975563e6c54448.tar.xz",
+			"sha256": "a6f35e17f8a191c70a4018be11e7b02d560301c7619dbeaf61c0908da39bc835"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-opencore-amr/LICENSE",
+				"LICENSES/ffmpeg-static/50-opencore-amr/opencore/NOTICE"
+			],
+			"name": "50-opencore-amr_5d7ec3b8ffdd0f32309a659256916e3286724f08acf0f625a4b4f1f9c17ebf7c.tar.xz",
+			"sha256": "4f26b01587100888f6ee4826d4c9d19ca471d2bc6c790e99d1352771999748ac"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-openh264/LICENSE"
+			],
+			"name": "50-openh264_dd0be1df3be358a8a11eec5f958891e704696de08e0521cf9704a75bf693519d.tar.xz",
+			"sha256": "6329b00c2dc4f86ffcba3de3d0fcbb948d273abf483d3019f9673436c8479714"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-openjpeg/LICENSE",
+				"LICENSES/ffmpeg-static/50-openjpeg/src/bin/wx/OPJViewer/source/license.txt",
+				"LICENSES/ffmpeg-static/50-openjpeg/thirdparty/astyle/LICENSE.md",
+				"LICENSES/ffmpeg-static/50-openjpeg/thirdparty/liblcms2/COPYING",
+				"LICENSES/ffmpeg-static/50-openjpeg/thirdparty/libpng/LICENSE"
+			],
+			"name": "50-openjpeg_c2cdab7824fc83026cf46e7cef9df506767265ef79a1034ae9ea5652099b420f.tar.xz",
+			"sha256": "f2cdd079fafd3c6ab90b8f9154eaa91bad1ee28b7ec5d7d343b99adb7ee15420"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-openmpt/LICENSE",
+				"LICENSES/ffmpeg-static/50-openmpt/contrib/libmodplug-0.8.8.5/LICENSE",
+				"LICENSES/ffmpeg-static/50-openmpt/contrib/libmodplug-0.8.9.0/LICENSE",
+				"LICENSES/ffmpeg-static/50-openmpt/include/SignalsmithStretch/SignalsmithStretch/LICENSE.txt",
+				"LICENSES/ffmpeg-static/50-openmpt/include/SignalsmithStretch/signalsmith-linear/LICENSE.txt",
+				"LICENSES/ffmpeg-static/50-openmpt/include/ancient/LICENSE",
+				"LICENSES/ffmpeg-static/50-openmpt/include/ancient/LICENSE.bzip2",
+				"LICENSES/ffmpeg-static/50-openmpt/include/cryptopp/License.txt",
+				"LICENSES/ffmpeg-static/50-openmpt/include/flac/COPYING.Xiph",
+				"LICENSES/ffmpeg-static/50-openmpt/include/lame/COPYING",
+				"LICENSES/ffmpeg-static/50-openmpt/include/lhasa/COPYING.md",
+				"LICENSES/ffmpeg-static/50-openmpt/include/minimp3/LICENSE",
+				"LICENSES/ffmpeg-static/50-openmpt/include/miniz/LICENSE",
+				"LICENSES/ffmpeg-static/50-openmpt/include/mpg123/COPYING",
+				"LICENSES/ffmpeg-static/50-openmpt/include/nlohmann-json/LICENSE.MIT",
+				"LICENSES/ffmpeg-static/50-openmpt/include/ogg/COPYING",
+				"LICENSES/ffmpeg-static/50-openmpt/include/opus/COPYING",
+				"LICENSES/ffmpeg-static/50-openmpt/include/opusenc/COPYING",
+				"LICENSES/ffmpeg-static/50-openmpt/include/opusfile/COPYING",
+				"LICENSES/ffmpeg-static/50-openmpt/include/portaudio/LICENSE.txt",
+				"LICENSES/ffmpeg-static/50-openmpt/include/portaudio/bindings/cpp/COPYING",
+				"LICENSES/ffmpeg-static/50-openmpt/include/premake/LICENSE.txt",
+				"LICENSES/ffmpeg-static/50-openmpt/include/premake/binmodules/luasocket/LICENSE",
+				"LICENSES/ffmpeg-static/50-openmpt/include/premake/contrib/mbedtls/LICENSE",
+				"LICENSES/ffmpeg-static/50-openmpt/include/premake/contrib/zlib/LICENSE",
+				"LICENSES/ffmpeg-static/50-openmpt/include/premake/modules/xcode/LICENSE.TXT",
+				"LICENSES/ffmpeg-static/50-openmpt/include/premake/packages/debian/copyright",
+				"LICENSES/ffmpeg-static/50-openmpt/include/pthread-win32/docs/COPYING.FSF.md",
+				"LICENSES/ffmpeg-static/50-openmpt/include/pthread-win32/docs/COPYING.md",
+				"LICENSES/ffmpeg-static/50-openmpt/include/pugixml/LICENSE.md",
+				"LICENSES/ffmpeg-static/50-openmpt/include/r8brain/LICENSE",
+				"LICENSES/ffmpeg-static/50-openmpt/include/rtaudio/LICENSE",
+				"LICENSES/ffmpeg-static/50-openmpt/include/rtmidi/LICENSE",
+				"LICENSES/ffmpeg-static/50-openmpt/include/unrar/license.txt",
+				"LICENSES/ffmpeg-static/50-openmpt/include/vorbis/COPYING",
+				"LICENSES/ffmpeg-static/50-openmpt/include/zlib/LICENSE",
+				"LICENSES/ffmpeg-static/50-openmpt/include/zlib/contrib/minizip/LICENSE.Info-Zip",
+				"LICENSES/ffmpeg-static/50-openmpt/src/mpt/LICENSE.BSD-3-Clause.txt",
+				"LICENSES/ffmpeg-static/50-openmpt/src/mpt/LICENSE.BSL-1.0.txt"
+			],
+			"name": "50-openmpt_7019497984915be77e51e02643b9f0e2ccc5c39e7e34ddc03b922b68e352ed0f.tar.xz",
+			"sha256": "02f90e7d0b930398915bec711bc313033d5ee645ca7ffb522ff484d1d69e6c81"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-rav1e/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/PATENTS",
+				"LICENSES/ffmpeg-static/50-rav1e/ivf/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/license_template.txt"
+			],
+			"name": "50-rav1e_f5502fba0839b77e72f498941acc6b52cd25845005fff70a9f22bff369d96d24.tar.xz",
+			"sha256": "20acab70634fd59187c6c9ed7dde0076909592e6ca1ead8e8872991ab83fa1f0"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-rubberband/COPYING",
+				"LICENSES/ffmpeg-static/50-rubberband/src/ext/kissfft/COPYING",
+				"LICENSES/ffmpeg-static/50-rubberband/src/ext/speex/COPYING"
+			],
+			"name": "50-rubberband_5d3ca7b4a1f4c07ead3f23ba9c7a3736384a9394a34e41bf70a78075e0ed9593.tar.xz",
+			"sha256": "03be88b49cd826b8e99adfd8ed71c2dc3bc8c12f0b2997bd3f15b35e75401eae"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-sdl/LICENSE.txt",
+				"LICENSES/ffmpeg-static/50-sdl/Xcode-iOS/Demos/data/bitmapfont/license.txt",
+				"LICENSES/ffmpeg-static/50-sdl/Xcode/SDL/pkg-support/resources/License.txt",
+				"LICENSES/ffmpeg-static/50-sdl/src/hidapi/LICENSE-bsd.txt",
+				"LICENSES/ffmpeg-static/50-sdl/src/hidapi/LICENSE-gpl3.txt",
+				"LICENSES/ffmpeg-static/50-sdl/src/hidapi/LICENSE-orig.txt",
+				"LICENSES/ffmpeg-static/50-sdl/src/hidapi/LICENSE.txt",
+				"LICENSES/ffmpeg-static/50-sdl/src/video/yuv2rgb/LICENSE",
+				"LICENSES/ffmpeg-static/50-sdl/test/COPYING",
+				"LICENSES/ffmpeg-static/50-sdl/visualtest/COPYING.txt"
+			],
+			"name": "50-sdl_0ef5b5fa25ed0cc561dce0a22af586d0936ac938b5e00d5065991bbc5350db32.tar.xz",
+			"sha256": "a1d99b0449de28c7517223b60bb27aa8ddb5371deb887bf95b9b89e3b8ed0e73"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-shaderc/LICENSE",
+				"LICENSES/ffmpeg-static/50-shaderc/license-checker.cfg",
+				"LICENSES/ffmpeg-static/50-shaderc/third_party/LICENSE.glslang",
+				"LICENSES/ffmpeg-static/50-shaderc/third_party/LICENSE.spirv-tools",
+				"LICENSES/ffmpeg-static/50-shaderc/third_party/abseil_cpp/LICENSE",
+				"LICENSES/ffmpeg-static/50-shaderc/third_party/effcee/LICENSE",
+				"LICENSES/ffmpeg-static/50-shaderc/third_party/glslang/LICENSE.txt",
+				"LICENSES/ffmpeg-static/50-shaderc/third_party/glslang/license-checker.cfg",
+				"LICENSES/ffmpeg-static/50-shaderc/third_party/googletest/LICENSE",
+				"LICENSES/ffmpeg-static/50-shaderc/third_party/re2/LICENSE",
+				"LICENSES/ffmpeg-static/50-shaderc/third_party/re2/python/LICENSE",
+				"LICENSES/ffmpeg-static/50-shaderc/third_party/spirv-headers/LICENSE",
+				"LICENSES/ffmpeg-static/50-shaderc/third_party/spirv-tools/LICENSE",
+				"LICENSES/ffmpeg-static/50-shaderc/third_party/spirv-tools/utils/vscode/src/lsp/LICENSE"
+			],
+			"name": "50-shaderc_29e02a337855fa28560076383c49e2aeeefeb32ec1050d45b514b4b5482d7b51.tar.xz",
+			"sha256": "e0e2ba9826167a087a65daf3cd13fe0f97bbb65f1be4ae1af077161914ab63bf"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-snappy/COPYING",
+				"LICENSES/ffmpeg-static/50-snappy/COPYING.notestdata"
+			],
+			"name": "50-snappy_3c05d1552e076754bb5ececd08e6de9cf8e3218260643fa5dbfb66c87f5105fe.tar.xz",
+			"sha256": "ce20860a3683de059d8143fc0a850ae79733f767b90672ad90838a2e85f7ceb1"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-soxr/COPYING.LGPL",
+				"LICENSES/ffmpeg-static/50-soxr/LICENCE",
+				"LICENSES/ffmpeg-static/50-soxr/lsr-tests/COPYING"
+			],
+			"name": "50-soxr_d24c000584012b62b406f09325af85575932219b972b87ab3e2b1037bdc97c6a.tar.xz",
+			"sha256": "037f7ca12f3b34bb469a446fb5238bef4d8b9f4d6fb1afb86417faccfd6b5d10"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-srt/LICENSE"
+			],
+			"name": "50-srt_224921fa1ca86e4fb9795afc4aa246ac53510e141d15a9c0be1db5e56ecda40d.tar.xz",
+			"sha256": "8da54cfde0d01fb06f4e9890604ac36bb8a3db933b17f4248b287a30a40e456a"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-svtav1/LICENSE-BSD2.md",
+				"LICENSES/ffmpeg-static/50-svtav1/LICENSE.md",
+				"LICENSES/ffmpeg-static/50-svtav1/PATENTS.md",
+				"LICENSES/ffmpeg-static/50-svtav1/third_party/fastfeat/LICENSE",
+				"LICENSES/ffmpeg-static/50-svtav1/third_party/safestringlib/LICENSE"
+			],
+			"name": "50-svtav1_ca448962971bfcf93e4fe58f8d0901486c24a26fb1e64d48ca99b779b5e393c0.tar.xz",
+			"sha256": "9745a892f66d26ca81387be115207514c5228d25b1f38b720e1910113f7d15b1"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-twolame/COPYING"
+			],
+			"name": "50-twolame_b034b56f3c8caa730922980b6e8aca15c6f3b46e3fa98d3229c337aeb7858f71.tar.xz",
+			"sha256": "faa307ea3c94f154f4b39c2a69ebd742d09b3539e585d51eceaec1397d75349d"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-uavs3d/COPYING"
+			],
+			"name": "50-uavs3d_f5c1983f0fc2360d5846298e08a8f89f2f345caa3beb83100ca9b48eff5ded6b.tar.xz",
+			"sha256": "5030e01ddbb769e0d32ad1439c4ca51f15806a83ce5ae22b469d5777d9c63885"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-vidstab/LICENSE"
+			],
+			"name": "50-vidstab_b2afeccab2f2f48dd56f5cadd43984011ee9bf7cf36113a0a545fe54a3368123.tar.xz",
+			"sha256": "8f6083bad000d3a27ee142f765d29aa7a0b53ddd56e5441369aeaccf49bd2f49"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-vvenc/LICENSE.txt",
+				"LICENSES/ffmpeg-static/50-vvenc/thirdparty/nlohmann_json/LICENSE.MIT",
+				"LICENSES/ffmpeg-static/50-vvenc/thirdparty/simde/COPYING"
+			],
+			"name": "50-vvenc_ac154095ad373cfc25969847c29414053461991a677d5d1b3ffcae4cf22c3c05.tar.xz",
+			"sha256": "4c0039cc1fa09ddda142361c51bfb5b2c27a0ca39ce0e77588a4a4f0b18d5238"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-x264/COPYING"
+			],
+			"name": "50-x264_7aee4cf46b7c0eff1a5ad3d23ae43a29562065ef2866a4a883d7ad2db0fb755d.tar.xz",
+			"sha256": "e88c840fb3167b8c1f6436e350745b34f003b2214453df6c34ae5028287dbe34"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-x265/COPYING",
+				"LICENSES/ffmpeg-static/50-x265/source/dynamicHDR10/LICENSE.txt",
+				"LICENSES/ffmpeg-static/50-x265/source/dynamicHDR10/json11/LICENSE.txt"
+			],
+			"name": "50-x265_f5451b1fd1b436572157ea0d3fa22ad43fe83aac3640a6fcbaee0b5a8cec15bf.tar.xz",
+			"sha256": "66d467ae305a390a2f1ed7a9dcd34c20bdf14e7b215f44afdd91baa08da4c351"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-xavs2/COPYING"
+			],
+			"name": "50-xavs2_983aacbab6d33318bf9c4742b41a1ed9d42afc12a0493ba97d07404a99734009.tar.xz",
+			"sha256": "c2ffa188e4966946bd98d45e45359cbf67aa5270e029edce285452633254377e"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-xvid/LICENSE",
+				"LICENSES/ffmpeg-static/50-xvid/debian/copyright",
+				"LICENSES/ffmpeg-static/50-xvid/vfw/LICENSE"
+			],
+			"name": "50-xvid_03619a39e7e15a372b56fc954435c35668ed47258d7e7d3f2e47ba521e3b884f.tar.xz",
+			"sha256": "a3a91f1f89be1cc846824a4320e9e2c69abcc0e74d1c3a4e1b62802be963f3b4"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-zimg/COPYING",
+				"LICENSES/ffmpeg-static/50-zimg/graphengine/COPYING",
+				"LICENSES/ffmpeg-static/50-zimg/graphengine/test/googletest/LICENSE",
+				"LICENSES/ffmpeg-static/50-zimg/graphengine/test/googletest/googlemock/scripts/generator/LICENSE",
+				"LICENSES/ffmpeg-static/50-zimg/test/extra/googletest/LICENSE",
+				"LICENSES/ffmpeg-static/50-zimg/test/extra/musl-libm/COPYRIGHT"
+			],
+			"name": "50-zimg_6315e79a8732e7c94f83940865c2cdc7c3a44be0b94db8fa6b4325f652ae8b34.tar.xz",
+			"sha256": "4cef6dd16c18b9bc3d136dbaef592a68eb87b964094fb19033d9c7065b5ff4ec"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/50-zvbi/COPYING.md"
+			],
+			"name": "50-zvbi_50436a6b2f8f37bea69ea28d5c7b0adb56a96ff85bbd93df6fd6d0f62bf26ed4.tar.xz",
+			"sha256": "f9a599044ff3f7876ed83b7c024563c4d5afe66a55e255397f1f4658c7f3327c"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/55-spirv-cross/LICENSE"
+			],
+			"name": "55-spirv-cross_3748d56b8b02e28d7627725d4e9e44a22175e1de7281ad0490f90fb937d88161.tar.xz",
+			"sha256": "d90200fdc2e04f5e604921c900908b1d84957f2d7a8ac4185ea4ed02d70d7599"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/60-libglvnd/src/util/cJSON/LICENSE",
+				"LICENSES/ffmpeg-static/60-libglvnd/src/util/uthash/LICENSE"
+			],
+			"name": "60-libglvnd_b5decd6ef0d35071d5ef435a736000a7c2dfe94707206653267c61e11630c960.tar.xz",
+			"sha256": "72270e798278f8208817d0cd72295ce178d736df75a1e188278ebf977412e1df"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/60-libxcursor/COPYING"
+			],
+			"name": "60-libxcursor_899caf3541ff1f0fdf3a60cbc483877819b6bc6b8fc6d56ae9863dd95d5b4a45.tar.xz",
+			"sha256": "98ff0e944d36c312480e32cc2e071ba952986f7f5a32afa378042564f3afd8c3"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/60-libxrandr/COPYING"
+			],
+			"name": "60-libxrandr_76ce7ef426d59979a255619444de369567889d5bfe2af130ef77700c096230fc.tar.xz",
+			"sha256": "e0aa0703c13279ea63e950ae66a0193100710ce45475a1fe07f525d183568b12"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/60-libxv/COPYING"
+			],
+			"name": "60-libxv_cda840dfd0f852c6535789148438618900c0a214b03a010c02ff1364a5499e02.tar.xz",
+			"sha256": "1bfee168c660a0ae8c022f5727850d66ddd4fcfc210fe829b0303ba32767e7be"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/60-spirv-headers/LICENSE"
+			],
+			"name": "60-spirv-headers_0987873192a0b04883dc8badec5a74b6698124a03683fd2ccd78df9d46e8e830.tar.xz",
+			"sha256": "ecf2cafd047ba2ceab2169f449705477e63ab21fce2437b6025dc2c39c7b694f"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/96-lv2/COPYING"
+			],
+			"name": "96-lv2_1833e554a5a1760aa41062569225bbb9856f09f3c23d37301074d82a17b0624e.tar.xz",
+			"sha256": "b08f82dc7682dec2db6b3ba94f2e592af50dab3604e747d7b951e6ececefda3d"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/96-serd/COPYING",
+				"LICENSES/ffmpeg-static/96-serd/test/w3c/trig/LICENSE",
+				"LICENSES/ffmpeg-static/96-serd/test/w3c/turtle/LICENSE"
+			],
+			"name": "96-serd_257c27b8651c05a3b7179f2477bd69ed036feac4eb253312569096821e69a8e7.tar.xz",
+			"sha256": "e905ac4018eaa2113ca289f253e34e368e7a554fc2d57dfe13a03c3011e4332e"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/96-zix/COPYING"
+			],
+			"name": "96-zix_21e780c9ab8c0f8067c36bb53b76fcabc2dd828153b3f1ab082ed44281f62d13.tar.xz",
+			"sha256": "d5c7a4586a9c64695b143f00f8fa0b7adb0693411f56fb4c7bf49172d0ffa334"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/97-sord/COPYING"
+			],
+			"name": "97-sord_6ef433b3c59e64a645002e31f929dfec02cbd979f0d70b5373173e1ca217125d.tar.xz",
+			"sha256": "b041135e73005c1e8db9b3819b7855606e38960dac730b3b59982c09501b14ab"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/98-sratom/COPYING"
+			],
+			"name": "98-sratom_a7e01a157b247bfecbce4a5c63016fa503ddd5703ffc208af3f81805a7d30535.tar.xz",
+			"sha256": "7041201e0ca636920a0edffacca7242b894d7dfd3e54a57e6a69f1de4fd41a0f"
+		},
+		{
+			"licenseFiles": [
+				"LICENSES/ffmpeg-static/99-lilv/COPYING"
+			],
+			"name": "99-lilv_0543a3c15e7971c2371260e51aad5ead6ffbc7a539de39540a906ebf944d829d.tar.xz",
+			"sha256": "e61ec9b5eff63006b2b7f03c6bc41c92f12b3ca6c8f83c63c1c9da0b5128850e"
+		}
+	],
+	"sourceBundle": {
+		"name": "n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz",
+		"sha256": "6576eef8e990c7da69b18d37f17f318ebc832365c50fd62a8a473240a6e62d54",
+		"url": "https://github.com/aliyusufergin/n8n-nodes-yt-dlp/releases/download/v0.2.0/n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz"
+	},
+	"sourceCache": {
+		"actionsArtifactId": 8261218390,
+		"name": "cache.tar.gz",
+		"sha256": "dfdb5701382b753efb0ad8cb724dfd7bdef3c1238f1d0dc3cbf20d06b854c1af"
+	}
+}
