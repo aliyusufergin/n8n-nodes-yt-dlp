@@ -4,7 +4,8 @@
 		"workflowRun": 29196749904,
 		"job": 86661911269,
 		"linkTarget": "ffmpeg_g and ffprobe_g",
-		"capturedAt": "2026-07-12T15:03:38Z"
+		"capturedAt": "2026-07-12T15:03:38Z",
+		"externalLinkerInputsSha256": "1c0569b97b8d10944f2e3ed006d8d738d11824a1b60e1b71f2aed7870605f2a8"
 	},
 	"ffmpegInternal": [
 		"avcodec",

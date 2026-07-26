@@ -8,7 +8,7 @@ assets. Their SHA-256 values are also recorded in `TOOLCHAIN.lock.json`.
 | yt-dlp `2026.07.14.233956`                                         | <https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.07.14.233956/yt-dlp.tar.gz>                      | `07e2aec9b176ce346d5dd96aa4ade127add1ee88a297129e5bad854be2170dab` |
 | Deno `v2.9.3`                                                      | <https://github.com/denoland/deno/releases/download/v2.9.3/deno_src.tar.gz>                                              | `58da10e48968a80a6c205b31584d1f1f4583226e59ebb08cb3783b12e7f22d4d` |
 | yt-dlp-ejs `0.8.0`                                                 | <https://github.com/yt-dlp/ejs/releases/download/0.8.0/yt_dlp_ejs-0.8.0.tar.gz>                                          | `d5fa1639f63b5c4af8d932495f60689d5370f1a095782c944f7f62a303eb104e` |
-| FFmpeg `N-125551-ga09be9b91e-20260712` and all static dependencies | <https://github.com/aliyusufergin/n8n-nodes-yt-dlp/releases/download/v0.2.0/n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz> | `5c8094a00f39f2419c527fe391e18a269c428a0e97bed4f408361fa84f9b293b` |
+| FFmpeg `N-125551-ga09be9b91e-20260712` and all static dependencies | <https://github.com/aliyusufergin/n8n-nodes-yt-dlp/releases/download/v0.2.0/n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz> | `3dcd8963e229e3b34fb9d0d969377e59e25a01146fd128282ad599200034e882` |
 
 The FFmpeg bundle is self-contained: it includes the exact FFmpeg and FFmpeg-Builds snapshots, all
 109 static dependency source archives, including rav1e's locked vendored Cargo graph, build/install

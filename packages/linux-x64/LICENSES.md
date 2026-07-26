@@ -14,7 +14,9 @@ This package contains components under different licenses. Its package metadata 
 
 `FFMPEG-SOURCE-MANIFEST.json` maps each of the 109 exact static dependency source archives to its
 packaged license, notice, or license-header material. Its rav1e entry additionally maps every
-vendored Cargo package's name, version, SPDX expression, source path, and verbatim license files.
+vendored Cargo package's name, version, SPDX expression, source path, exact packaged `Cargo.toml`
+license declaration, and any crate-local verbatim license files. A crate without a bundled license
+text is not mapped to another crate's copyright notice.
 The source-bundle identity and complete corresponding-source instructions are in
 `CORRESPONDING_SOURCE.md` and `TOOLCHAIN.lock.json`.
 

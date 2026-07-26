@@ -81,20 +81,6 @@ function cargoString(packageSection, key) {
 	return match ? JSON.parse(match[1]) : undefined;
 }
 
-function cargoFallbackLicensePaths(license) {
-	const root = 'LICENSES/ffmpeg-static/50-rav1e/vendor';
-	const paths = [];
-	if (license.includes('MIT')) paths.push(`${root}/addr2line/LICENSE-MIT`);
-	if (license.includes('Apache-2.0')) paths.push(`${root}/addr2line/LICENSE-APACHE`);
-	if (license.includes('LGPL-2.1-or-later')) {
-		paths.push(`${root}/libgit2-sys/libgit2/deps/winhttp/COPYING.LGPL`);
-	}
-	if (license.includes('LLVM-exception')) {
-		paths.push(`${root}/linux-raw-sys/LICENSE-Apache-2.0_WITH_LLVM-exception`);
-	}
-	return [...new Set(paths)];
-}
-
 const archiveNames = (await readdir(sourceDirectory))
 	.filter((name) => name.endsWith('.tar.xz'))
 	.sort();
@@ -166,6 +152,7 @@ try {
 				...members.filter(isLicenseMaterial),
 				...(supplementalLicenseMembers.get(component) ?? []),
 				...declaredCargoLicenses,
+				...cargoManifestMembers,
 			]),
 		].sort();
 		for (const member of licenseMembers) {
@@ -195,9 +182,6 @@ try {
 					`LICENSES/ffmpeg-static/${component}/${cargoPackage.sourcePath.slice(2)}/`,
 				),
 			);
-			if (cargoPackage.licenseFiles.length === 0) {
-				cargoPackage.licenseFiles = cargoFallbackLicensePaths(cargoPackage.license);
-			}
 			if (cargoPackage.licenseFiles.length === 0) {
 				throw new Error(`No license material for Cargo package ${cargoPackage.name}.`);
 			}
@@ -256,6 +240,10 @@ try {
 			dependencyImage:
 				'ghcr.io/yt-dlp/ffmpeg-builds/linux64-gpl@sha256:59abf3d43b3ae3acc15c2d3a04e9fc3c863292d38c233d878ef7070696a9c6c5',
 		},
+		cleanRebuildOutputs: {
+			ffmpegSha256: 'b5532ca4ce06bef2fce593e89cd6bcb2be5fa89db6fa91e876b1c16c613502b1',
+			ffprobeSha256: 'e6b5e3496cd160152898de6e86b4689fa6f2630ed7903725c50a5de3b7eeae3f',
+		},
 		manualReview: {
 			path: 'toolchain/ffmpeg/LICENSE-REVIEW.json',
 			requiredStatus: 'approved',
@@ -273,7 +261,7 @@ try {
 		sourceArchives,
 		sourceBundle: {
 			name: 'n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz',
-			sha256: '5c8094a00f39f2419c527fe391e18a269c428a0e97bed4f408361fa84f9b293b',
+			sha256: '3dcd8963e229e3b34fb9d0d969377e59e25a01146fd128282ad599200034e882',
 			url: 'https://github.com/aliyusufergin/n8n-nodes-yt-dlp/releases/download/v0.2.0/n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz',
 		},
 		sourceCache: {

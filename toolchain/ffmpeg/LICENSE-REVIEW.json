@@ -8,9 +8,9 @@
 	},
 	"bindings": {
 		"binaryAssetSha256": "7a19456683e31d937ae48d51e23dfb869dbb9db1e4d6e1b6881d7fed168fa5cf",
-		"licenseSurfaceSha256": "93352033381eff51097883dadba0a30063ad65434491157d73e2f0cf5d3c66f8",
-		"linkedLibrariesSha256": "f128fd3d2e0efc14e8303d7c193a3402fc6ea5dd54906eebc8007c4b8dbd7ff9",
-		"sourceBundleSha256": "5c8094a00f39f2419c527fe391e18a269c428a0e97bed4f408361fa84f9b293b",
-		"sourceManifestSha256": "17c21bb76ba30fed982c987c70a1ff896085924dc8ed1dd35d6c3e2197a67547"
+		"licenseSurfaceSha256": "8e1b9f54689f7febd107f775f3cf7c2be4e349ffb952b7681dfb3423512c3008",
+		"linkedLibrariesSha256": "ad103c5c95482590c657ba672d634182b1dd912f862bfac57b8e137719ab471e",
+		"sourceBundleSha256": "3dcd8963e229e3b34fb9d0d969377e59e25a01146fd128282ad599200034e882",
+		"sourceManifestSha256": "bddc27df1db4ec67a95077f699432b2c5ae720d66d1ce9316c4de8bf17215179"
 	}
 }

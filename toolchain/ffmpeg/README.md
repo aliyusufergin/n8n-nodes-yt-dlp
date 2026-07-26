@@ -24,8 +24,13 @@ It writes `REBUILD-EVIDENCE.json` beside the rebuilt executables. Persist that r
 `toolchain/ffmpeg/REBUILD-EVIDENCE.json`; the release gate binds it to the source inventory, binary
 asset, dependency Dockerfile, and pinned base image.
 The evidence also binds the rav1e offline-build patch.
+The output hashes from the completed clean rebuild are frozen in `FFMPEG-SOURCE-MANIFEST.json`; the
+release gate rejects a later evidence record whose rebuilt executables differ from those expected
+outputs, even when their version/configuration text matches.
 
 `SOURCE-INVENTORY.json` is the machine-readable source and digest index. `LINKED-LIBRARIES.json`
 maps the complete captured external linker input to its corresponding bundled source component.
+The gate hashes the sorted mapping keys and compares them with the captured linker-input digest, so
+removing an observed linker input makes the coverage check fail.
 Its toolchain-runtime section distinguishes GCC portions incorporated under the GCC Runtime Library
 Exception from host-provided dynamic libraries that are not part of the package.

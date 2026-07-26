@@ -192,6 +192,12 @@ async function verifyPackage({ allowPendingBundle = false } = {}) {
 	}
 	if (Object.keys(linkedLibraries.external).length === 0)
 		fail('The external linker inventory is empty.');
+	const externalLinkerInputsSha256 = sha256Bytes(
+		`${Object.keys(linkedLibraries.external).sort().join('\n')}\n`,
+	);
+	if (linkedLibraries.evidence.externalLinkerInputsSha256 !== externalLinkerInputsSha256) {
+		fail('The external linker inventory does not match the captured linker-input evidence.');
+	}
 	const runtime = linkedLibraries.toolchainRuntime;
 	if (
 		!isDeepStrictEqual(runtime.incorporated.libraries, ['atomic', 'gcc', 'gomp', 'stdc++']) ||
@@ -243,6 +249,11 @@ async function verifyPackage({ allowPendingBundle = false } = {}) {
 		)
 	) {
 		fail('The source bundle must use the immutable versioned release URL.');
+	}
+	for (const name of ['ffmpegSha256', 'ffprobeSha256']) {
+		if (!digestPattern.test(manifest.cleanRebuildOutputs?.[name] ?? '')) {
+			fail(`The expected clean-rebuild ${name} has not been frozen.`);
+		}
 	}
 
 	for (const expected of [
@@ -319,6 +330,7 @@ async function expectedEvidence(manifest, executionManifest) {
 			ffmpegConfigEvidenceSha256: sha256Bytes(versionEvidenceBytes(executionManifest, 'ffmpeg')),
 			ffprobeConfigEvidenceSha256: sha256Bytes(versionEvidenceBytes(executionManifest, 'ffprobe')),
 		},
+		expectedOutputs: manifest.cleanRebuildOutputs,
 	};
 }
 
@@ -348,6 +360,8 @@ async function verifyReleaseEvidence(manifest, executionManifest) {
 		!isDeepStrictEqual(rebuild.bindings, expected.rebuildBindings) ||
 		!digestPattern.test(rebuild.outputs?.ffmpegSha256) ||
 		!digestPattern.test(rebuild.outputs?.ffprobeSha256) ||
+		rebuild.outputs?.ffmpegSha256 !== expected.expectedOutputs.ffmpegSha256 ||
+		rebuild.outputs?.ffprobeSha256 !== expected.expectedOutputs.ffprobeSha256 ||
 		rebuild.outputs?.ffmpegConfigEvidenceSha256 !==
 			expected.expectedConfiguration.ffmpegConfigEvidenceSha256 ||
 		rebuild.outputs?.ffprobeConfigEvidenceSha256 !==

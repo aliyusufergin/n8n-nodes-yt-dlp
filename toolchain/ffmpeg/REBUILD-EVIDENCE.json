@@ -10,7 +10,7 @@
 		"dependencyDockerfileSha256": "c6dcf6ad867076a322ff0f179d37da30d7ecec689eec3cc7ce990ff502558b20",
 		"rav1ePatchSha256": "a83e8e2476c8123026c486113538271615311c62fcaa5dbbf5bf330f142bc1ee",
 		"rebuildScriptSha256": "b9a07c89afd715b6f83feaf7f3e296d4a8857b00de14982e718b88ed80c0d496",
-		"sourceInventorySha256": "ced7dff380098d0dacfba68ec371886162c2fac9762c61f42f7f5ea907f2e1f3"
+		"sourceInventorySha256": "dd8e8f5deb3717e7167623e14eaabcafe092410e854bf241b4f4b55919ec4995"
 	},
 	"outputs": {
 		"ffmpegSha256": "b5532ca4ce06bef2fce593e89cd6bcb2be5fa89db6fa91e876b1c16c613502b1",

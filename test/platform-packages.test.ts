@@ -403,12 +403,14 @@ describe('published Platform Gate packages', () => {
 		const sourceManifest = JSON.parse(
 			await readFile(join(packageRoot, 'FFMPEG-SOURCE-MANIFEST.json'), 'utf8'),
 		) as {
+			cleanRebuildOutputs: { ffmpegSha256: string; ffprobeSha256: string };
 			manualReview: { path: string; requiredStatus: string };
 			sourceArchives: Array<{
 				cargoPackages?: Array<{
 					license: string;
 					licenseFiles: string[];
 					name: string;
+					sourcePath: string;
 					version: string;
 				}>;
 				cargoVendor?: { configSha256: string; lockSha256: string; packageCount: number };
@@ -442,9 +444,17 @@ describe('published Platform Gate packages', () => {
 			expect(cargoPackage).toMatchObject({
 				license: expect.any(String),
 				name: expect.any(String),
+				sourcePath: expect.stringMatching(/^\.\/vendor\/[^/]+$/u),
 				version: expect.any(String),
 			});
 			expect(cargoPackage.licenseFiles.length).toBeGreaterThan(0);
+			expect(
+				cargoPackage.licenseFiles.every((path) =>
+					path.startsWith(
+						`LICENSES/ffmpeg-static/50-rav1e/${cargoPackage.sourcePath.slice(2)}/`,
+					),
+				),
+			).toBe(true);
 		}
 		const freetypeSources = sourceManifest.sourceArchives.filter(({ name }) =>
 			/^(?:25|50)-freetype_/u.test(name),
@@ -466,6 +476,10 @@ describe('published Platform Gate packages', () => {
 		expect(sourceManifest.manualReview).toEqual({
 			path: 'toolchain/ffmpeg/LICENSE-REVIEW.json',
 			requiredStatus: 'approved',
+		});
+		expect(sourceManifest.cleanRebuildOutputs).toEqual({
+			ffmpegSha256: 'b5532ca4ce06bef2fce593e89cd6bcb2be5fa89db6fa91e876b1c16c613502b1',
+			ffprobeSha256: 'e6b5e3496cd160152898de6e86b4689fa6f2630ed7903725c50a5de3b7eeae3f',
 		});
 	});
 

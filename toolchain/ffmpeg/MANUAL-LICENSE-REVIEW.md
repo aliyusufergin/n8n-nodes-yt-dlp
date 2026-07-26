@@ -8,9 +8,9 @@
 
 The reviewed build enables GPL and version 3, disables the nonfree FDK AAC integration, and ships
 the FFmpeg GPLv3 text. The complete captured linker inventory is mapped to the 109 exact dependency
-source archives in `LINKED-LIBRARIES.json`; the platform package preserves 895 verbatim license,
-notice, and license-header materials extracted from those archives. The FreeType inventories also
-pin and preserve the license for their `dlg` submodule. The rav1e inventory includes
+source archives in `LINKED-LIBRARIES.json`; the platform package preserves 1,167 license texts,
+notices, license headers, and Cargo license declarations extracted from those archives. The FreeType
+inventories also pin and preserve the license for their `dlg` submodule. The rav1e inventory includes
 all 272 locked Cargo packages with their name, version, SPDX expression, source path, and mapped
 license texts.
 

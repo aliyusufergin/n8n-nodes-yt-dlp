@@ -12,6 +12,10 @@
 		"baseImage": "ghcr.io/yt-dlp/ffmpeg-builds/base-linux64@sha256:2d1b4af9d22653e1fa430b7cabd36f616bebbd6c1a1f93242008f3f6869e57cf",
 		"dependencyImage": "ghcr.io/yt-dlp/ffmpeg-builds/linux64-gpl@sha256:59abf3d43b3ae3acc15c2d3a04e9fc3c863292d38c233d878ef7070696a9c6c5"
 	},
+	"cleanRebuildOutputs": {
+		"ffmpegSha256": "b5532ca4ce06bef2fce593e89cd6bcb2be5fa89db6fa91e876b1c16c613502b1",
+		"ffprobeSha256": "e6b5e3496cd160152898de6e86b4689fa6f2630ed7903725c50a5de3b7eeae3f"
+	},
 	"manualReview": {
 		"path": "toolchain/ffmpeg/LICENSE-REVIEW.json",
 		"requiredStatus": "approved"
@@ -859,201 +863,313 @@
 				"LICENSES/ffmpeg-static/50-rav1e/PATENTS",
 				"LICENSES/ffmpeg-static/50-rav1e/ivf/LICENSE",
 				"LICENSES/ffmpeg-static/50-rav1e/license_template.txt",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/adler2/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/adler2/LICENSE-0BSD",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/adler2/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/adler2/LICENSE-MIT",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/aho-corasick/COPYING",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/aho-corasick/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/aho-corasick/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/aligned-vec/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/aligned-vec/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/aligned/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/aligned/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/aligned/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/anes/Cargo.toml",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstream/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstream/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstream/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-parse/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-parse/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-parse/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-query/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-query/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-query/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-wincon/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-wincon/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-wincon/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/anyhow/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/anyhow/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/anyhow/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/aom-sys/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/aom-sys/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/arbitrary/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/arbitrary/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/arbitrary/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/arg_enum_proc_macro/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/arg_enum_proc_macro/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/arrayvec/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/arrayvec/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/arrayvec/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/as-slice/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/as-slice/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/as-slice/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/assert_cmd/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/assert_cmd/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/assert_cmd/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/autocfg/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/autocfg/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/autocfg/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/av-metrics/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/av-metrics/src/video/ciede/delta_e/LICENSE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/av-metrics/src/video/ciede/rgbtolab/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/av-scenechange/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/av-scenechange/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/av1-grain/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/av1-grain/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/backtrace/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/backtrace/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/backtrace/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bindgen/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/bindgen/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bitflags-1.3.2/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/bitflags-1.3.2/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/bitflags-1.3.2/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bitflags/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/bitflags/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/bitflags/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bitstream-io/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/bitstream-io/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/bitstream-io/LICENSE-MIT",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/bstr/COPYING",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bstr/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/bstr/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/bstr/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/built/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/built/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bumpalo/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/bumpalo/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/bumpalo/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bytemuck/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/bytemuck/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/bytemuck/LICENSE-MIT",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/bytemuck/LICENSE-ZLIB",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/byteorder-lite/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/byteorder-lite/LICENSE-MIT",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/byteorder/COPYING",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/byteorder/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/byteorder/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/cast/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/cast/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/cast/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/cc/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/cc/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/cc/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/cexpr/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/cexpr/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/cexpr/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/cfg-expr/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/cfg-expr/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/cfg-expr/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/cfg-if/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/cfg-if/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/cfg-if/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/ciborium-io/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/ciborium-io/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/ciborium-ll/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/ciborium-ll/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/ciborium/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/ciborium/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/clang-sys/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/clang-sys/LICENSE.txt",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_builder/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_builder/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_builder/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_complete/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_complete/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_complete/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_derive/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_derive/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_derive/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_lex/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_lex/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_lex/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/colorchoice/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/colorchoice/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/colorchoice/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/console/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/console/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/core2/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/core2/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/core2/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crc32fast/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/crc32fast/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/crc32fast/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/criterion-plot/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/criterion-plot/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/criterion-plot/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/criterion/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/criterion/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/criterion/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-channel/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-channel/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-channel/LICENSE-MIT",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-channel/LICENSE-THIRD-PARTY",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-deque/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-deque/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-deque/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-epoch/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-epoch/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-epoch/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-queue/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-queue/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-queue/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-utils/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-utils/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-utils/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crunchy/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/crunchy/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/diff/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/diff/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/diff/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/difflib/Cargo.toml",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/displaydoc/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/displaydoc/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/displaydoc/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/doc-comment/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/doc-comment/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/either/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/either/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/either/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/encode_unicode/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/encode_unicode/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/encode_unicode/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/env_logger/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/env_logger/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/env_logger/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/equator-macro/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/equator-macro/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/equator/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/equator/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/equivalent/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/equivalent/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/equivalent/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/errno/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/errno/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/errno/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/fdeflate/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/fdeflate/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/fdeflate/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/fern/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/fern/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/find-msvc-tools/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/find-msvc-tools/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/find-msvc-tools/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/flate2/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/flate2/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/flate2/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/form_urlencoded/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/form_urlencoded/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/form_urlencoded/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/getrandom-0.2.16/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/getrandom-0.2.16/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/getrandom-0.2.16/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/getrandom/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/getrandom/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/getrandom/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/gimli/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/gimli/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/gimli/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/git2/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/git2/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/git2/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/glob/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/glob/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/glob/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/half/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/half/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/half/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/hashbrown/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/hashbrown/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/hashbrown/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/heck/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/heck/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/heck/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/home/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/home/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/home/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_collections/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_collections/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_locale_core/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_locale_core/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_normalizer/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_normalizer/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_normalizer_data/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_normalizer_data/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_properties/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_properties/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_properties_data/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_properties_data/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_provider/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_provider/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/idna/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/idna/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/idna/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/idna_adapter/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/idna_adapter/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/idna_adapter/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/image/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/image/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/image/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/indexmap/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/indexmap/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/indexmap/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/interpolate_name/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/interpolate_name/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/is_terminal_polyfill/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/is_terminal_polyfill/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/is_terminal_polyfill/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.10.5/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.10.5/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.10.5/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.12.1/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.12.1/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.12.1/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.13.0/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.13.0/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.13.0/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/itoa/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/itoa/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/itoa/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/jobserver/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/jobserver/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/jobserver/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/js-sys/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/js-sys/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/js-sys/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/lab/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/lab/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/lazy_static/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/lazy_static/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/lazy_static/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/lazycell/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/lazycell/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/lazycell/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libc/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/libc/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/libc/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libdav1d-sys/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/libdav1d-sys/vendor/COPYING",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/libdav1d-sys/vendor/doc/PATENTS",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libfuzzer-sys/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/libfuzzer-sys/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/libfuzzer-sys/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/LICENSE-MIT",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/COPYING",
@@ -1064,297 +1180,457 @@
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/deps/winhttp/COPYING.GPL",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/deps/winhttp/COPYING.LGPL",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/deps/zlib/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libloading/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/libloading/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libz-sys/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/libz-sys/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/libz-sys/LICENSE-MIT",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/libz-sys/src/zlib-ng/LICENSE.md",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/libz-sys/src/zlib/LICENSE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/libz-sys/src/zlib/contrib/dotzlib/LICENSE_1_0.txt",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys-0.4.15/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys-0.4.15/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys-0.4.15/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys-0.4.15/LICENSE-Apache-2.0_WITH_LLVM-exception",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys-0.4.15/LICENSE-MIT",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys/LICENSE-Apache-2.0_WITH_LLVM-exception",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/litemap/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/litemap/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/log/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/log/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/log/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/maybe-rayon/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/maybe-rayon/LICENSE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/memchr/COPYING",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/memchr/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/memchr/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/minimal-lexical/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/minimal-lexical/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/minimal-lexical/LICENSE-MIT",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/minimal-lexical/LICENSE.md",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/miniz_oxide/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/miniz_oxide/LICENSE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/miniz_oxide/LICENSE-APACHE.md",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/miniz_oxide/LICENSE-MIT.md",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/miniz_oxide/LICENSE-ZLIB.md",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/nasm-rs/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/nasm-rs/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/nasm-rs/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/new_debug_unreachable/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/new_debug_unreachable/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/nom-7.1.3/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/nom-7.1.3/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/nom/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/nom/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/noop_proc_macro/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/noop_proc_macro/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/nu-ansi-term/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/nu-ansi-term/LICENCE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-bigint/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-bigint/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-bigint/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-derive/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-derive/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-derive/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-integer/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-integer/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-integer/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-rational/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-rational/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-rational/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-traits/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-traits/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-traits/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/object/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/object/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/object/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/once_cell/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/once_cell/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/once_cell/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/once_cell_polyfill/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/once_cell_polyfill/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/once_cell_polyfill/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/oorandom/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/oorandom/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/overload/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/overload/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/pastey/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/pastey/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/pastey/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/percent-encoding/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/percent-encoding/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/percent-encoding/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/pin-project-lite/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/pin-project-lite/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/pin-project-lite/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/pkg-config/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/pkg-config/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/pkg-config/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/plotters-backend/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/plotters-backend/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/plotters-svg/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/plotters-svg/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/plotters/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/plotters/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/png/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/png/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/png/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/potential_utf/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/potential_utf/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/ppv-lite86/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/ppv-lite86/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/ppv-lite86/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates-core/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates-core/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates-core/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates-tree/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates-tree/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates-tree/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/pretty_assertions/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/pretty_assertions/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/pretty_assertions/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/prettyplease/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/prettyplease/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/prettyplease/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/proc-macro2/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/proc-macro2/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/proc-macro2/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/profiling-procmacros/Cargo.toml",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/profiling/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/quickcheck/COPYING",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/quickcheck/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/quickcheck/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/quote/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/quote/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/quote/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/r-efi/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand-0.8.5/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand-0.8.5/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand-0.8.5/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand-0.8.5/LICENSE-MIT",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand/LICENSE-MIT",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_chacha/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_chacha/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_chacha/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_chacha/LICENSE-MIT",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core-0.6.4/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core-0.6.4/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core-0.6.4/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core-0.6.4/LICENSE-MIT",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rayon-core/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rayon-core/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rayon-core/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rayon/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rayon/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rayon/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-automata/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-automata/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-automata/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-syntax/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-syntax/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-syntax/LICENSE-MIT",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-syntax/src/unicode_tables/LICENSE-UNICODE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/regex/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/regex/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/regex/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustc-demangle/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustc-demangle/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustc-demangle/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustc-hash/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustc-hash/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustc-hash/LICENSE-MIT",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix-0.38.44/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix-0.38.44/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix-0.38.44/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix-0.38.44/LICENSE-Apache-2.0_WITH_LLVM-exception",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix-0.38.44/LICENSE-MIT",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix/LICENSE-Apache-2.0_WITH_LLVM-exception",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustversion/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustversion/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustversion/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/ryu/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/ryu/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/ryu/LICENSE-BOOST",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/same-file/COPYING",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/same-file/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/same-file/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/scan_fmt/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/scan_fmt/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/semver/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/semver/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/semver/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde-big-array/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde-big-array/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde-big-array/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_derive/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_derive/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_derive/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_json/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_json/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_json/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_spanned/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_spanned/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_spanned/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/sharded-slab/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/sharded-slab/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/shlex-1.3.0/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/shlex-1.3.0/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/shlex-1.3.0/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/shlex/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/shlex/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/shlex/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/signal-hook-registry/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/signal-hook-registry/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/signal-hook-registry/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/signal-hook/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/signal-hook/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/signal-hook/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/simd-adler32/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/simd-adler32/LICENSE.md",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/simd_helpers/Cargo.toml",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/smallvec/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/smallvec/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/smallvec/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/stable_deref_trait/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/stable_deref_trait/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/stable_deref_trait/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/syn/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/syn/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/syn/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/synstructure/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/synstructure/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/system-deps/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/system-deps/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/system-deps/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/target-lexicon/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/target-lexicon/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/terminal_size/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/terminal_size/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/terminal_size/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/termtree/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/termtree/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-1.0.69/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-1.0.69/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-1.0.69/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-impl-1.0.69/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-impl-1.0.69/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-impl-1.0.69/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-impl/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-impl/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-impl/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/thread_local/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/thread_local/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/thread_local/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/tinystr/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/tinystr/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/tinytemplate/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/tinytemplate/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/tinytemplate/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/toml/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/toml/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/toml/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_datetime/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_datetime/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_datetime/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_edit/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_edit/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_edit/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_write/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_write/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_write/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-attributes/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-attributes/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-chrome/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-chrome/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-core/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-core/LICENSE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-core/src/spin/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-log/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-log/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-subscriber/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-subscriber/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-ident/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-ident/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-ident/LICENSE-MIT",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-ident/LICENSE-UNICODE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-width/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-width/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-width/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-width/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/url/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/url/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/url/LICENSE-MIT",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8_iter/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8_iter/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8_iter/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8_iter/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8parse/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8parse/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8parse/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/v_frame/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/v_frame/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/valuable/Cargo.toml",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/vcpkg/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/vcpkg/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/vcpkg/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/version-compare/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/version-compare/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wait-timeout/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/wait-timeout/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/wait-timeout/LICENSE-MIT",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/walkdir/COPYING",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/walkdir/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/walkdir/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi-0.11.1+wasi-snapshot-preview1/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi-0.11.1+wasi-snapshot-preview1/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi-0.11.1+wasi-snapshot-preview1/LICENSE-Apache-2.0_WITH_LLVM-exception",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi-0.11.1+wasi-snapshot-preview1/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi/LICENSE-Apache-2.0_WITH_LLVM-exception",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-backend/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-backend/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-backend/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-macro-support/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-macro-support/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-macro-support/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-macro/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-macro/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-macro/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-shared/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-shared/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-shared/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/web-sys/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/web-sys/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/web-sys/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/which/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/which/LICENSE.txt",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi-i686-pc-windows-gnu/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi-util/COPYING",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi-util/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi-util/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi-x86_64-pc-windows-gnu/Cargo.toml",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-sys/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-sys/license-apache-2.0",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-sys/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-targets-0.52.6/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-targets-0.52.6/license-apache-2.0",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-targets-0.52.6/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-targets/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-targets/license-apache-2.0",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-targets/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_gnullvm-0.52.6/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_gnullvm-0.52.6/license-apache-2.0",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_gnullvm-0.52.6/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_gnullvm/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_gnullvm/license-apache-2.0",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_gnullvm/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_msvc-0.52.6/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_msvc-0.52.6/license-apache-2.0",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_msvc-0.52.6/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_msvc/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_msvc/license-apache-2.0",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_msvc/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnu-0.52.6/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnu-0.52.6/license-apache-2.0",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnu-0.52.6/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnu/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnu/license-apache-2.0",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnu/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnullvm-0.52.6/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnullvm-0.52.6/license-apache-2.0",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnullvm-0.52.6/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnullvm/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnullvm/license-apache-2.0",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnullvm/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_msvc-0.52.6/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_msvc-0.52.6/license-apache-2.0",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_msvc-0.52.6/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_msvc/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_msvc/license-apache-2.0",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_msvc/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnu-0.52.6/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnu-0.52.6/license-apache-2.0",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnu-0.52.6/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnu/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnu/license-apache-2.0",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnu/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnullvm-0.52.6/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnullvm-0.52.6/license-apache-2.0",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnullvm-0.52.6/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnullvm/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnullvm/license-apache-2.0",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnullvm/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_msvc-0.52.6/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_msvc-0.52.6/license-apache-2.0",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_msvc-0.52.6/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_msvc/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_msvc/license-apache-2.0",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_msvc/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/winnow/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/winnow/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wit-bindgen-rt/Cargo.toml",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/writeable/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/writeable/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/y4m/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/y4m/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/yansi/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/yansi/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/yansi/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/yoke-derive/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/yoke-derive/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/yoke/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/yoke/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy-derive/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy-derive/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy-derive/LICENSE-BSD",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy-derive/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy/LICENSE-APACHE",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy/LICENSE-BSD",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerofrom-derive/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerofrom-derive/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerofrom/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerofrom/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerotrie/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerotrie/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerovec-derive/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerovec-derive/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerovec/Cargo.toml",
 				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerovec/LICENSE"
 			],
 			"name": "50-rav1e_0bba6aa8bbb91a3da33c9abb3e5b2e3abf0be7cd29c2f3fa395689cf0a082e9d.tar.xz",
@@ -1371,6 +1647,7 @@
 					"sourcePath": "./vendor/addr2line",
 					"version": "0.24.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT"
 					]
@@ -1381,6 +1658,7 @@
 					"sourcePath": "./vendor/adler2",
 					"version": "2.0.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/adler2/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/adler2/LICENSE-0BSD",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/adler2/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/adler2/LICENSE-MIT"
@@ -1393,6 +1671,7 @@
 					"version": "1.1.3",
 					"licenseFiles": [
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/aho-corasick/COPYING",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/aho-corasick/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/aho-corasick/LICENSE-MIT"
 					]
 				},
@@ -1402,6 +1681,7 @@
 					"sourcePath": "./vendor/aligned",
 					"version": "0.4.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/aligned/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/aligned/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/aligned/LICENSE-MIT"
 					]
@@ -1412,6 +1692,7 @@
 					"sourcePath": "./vendor/aligned-vec",
 					"version": "0.6.4",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/aligned-vec/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/aligned-vec/LICENSE"
 					]
 				},
@@ -1421,8 +1702,7 @@
 					"sourcePath": "./vendor/anes",
 					"version": "0.1.6",
 					"licenseFiles": [
-						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT",
-						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-APACHE"
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/anes/Cargo.toml"
 					]
 				},
 				{
@@ -1431,6 +1711,7 @@
 					"sourcePath": "./vendor/anstream",
 					"version": "0.6.19",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstream/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstream/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstream/LICENSE-MIT"
 					]
@@ -1441,6 +1722,7 @@
 					"sourcePath": "./vendor/anstyle",
 					"version": "1.0.11",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle/LICENSE-MIT"
 					]
@@ -1451,6 +1733,7 @@
 					"sourcePath": "./vendor/anstyle-parse",
 					"version": "0.2.7",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-parse/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-parse/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-parse/LICENSE-MIT"
 					]
@@ -1461,6 +1744,7 @@
 					"sourcePath": "./vendor/anstyle-query",
 					"version": "1.1.3",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-query/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-query/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-query/LICENSE-MIT"
 					]
@@ -1471,6 +1755,7 @@
 					"sourcePath": "./vendor/anstyle-wincon",
 					"version": "3.0.9",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-wincon/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-wincon/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-wincon/LICENSE-MIT"
 					]
@@ -1481,6 +1766,7 @@
 					"sourcePath": "./vendor/anyhow",
 					"version": "1.0.98",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/anyhow/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/anyhow/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/anyhow/LICENSE-MIT"
 					]
@@ -1491,6 +1777,7 @@
 					"sourcePath": "./vendor/aom-sys",
 					"version": "0.3.3",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/aom-sys/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/aom-sys/LICENSE"
 					]
 				},
@@ -1500,6 +1787,7 @@
 					"sourcePath": "./vendor/arbitrary",
 					"version": "1.4.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/arbitrary/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/arbitrary/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/arbitrary/LICENSE-MIT"
 					]
@@ -1510,6 +1798,7 @@
 					"sourcePath": "./vendor/arg_enum_proc_macro",
 					"version": "0.3.4",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/arg_enum_proc_macro/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/arg_enum_proc_macro/LICENSE"
 					]
 				},
@@ -1519,6 +1808,7 @@
 					"sourcePath": "./vendor/arrayvec",
 					"version": "0.7.6",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/arrayvec/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/arrayvec/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/arrayvec/LICENSE-MIT"
 					]
@@ -1529,6 +1819,7 @@
 					"sourcePath": "./vendor/as-slice",
 					"version": "0.2.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/as-slice/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/as-slice/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/as-slice/LICENSE-MIT"
 					]
@@ -1539,6 +1830,7 @@
 					"sourcePath": "./vendor/assert_cmd",
 					"version": "2.0.17",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/assert_cmd/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/assert_cmd/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/assert_cmd/LICENSE-MIT"
 					]
@@ -1549,6 +1841,7 @@
 					"sourcePath": "./vendor/autocfg",
 					"version": "1.4.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/autocfg/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/autocfg/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/autocfg/LICENSE-MIT"
 					]
@@ -1559,6 +1852,7 @@
 					"sourcePath": "./vendor/av-metrics",
 					"version": "0.9.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/av-metrics/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/av-metrics/src/video/ciede/delta_e/LICENSE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/av-metrics/src/video/ciede/rgbtolab/LICENSE"
 					]
@@ -1569,6 +1863,7 @@
 					"sourcePath": "./vendor/av-scenechange",
 					"version": "0.14.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/av-scenechange/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/av-scenechange/LICENSE"
 					]
 				},
@@ -1578,6 +1873,7 @@
 					"sourcePath": "./vendor/av1-grain",
 					"version": "0.2.4",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/av1-grain/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/av1-grain/LICENSE"
 					]
 				},
@@ -1587,6 +1883,7 @@
 					"sourcePath": "./vendor/backtrace",
 					"version": "0.3.75",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/backtrace/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/backtrace/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/backtrace/LICENSE-MIT"
 					]
@@ -1597,6 +1894,7 @@
 					"sourcePath": "./vendor/bindgen",
 					"version": "0.69.5",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bindgen/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/bindgen/LICENSE"
 					]
 				},
@@ -1606,6 +1904,7 @@
 					"sourcePath": "./vendor/bitflags",
 					"version": "2.9.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bitflags/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/bitflags/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/bitflags/LICENSE-MIT"
 					]
@@ -1616,6 +1915,7 @@
 					"sourcePath": "./vendor/bitflags-1.3.2",
 					"version": "1.3.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bitflags-1.3.2/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/bitflags-1.3.2/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/bitflags-1.3.2/LICENSE-MIT"
 					]
@@ -1626,6 +1926,7 @@
 					"sourcePath": "./vendor/bitstream-io",
 					"version": "4.2.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bitstream-io/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/bitstream-io/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/bitstream-io/LICENSE-MIT"
 					]
@@ -1637,6 +1938,7 @@
 					"version": "1.12.0",
 					"licenseFiles": [
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/bstr/COPYING",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bstr/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/bstr/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/bstr/LICENSE-MIT"
 					]
@@ -1647,6 +1949,7 @@
 					"sourcePath": "./vendor/built",
 					"version": "0.8.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/built/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/built/LICENSE"
 					]
 				},
@@ -1656,6 +1959,7 @@
 					"sourcePath": "./vendor/bumpalo",
 					"version": "3.18.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bumpalo/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/bumpalo/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/bumpalo/LICENSE-MIT"
 					]
@@ -1666,6 +1970,7 @@
 					"sourcePath": "./vendor/bytemuck",
 					"version": "1.23.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bytemuck/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/bytemuck/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/bytemuck/LICENSE-MIT",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/bytemuck/LICENSE-ZLIB"
@@ -1678,6 +1983,7 @@
 					"version": "1.5.0",
 					"licenseFiles": [
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/byteorder/COPYING",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/byteorder/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/byteorder/LICENSE-MIT"
 					]
 				},
@@ -1687,6 +1993,7 @@
 					"sourcePath": "./vendor/byteorder-lite",
 					"version": "0.1.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/byteorder-lite/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/byteorder-lite/LICENSE-MIT"
 					]
 				},
@@ -1696,6 +2003,7 @@
 					"sourcePath": "./vendor/cast",
 					"version": "0.3.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/cast/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/cast/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/cast/LICENSE-MIT"
 					]
@@ -1706,6 +2014,7 @@
 					"sourcePath": "./vendor/cc",
 					"version": "1.3.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/cc/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/cc/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/cc/LICENSE-MIT"
 					]
@@ -1716,6 +2025,7 @@
 					"sourcePath": "./vendor/cexpr",
 					"version": "0.6.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/cexpr/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/cexpr/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/cexpr/LICENSE-MIT"
 					]
@@ -1726,6 +2036,7 @@
 					"sourcePath": "./vendor/cfg-expr",
 					"version": "0.15.8",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/cfg-expr/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/cfg-expr/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/cfg-expr/LICENSE-MIT"
 					]
@@ -1736,6 +2047,7 @@
 					"sourcePath": "./vendor/cfg-if",
 					"version": "1.0.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/cfg-if/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/cfg-if/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/cfg-if/LICENSE-MIT"
 					]
@@ -1746,6 +2058,7 @@
 					"sourcePath": "./vendor/ciborium",
 					"version": "0.2.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/ciborium/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/ciborium/LICENSE"
 					]
 				},
@@ -1755,6 +2068,7 @@
 					"sourcePath": "./vendor/ciborium-io",
 					"version": "0.2.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/ciborium-io/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/ciborium-io/LICENSE"
 					]
 				},
@@ -1764,6 +2078,7 @@
 					"sourcePath": "./vendor/ciborium-ll",
 					"version": "0.2.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/ciborium-ll/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/ciborium-ll/LICENSE"
 					]
 				},
@@ -1773,6 +2088,7 @@
 					"sourcePath": "./vendor/clang-sys",
 					"version": "1.8.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/clang-sys/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/clang-sys/LICENSE.txt"
 					]
 				},
@@ -1782,6 +2098,7 @@
 					"sourcePath": "./vendor/clap",
 					"version": "4.5.40",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap/LICENSE-MIT"
 					]
@@ -1792,6 +2109,7 @@
 					"sourcePath": "./vendor/clap_builder",
 					"version": "4.5.40",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_builder/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_builder/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_builder/LICENSE-MIT"
 					]
@@ -1802,6 +2120,7 @@
 					"sourcePath": "./vendor/clap_complete",
 					"version": "4.5.54",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_complete/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_complete/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_complete/LICENSE-MIT"
 					]
@@ -1812,6 +2131,7 @@
 					"sourcePath": "./vendor/clap_derive",
 					"version": "4.5.40",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_derive/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_derive/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_derive/LICENSE-MIT"
 					]
@@ -1822,6 +2142,7 @@
 					"sourcePath": "./vendor/clap_lex",
 					"version": "0.7.5",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_lex/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_lex/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_lex/LICENSE-MIT"
 					]
@@ -1832,6 +2153,7 @@
 					"sourcePath": "./vendor/colorchoice",
 					"version": "1.0.4",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/colorchoice/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/colorchoice/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/colorchoice/LICENSE-MIT"
 					]
@@ -1842,6 +2164,7 @@
 					"sourcePath": "./vendor/console",
 					"version": "0.15.11",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/console/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/console/LICENSE"
 					]
 				},
@@ -1851,6 +2174,7 @@
 					"sourcePath": "./vendor/core2",
 					"version": "0.4.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/core2/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/core2/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/core2/LICENSE-MIT"
 					]
@@ -1861,6 +2185,7 @@
 					"sourcePath": "./vendor/crc32fast",
 					"version": "1.4.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crc32fast/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/crc32fast/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/crc32fast/LICENSE-MIT"
 					]
@@ -1871,6 +2196,7 @@
 					"sourcePath": "./vendor/criterion",
 					"version": "0.6.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/criterion/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/criterion/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/criterion/LICENSE-MIT"
 					]
@@ -1881,6 +2207,7 @@
 					"sourcePath": "./vendor/criterion-plot",
 					"version": "0.5.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/criterion-plot/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/criterion-plot/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/criterion-plot/LICENSE-MIT"
 					]
@@ -1891,6 +2218,7 @@
 					"sourcePath": "./vendor/crossbeam",
 					"version": "0.8.4",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam/LICENSE-MIT"
 					]
@@ -1901,6 +2229,7 @@
 					"sourcePath": "./vendor/crossbeam-channel",
 					"version": "0.5.15",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-channel/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-channel/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-channel/LICENSE-MIT",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-channel/LICENSE-THIRD-PARTY"
@@ -1912,6 +2241,7 @@
 					"sourcePath": "./vendor/crossbeam-deque",
 					"version": "0.8.6",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-deque/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-deque/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-deque/LICENSE-MIT"
 					]
@@ -1922,6 +2252,7 @@
 					"sourcePath": "./vendor/crossbeam-epoch",
 					"version": "0.9.18",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-epoch/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-epoch/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-epoch/LICENSE-MIT"
 					]
@@ -1932,6 +2263,7 @@
 					"sourcePath": "./vendor/crossbeam-queue",
 					"version": "0.3.12",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-queue/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-queue/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-queue/LICENSE-MIT"
 					]
@@ -1942,6 +2274,7 @@
 					"sourcePath": "./vendor/crossbeam-utils",
 					"version": "0.8.21",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-utils/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-utils/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-utils/LICENSE-MIT"
 					]
@@ -1952,6 +2285,7 @@
 					"sourcePath": "./vendor/crunchy",
 					"version": "0.2.3",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crunchy/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/crunchy/LICENSE"
 					]
 				},
@@ -1961,6 +2295,7 @@
 					"sourcePath": "./vendor/diff",
 					"version": "0.1.13",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/diff/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/diff/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/diff/LICENSE-MIT"
 					]
@@ -1971,7 +2306,7 @@
 					"sourcePath": "./vendor/difflib",
 					"version": "0.4.0",
 					"licenseFiles": [
-						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT"
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/difflib/Cargo.toml"
 					]
 				},
 				{
@@ -1980,6 +2315,7 @@
 					"sourcePath": "./vendor/displaydoc",
 					"version": "0.2.5",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/displaydoc/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/displaydoc/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/displaydoc/LICENSE-MIT"
 					]
@@ -1990,6 +2326,7 @@
 					"sourcePath": "./vendor/doc-comment",
 					"version": "0.3.3",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/doc-comment/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/doc-comment/LICENSE"
 					]
 				},
@@ -1999,6 +2336,7 @@
 					"sourcePath": "./vendor/either",
 					"version": "1.15.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/either/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/either/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/either/LICENSE-MIT"
 					]
@@ -2009,6 +2347,7 @@
 					"sourcePath": "./vendor/encode_unicode",
 					"version": "1.0.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/encode_unicode/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/encode_unicode/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/encode_unicode/LICENSE-MIT"
 					]
@@ -2019,6 +2358,7 @@
 					"sourcePath": "./vendor/env_logger",
 					"version": "0.8.4",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/env_logger/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/env_logger/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/env_logger/LICENSE-MIT"
 					]
@@ -2029,6 +2369,7 @@
 					"sourcePath": "./vendor/equator",
 					"version": "0.4.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/equator/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/equator/LICENSE"
 					]
 				},
@@ -2038,6 +2379,7 @@
 					"sourcePath": "./vendor/equator-macro",
 					"version": "0.4.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/equator-macro/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/equator-macro/LICENSE"
 					]
 				},
@@ -2047,6 +2389,7 @@
 					"sourcePath": "./vendor/equivalent",
 					"version": "1.0.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/equivalent/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/equivalent/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/equivalent/LICENSE-MIT"
 					]
@@ -2057,6 +2400,7 @@
 					"sourcePath": "./vendor/errno",
 					"version": "0.3.12",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/errno/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/errno/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/errno/LICENSE-MIT"
 					]
@@ -2067,6 +2411,7 @@
 					"sourcePath": "./vendor/fdeflate",
 					"version": "0.3.7",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/fdeflate/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/fdeflate/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/fdeflate/LICENSE-MIT"
 					]
@@ -2077,6 +2422,7 @@
 					"sourcePath": "./vendor/fern",
 					"version": "0.7.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/fern/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/fern/LICENSE"
 					]
 				},
@@ -2086,6 +2432,7 @@
 					"sourcePath": "./vendor/find-msvc-tools",
 					"version": "0.1.9",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/find-msvc-tools/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/find-msvc-tools/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/find-msvc-tools/LICENSE-MIT"
 					]
@@ -2096,6 +2443,7 @@
 					"sourcePath": "./vendor/flate2",
 					"version": "1.1.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/flate2/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/flate2/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/flate2/LICENSE-MIT"
 					]
@@ -2106,6 +2454,7 @@
 					"sourcePath": "./vendor/form_urlencoded",
 					"version": "1.2.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/form_urlencoded/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/form_urlencoded/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/form_urlencoded/LICENSE-MIT"
 					]
@@ -2116,6 +2465,7 @@
 					"sourcePath": "./vendor/getrandom",
 					"version": "0.3.3",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/getrandom/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/getrandom/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/getrandom/LICENSE-MIT"
 					]
@@ -2126,6 +2476,7 @@
 					"sourcePath": "./vendor/getrandom-0.2.16",
 					"version": "0.2.16",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/getrandom-0.2.16/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/getrandom-0.2.16/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/getrandom-0.2.16/LICENSE-MIT"
 					]
@@ -2136,6 +2487,7 @@
 					"sourcePath": "./vendor/gimli",
 					"version": "0.31.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/gimli/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/gimli/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/gimli/LICENSE-MIT"
 					]
@@ -2146,6 +2498,7 @@
 					"sourcePath": "./vendor/git2",
 					"version": "0.20.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/git2/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/git2/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/git2/LICENSE-MIT"
 					]
@@ -2156,6 +2509,7 @@
 					"sourcePath": "./vendor/glob",
 					"version": "0.3.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/glob/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/glob/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/glob/LICENSE-MIT"
 					]
@@ -2166,6 +2520,7 @@
 					"sourcePath": "./vendor/half",
 					"version": "2.6.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/half/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/half/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/half/LICENSE-MIT"
 					]
@@ -2176,6 +2531,7 @@
 					"sourcePath": "./vendor/hashbrown",
 					"version": "0.15.4",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/hashbrown/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/hashbrown/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/hashbrown/LICENSE-MIT"
 					]
@@ -2186,6 +2542,7 @@
 					"sourcePath": "./vendor/heck",
 					"version": "0.5.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/heck/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/heck/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/heck/LICENSE-MIT"
 					]
@@ -2196,6 +2553,7 @@
 					"sourcePath": "./vendor/home",
 					"version": "0.5.11",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/home/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/home/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/home/LICENSE-MIT"
 					]
@@ -2206,6 +2564,7 @@
 					"sourcePath": "./vendor/icu_collections",
 					"version": "2.0.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_collections/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_collections/LICENSE"
 					]
 				},
@@ -2215,6 +2574,7 @@
 					"sourcePath": "./vendor/icu_locale_core",
 					"version": "2.0.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_locale_core/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_locale_core/LICENSE"
 					]
 				},
@@ -2224,6 +2584,7 @@
 					"sourcePath": "./vendor/icu_normalizer",
 					"version": "2.0.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_normalizer/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_normalizer/LICENSE"
 					]
 				},
@@ -2233,6 +2594,7 @@
 					"sourcePath": "./vendor/icu_normalizer_data",
 					"version": "2.0.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_normalizer_data/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_normalizer_data/LICENSE"
 					]
 				},
@@ -2242,6 +2604,7 @@
 					"sourcePath": "./vendor/icu_properties",
 					"version": "2.0.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_properties/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_properties/LICENSE"
 					]
 				},
@@ -2251,6 +2614,7 @@
 					"sourcePath": "./vendor/icu_properties_data",
 					"version": "2.0.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_properties_data/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_properties_data/LICENSE"
 					]
 				},
@@ -2260,6 +2624,7 @@
 					"sourcePath": "./vendor/icu_provider",
 					"version": "2.0.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_provider/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_provider/LICENSE"
 					]
 				},
@@ -2269,6 +2634,7 @@
 					"sourcePath": "./vendor/idna",
 					"version": "1.0.3",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/idna/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/idna/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/idna/LICENSE-MIT"
 					]
@@ -2279,6 +2645,7 @@
 					"sourcePath": "./vendor/idna_adapter",
 					"version": "1.2.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/idna_adapter/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/idna_adapter/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/idna_adapter/LICENSE-MIT"
 					]
@@ -2289,6 +2656,7 @@
 					"sourcePath": "./vendor/image",
 					"version": "0.25.6",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/image/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/image/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/image/LICENSE-MIT"
 					]
@@ -2299,6 +2667,7 @@
 					"sourcePath": "./vendor/indexmap",
 					"version": "2.9.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/indexmap/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/indexmap/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/indexmap/LICENSE-MIT"
 					]
@@ -2309,6 +2678,7 @@
 					"sourcePath": "./vendor/interpolate_name",
 					"version": "0.2.4",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/interpolate_name/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/interpolate_name/LICENSE"
 					]
 				},
@@ -2318,6 +2688,7 @@
 					"sourcePath": "./vendor/is_terminal_polyfill",
 					"version": "1.70.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/is_terminal_polyfill/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/is_terminal_polyfill/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/is_terminal_polyfill/LICENSE-MIT"
 					]
@@ -2328,6 +2699,7 @@
 					"sourcePath": "./vendor/itertools",
 					"version": "0.14.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools/LICENSE-MIT"
 					]
@@ -2338,6 +2710,7 @@
 					"sourcePath": "./vendor/itertools-0.10.5",
 					"version": "0.10.5",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.10.5/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.10.5/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.10.5/LICENSE-MIT"
 					]
@@ -2348,6 +2721,7 @@
 					"sourcePath": "./vendor/itertools-0.12.1",
 					"version": "0.12.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.12.1/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.12.1/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.12.1/LICENSE-MIT"
 					]
@@ -2358,6 +2732,7 @@
 					"sourcePath": "./vendor/itertools-0.13.0",
 					"version": "0.13.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.13.0/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.13.0/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.13.0/LICENSE-MIT"
 					]
@@ -2368,6 +2743,7 @@
 					"sourcePath": "./vendor/itoa",
 					"version": "1.0.15",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/itoa/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/itoa/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/itoa/LICENSE-MIT"
 					]
@@ -2378,6 +2754,7 @@
 					"sourcePath": "./vendor/jobserver",
 					"version": "0.1.33",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/jobserver/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/jobserver/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/jobserver/LICENSE-MIT"
 					]
@@ -2388,6 +2765,7 @@
 					"sourcePath": "./vendor/js-sys",
 					"version": "0.3.77",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/js-sys/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/js-sys/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/js-sys/LICENSE-MIT"
 					]
@@ -2398,6 +2776,7 @@
 					"sourcePath": "./vendor/lab",
 					"version": "0.11.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/lab/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/lab/LICENSE"
 					]
 				},
@@ -2407,6 +2786,7 @@
 					"sourcePath": "./vendor/lazy_static",
 					"version": "1.5.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/lazy_static/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/lazy_static/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/lazy_static/LICENSE-MIT"
 					]
@@ -2417,6 +2797,7 @@
 					"sourcePath": "./vendor/lazycell",
 					"version": "1.3.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/lazycell/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/lazycell/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/lazycell/LICENSE-MIT"
 					]
@@ -2427,6 +2808,7 @@
 					"sourcePath": "./vendor/libc",
 					"version": "0.2.172",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libc/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/libc/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/libc/LICENSE-MIT"
 					]
@@ -2437,6 +2819,7 @@
 					"sourcePath": "./vendor/libdav1d-sys",
 					"version": "0.7.1+libdav1d.1.4.3",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libdav1d-sys/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/libdav1d-sys/vendor/COPYING",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/libdav1d-sys/vendor/doc/PATENTS"
 					]
@@ -2447,6 +2830,7 @@
 					"sourcePath": "./vendor/libfuzzer-sys",
 					"version": "0.4.9",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libfuzzer-sys/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/libfuzzer-sys/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/libfuzzer-sys/LICENSE-MIT"
 					]
@@ -2457,6 +2841,7 @@
 					"sourcePath": "./vendor/libgit2-sys",
 					"version": "0.18.1+1.9.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/LICENSE-MIT",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/COPYING",
@@ -2475,6 +2860,7 @@
 					"sourcePath": "./vendor/libloading",
 					"version": "0.8.8",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libloading/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/libloading/LICENSE"
 					]
 				},
@@ -2484,6 +2870,7 @@
 					"sourcePath": "./vendor/libz-sys",
 					"version": "1.1.22",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libz-sys/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/libz-sys/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/libz-sys/LICENSE-MIT",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/libz-sys/src/zlib-ng/LICENSE.md",
@@ -2498,6 +2885,7 @@
 					"version": "0.9.4",
 					"licenseFiles": [
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys/LICENSE-Apache-2.0_WITH_LLVM-exception",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys/LICENSE-MIT"
@@ -2510,6 +2898,7 @@
 					"version": "0.4.15",
 					"licenseFiles": [
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys-0.4.15/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys-0.4.15/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys-0.4.15/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys-0.4.15/LICENSE-Apache-2.0_WITH_LLVM-exception",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys-0.4.15/LICENSE-MIT"
@@ -2521,6 +2910,7 @@
 					"sourcePath": "./vendor/litemap",
 					"version": "0.8.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/litemap/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/litemap/LICENSE"
 					]
 				},
@@ -2530,6 +2920,7 @@
 					"sourcePath": "./vendor/log",
 					"version": "0.4.27",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/log/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/log/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/log/LICENSE-MIT"
 					]
@@ -2540,6 +2931,7 @@
 					"sourcePath": "./vendor/maybe-rayon",
 					"version": "0.1.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/maybe-rayon/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/maybe-rayon/LICENSE"
 					]
 				},
@@ -2550,6 +2942,7 @@
 					"version": "2.7.5",
 					"licenseFiles": [
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/memchr/COPYING",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/memchr/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/memchr/LICENSE-MIT"
 					]
 				},
@@ -2559,6 +2952,7 @@
 					"sourcePath": "./vendor/minimal-lexical",
 					"version": "0.2.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/minimal-lexical/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/minimal-lexical/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/minimal-lexical/LICENSE-MIT",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/minimal-lexical/LICENSE.md"
@@ -2570,6 +2964,7 @@
 					"sourcePath": "./vendor/miniz_oxide",
 					"version": "0.8.9",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/miniz_oxide/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/miniz_oxide/LICENSE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/miniz_oxide/LICENSE-APACHE.md",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/miniz_oxide/LICENSE-MIT.md",
@@ -2582,6 +2977,7 @@
 					"sourcePath": "./vendor/nasm-rs",
 					"version": "0.3.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/nasm-rs/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/nasm-rs/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/nasm-rs/LICENSE-MIT"
 					]
@@ -2592,6 +2988,7 @@
 					"sourcePath": "./vendor/new_debug_unreachable",
 					"version": "1.0.6",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/new_debug_unreachable/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/new_debug_unreachable/LICENSE-MIT"
 					]
 				},
@@ -2601,6 +2998,7 @@
 					"sourcePath": "./vendor/nom",
 					"version": "8.0.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/nom/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/nom/LICENSE"
 					]
 				},
@@ -2610,6 +3008,7 @@
 					"sourcePath": "./vendor/nom-7.1.3",
 					"version": "7.1.3",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/nom-7.1.3/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/nom-7.1.3/LICENSE"
 					]
 				},
@@ -2619,6 +3018,7 @@
 					"sourcePath": "./vendor/noop_proc_macro",
 					"version": "0.3.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/noop_proc_macro/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/noop_proc_macro/LICENSE"
 					]
 				},
@@ -2628,6 +3028,7 @@
 					"sourcePath": "./vendor/nu-ansi-term",
 					"version": "0.46.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/nu-ansi-term/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/nu-ansi-term/LICENCE"
 					]
 				},
@@ -2637,6 +3038,7 @@
 					"sourcePath": "./vendor/num-bigint",
 					"version": "0.4.6",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-bigint/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-bigint/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-bigint/LICENSE-MIT"
 					]
@@ -2647,6 +3049,7 @@
 					"sourcePath": "./vendor/num-derive",
 					"version": "0.4.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-derive/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-derive/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-derive/LICENSE-MIT"
 					]
@@ -2657,6 +3060,7 @@
 					"sourcePath": "./vendor/num-integer",
 					"version": "0.1.46",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-integer/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-integer/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-integer/LICENSE-MIT"
 					]
@@ -2667,6 +3071,7 @@
 					"sourcePath": "./vendor/num-rational",
 					"version": "0.4.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-rational/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-rational/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-rational/LICENSE-MIT"
 					]
@@ -2677,6 +3082,7 @@
 					"sourcePath": "./vendor/num-traits",
 					"version": "0.2.19",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-traits/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-traits/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-traits/LICENSE-MIT"
 					]
@@ -2687,6 +3093,7 @@
 					"sourcePath": "./vendor/object",
 					"version": "0.36.7",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/object/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/object/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/object/LICENSE-MIT"
 					]
@@ -2697,6 +3104,7 @@
 					"sourcePath": "./vendor/once_cell",
 					"version": "1.21.3",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/once_cell/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/once_cell/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/once_cell/LICENSE-MIT"
 					]
@@ -2707,6 +3115,7 @@
 					"sourcePath": "./vendor/once_cell_polyfill",
 					"version": "1.70.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/once_cell_polyfill/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/once_cell_polyfill/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/once_cell_polyfill/LICENSE-MIT"
 					]
@@ -2717,6 +3126,7 @@
 					"sourcePath": "./vendor/oorandom",
 					"version": "11.1.5",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/oorandom/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/oorandom/LICENSE-MIT"
 					]
 				},
@@ -2726,6 +3136,7 @@
 					"sourcePath": "./vendor/overload",
 					"version": "0.1.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/overload/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/overload/LICENSE"
 					]
 				},
@@ -2735,6 +3146,7 @@
 					"sourcePath": "./vendor/pastey",
 					"version": "0.1.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/pastey/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/pastey/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/pastey/LICENSE-MIT"
 					]
@@ -2745,6 +3157,7 @@
 					"sourcePath": "./vendor/percent-encoding",
 					"version": "2.3.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/percent-encoding/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/percent-encoding/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/percent-encoding/LICENSE-MIT"
 					]
@@ -2755,6 +3168,7 @@
 					"sourcePath": "./vendor/pin-project-lite",
 					"version": "0.2.16",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/pin-project-lite/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/pin-project-lite/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/pin-project-lite/LICENSE-MIT"
 					]
@@ -2765,6 +3179,7 @@
 					"sourcePath": "./vendor/pkg-config",
 					"version": "0.3.32",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/pkg-config/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/pkg-config/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/pkg-config/LICENSE-MIT"
 					]
@@ -2775,6 +3190,7 @@
 					"sourcePath": "./vendor/plotters",
 					"version": "0.3.7",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/plotters/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/plotters/LICENSE"
 					]
 				},
@@ -2784,6 +3200,7 @@
 					"sourcePath": "./vendor/plotters-backend",
 					"version": "0.3.7",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/plotters-backend/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/plotters-backend/LICENSE"
 					]
 				},
@@ -2793,6 +3210,7 @@
 					"sourcePath": "./vendor/plotters-svg",
 					"version": "0.3.7",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/plotters-svg/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/plotters-svg/LICENSE"
 					]
 				},
@@ -2802,6 +3220,7 @@
 					"sourcePath": "./vendor/png",
 					"version": "0.17.16",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/png/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/png/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/png/LICENSE-MIT"
 					]
@@ -2812,6 +3231,7 @@
 					"sourcePath": "./vendor/potential_utf",
 					"version": "0.1.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/potential_utf/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/potential_utf/LICENSE"
 					]
 				},
@@ -2821,6 +3241,7 @@
 					"sourcePath": "./vendor/ppv-lite86",
 					"version": "0.2.21",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/ppv-lite86/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/ppv-lite86/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/ppv-lite86/LICENSE-MIT"
 					]
@@ -2831,6 +3252,7 @@
 					"sourcePath": "./vendor/predicates",
 					"version": "3.1.3",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates/LICENSE-MIT"
 					]
@@ -2841,6 +3263,7 @@
 					"sourcePath": "./vendor/predicates-core",
 					"version": "1.0.9",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates-core/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates-core/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates-core/LICENSE-MIT"
 					]
@@ -2851,6 +3274,7 @@
 					"sourcePath": "./vendor/predicates-tree",
 					"version": "1.0.12",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates-tree/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates-tree/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates-tree/LICENSE-MIT"
 					]
@@ -2861,6 +3285,7 @@
 					"sourcePath": "./vendor/pretty_assertions",
 					"version": "1.4.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/pretty_assertions/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/pretty_assertions/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/pretty_assertions/LICENSE-MIT"
 					]
@@ -2871,6 +3296,7 @@
 					"sourcePath": "./vendor/prettyplease",
 					"version": "0.2.33",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/prettyplease/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/prettyplease/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/prettyplease/LICENSE-MIT"
 					]
@@ -2881,6 +3307,7 @@
 					"sourcePath": "./vendor/proc-macro2",
 					"version": "1.0.95",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/proc-macro2/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/proc-macro2/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/proc-macro2/LICENSE-MIT"
 					]
@@ -2891,8 +3318,7 @@
 					"sourcePath": "./vendor/profiling",
 					"version": "1.0.16",
 					"licenseFiles": [
-						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT",
-						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-APACHE"
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/profiling/Cargo.toml"
 					]
 				},
 				{
@@ -2901,8 +3327,7 @@
 					"sourcePath": "./vendor/profiling-procmacros",
 					"version": "1.0.16",
 					"licenseFiles": [
-						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT",
-						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-APACHE"
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/profiling-procmacros/Cargo.toml"
 					]
 				},
 				{
@@ -2912,6 +3337,7 @@
 					"version": "1.0.3",
 					"licenseFiles": [
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/quickcheck/COPYING",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/quickcheck/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/quickcheck/LICENSE-MIT"
 					]
 				},
@@ -2921,6 +3347,7 @@
 					"sourcePath": "./vendor/quote",
 					"version": "1.0.40",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/quote/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/quote/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/quote/LICENSE-MIT"
 					]
@@ -2931,9 +3358,7 @@
 					"sourcePath": "./vendor/r-efi",
 					"version": "5.2.0",
 					"licenseFiles": [
-						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT",
-						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-APACHE",
-						"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/deps/winhttp/COPYING.LGPL"
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/r-efi/Cargo.toml"
 					]
 				},
 				{
@@ -2943,6 +3368,7 @@
 					"version": "0.9.1",
 					"licenseFiles": [
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand/LICENSE-MIT"
 					]
@@ -2954,6 +3380,7 @@
 					"version": "0.8.5",
 					"licenseFiles": [
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand-0.8.5/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand-0.8.5/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand-0.8.5/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand-0.8.5/LICENSE-MIT"
 					]
@@ -2965,6 +3392,7 @@
 					"version": "0.9.0",
 					"licenseFiles": [
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_chacha/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_chacha/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_chacha/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_chacha/LICENSE-MIT"
 					]
@@ -2976,6 +3404,7 @@
 					"version": "0.9.3",
 					"licenseFiles": [
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core/LICENSE-MIT"
 					]
@@ -2987,6 +3416,7 @@
 					"version": "0.6.4",
 					"licenseFiles": [
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core-0.6.4/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core-0.6.4/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core-0.6.4/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core-0.6.4/LICENSE-MIT"
 					]
@@ -2997,6 +3427,7 @@
 					"sourcePath": "./vendor/rayon",
 					"version": "1.10.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rayon/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rayon/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rayon/LICENSE-MIT"
 					]
@@ -3007,6 +3438,7 @@
 					"sourcePath": "./vendor/rayon-core",
 					"version": "1.12.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rayon-core/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rayon-core/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rayon-core/LICENSE-MIT"
 					]
@@ -3017,6 +3449,7 @@
 					"sourcePath": "./vendor/regex",
 					"version": "1.11.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/regex/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/regex/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/regex/LICENSE-MIT"
 					]
@@ -3027,6 +3460,7 @@
 					"sourcePath": "./vendor/regex-automata",
 					"version": "0.4.9",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-automata/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-automata/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-automata/LICENSE-MIT"
 					]
@@ -3037,6 +3471,7 @@
 					"sourcePath": "./vendor/regex-syntax",
 					"version": "0.8.5",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-syntax/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-syntax/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-syntax/LICENSE-MIT",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-syntax/src/unicode_tables/LICENSE-UNICODE"
@@ -3048,6 +3483,7 @@
 					"sourcePath": "./vendor/rustc-demangle",
 					"version": "0.1.25",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustc-demangle/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustc-demangle/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustc-demangle/LICENSE-MIT"
 					]
@@ -3058,6 +3494,7 @@
 					"sourcePath": "./vendor/rustc-hash",
 					"version": "1.1.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustc-hash/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustc-hash/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustc-hash/LICENSE-MIT"
 					]
@@ -3069,6 +3506,7 @@
 					"version": "1.0.7",
 					"licenseFiles": [
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix/LICENSE-Apache-2.0_WITH_LLVM-exception",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix/LICENSE-MIT"
@@ -3081,6 +3519,7 @@
 					"version": "0.38.44",
 					"licenseFiles": [
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix-0.38.44/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix-0.38.44/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix-0.38.44/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix-0.38.44/LICENSE-Apache-2.0_WITH_LLVM-exception",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix-0.38.44/LICENSE-MIT"
@@ -3092,6 +3531,7 @@
 					"sourcePath": "./vendor/rustversion",
 					"version": "1.0.21",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustversion/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustversion/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustversion/LICENSE-MIT"
 					]
@@ -3102,6 +3542,7 @@
 					"sourcePath": "./vendor/ryu",
 					"version": "1.0.20",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/ryu/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/ryu/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/ryu/LICENSE-BOOST"
 					]
@@ -3113,6 +3554,7 @@
 					"version": "1.0.6",
 					"licenseFiles": [
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/same-file/COPYING",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/same-file/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/same-file/LICENSE-MIT"
 					]
 				},
@@ -3122,6 +3564,7 @@
 					"sourcePath": "./vendor/scan_fmt",
 					"version": "0.2.6",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/scan_fmt/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/scan_fmt/LICENSE"
 					]
 				},
@@ -3131,6 +3574,7 @@
 					"sourcePath": "./vendor/semver",
 					"version": "1.0.26",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/semver/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/semver/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/semver/LICENSE-MIT"
 					]
@@ -3141,6 +3585,7 @@
 					"sourcePath": "./vendor/serde",
 					"version": "1.0.219",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde/LICENSE-MIT"
 					]
@@ -3151,6 +3596,7 @@
 					"sourcePath": "./vendor/serde-big-array",
 					"version": "0.5.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde-big-array/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde-big-array/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde-big-array/LICENSE-MIT"
 					]
@@ -3161,6 +3607,7 @@
 					"sourcePath": "./vendor/serde_derive",
 					"version": "1.0.219",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_derive/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_derive/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_derive/LICENSE-MIT"
 					]
@@ -3171,6 +3618,7 @@
 					"sourcePath": "./vendor/serde_json",
 					"version": "1.0.140",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_json/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_json/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_json/LICENSE-MIT"
 					]
@@ -3181,6 +3629,7 @@
 					"sourcePath": "./vendor/serde_spanned",
 					"version": "0.6.9",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_spanned/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_spanned/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_spanned/LICENSE-MIT"
 					]
@@ -3191,6 +3640,7 @@
 					"sourcePath": "./vendor/sharded-slab",
 					"version": "0.1.7",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/sharded-slab/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/sharded-slab/LICENSE"
 					]
 				},
@@ -3200,6 +3650,7 @@
 					"sourcePath": "./vendor/shlex",
 					"version": "2.0.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/shlex/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/shlex/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/shlex/LICENSE-MIT"
 					]
@@ -3210,6 +3661,7 @@
 					"sourcePath": "./vendor/shlex-1.3.0",
 					"version": "1.3.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/shlex-1.3.0/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/shlex-1.3.0/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/shlex-1.3.0/LICENSE-MIT"
 					]
@@ -3220,6 +3672,7 @@
 					"sourcePath": "./vendor/signal-hook",
 					"version": "0.3.18",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/signal-hook/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/signal-hook/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/signal-hook/LICENSE-MIT"
 					]
@@ -3230,6 +3683,7 @@
 					"sourcePath": "./vendor/signal-hook-registry",
 					"version": "1.4.5",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/signal-hook-registry/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/signal-hook-registry/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/signal-hook-registry/LICENSE-MIT"
 					]
@@ -3240,6 +3694,7 @@
 					"sourcePath": "./vendor/simd-adler32",
 					"version": "0.3.7",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/simd-adler32/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/simd-adler32/LICENSE.md"
 					]
 				},
@@ -3249,7 +3704,7 @@
 					"sourcePath": "./vendor/simd_helpers",
 					"version": "0.1.0",
 					"licenseFiles": [
-						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT"
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/simd_helpers/Cargo.toml"
 					]
 				},
 				{
@@ -3258,6 +3713,7 @@
 					"sourcePath": "./vendor/smallvec",
 					"version": "1.15.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/smallvec/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/smallvec/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/smallvec/LICENSE-MIT"
 					]
@@ -3268,6 +3724,7 @@
 					"sourcePath": "./vendor/stable_deref_trait",
 					"version": "1.2.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/stable_deref_trait/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/stable_deref_trait/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/stable_deref_trait/LICENSE-MIT"
 					]
@@ -3278,6 +3735,7 @@
 					"sourcePath": "./vendor/syn",
 					"version": "2.0.102",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/syn/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/syn/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/syn/LICENSE-MIT"
 					]
@@ -3288,6 +3746,7 @@
 					"sourcePath": "./vendor/synstructure",
 					"version": "0.13.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/synstructure/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/synstructure/LICENSE"
 					]
 				},
@@ -3297,6 +3756,7 @@
 					"sourcePath": "./vendor/system-deps",
 					"version": "6.2.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/system-deps/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/system-deps/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/system-deps/LICENSE-MIT"
 					]
@@ -3307,6 +3767,7 @@
 					"sourcePath": "./vendor/target-lexicon",
 					"version": "0.12.16",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/target-lexicon/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/target-lexicon/LICENSE"
 					]
 				},
@@ -3316,6 +3777,7 @@
 					"sourcePath": "./vendor/terminal_size",
 					"version": "0.4.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/terminal_size/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/terminal_size/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/terminal_size/LICENSE-MIT"
 					]
@@ -3326,6 +3788,7 @@
 					"sourcePath": "./vendor/termtree",
 					"version": "0.5.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/termtree/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/termtree/LICENSE-MIT"
 					]
 				},
@@ -3335,6 +3798,7 @@
 					"sourcePath": "./vendor/thiserror",
 					"version": "2.0.12",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror/LICENSE-MIT"
 					]
@@ -3345,6 +3809,7 @@
 					"sourcePath": "./vendor/thiserror-1.0.69",
 					"version": "1.0.69",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-1.0.69/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-1.0.69/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-1.0.69/LICENSE-MIT"
 					]
@@ -3355,6 +3820,7 @@
 					"sourcePath": "./vendor/thiserror-impl",
 					"version": "2.0.12",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-impl/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-impl/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-impl/LICENSE-MIT"
 					]
@@ -3365,6 +3831,7 @@
 					"sourcePath": "./vendor/thiserror-impl-1.0.69",
 					"version": "1.0.69",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-impl-1.0.69/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-impl-1.0.69/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-impl-1.0.69/LICENSE-MIT"
 					]
@@ -3375,6 +3842,7 @@
 					"sourcePath": "./vendor/thread_local",
 					"version": "1.1.8",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/thread_local/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/thread_local/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/thread_local/LICENSE-MIT"
 					]
@@ -3385,6 +3853,7 @@
 					"sourcePath": "./vendor/tinystr",
 					"version": "0.8.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/tinystr/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/tinystr/LICENSE"
 					]
 				},
@@ -3394,6 +3863,7 @@
 					"sourcePath": "./vendor/tinytemplate",
 					"version": "1.2.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/tinytemplate/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/tinytemplate/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/tinytemplate/LICENSE-MIT"
 					]
@@ -3404,6 +3874,7 @@
 					"sourcePath": "./vendor/toml",
 					"version": "0.8.23",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/toml/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/toml/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/toml/LICENSE-MIT"
 					]
@@ -3414,6 +3885,7 @@
 					"sourcePath": "./vendor/toml_datetime",
 					"version": "0.6.11",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_datetime/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_datetime/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_datetime/LICENSE-MIT"
 					]
@@ -3424,6 +3896,7 @@
 					"sourcePath": "./vendor/toml_edit",
 					"version": "0.22.27",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_edit/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_edit/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_edit/LICENSE-MIT"
 					]
@@ -3434,6 +3907,7 @@
 					"sourcePath": "./vendor/toml_write",
 					"version": "0.1.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_write/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_write/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_write/LICENSE-MIT"
 					]
@@ -3444,6 +3918,7 @@
 					"sourcePath": "./vendor/tracing",
 					"version": "0.1.41",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing/LICENSE"
 					]
 				},
@@ -3453,6 +3928,7 @@
 					"sourcePath": "./vendor/tracing-attributes",
 					"version": "0.1.29",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-attributes/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-attributes/LICENSE"
 					]
 				},
@@ -3462,6 +3938,7 @@
 					"sourcePath": "./vendor/tracing-chrome",
 					"version": "0.7.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-chrome/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-chrome/LICENSE"
 					]
 				},
@@ -3471,6 +3948,7 @@
 					"sourcePath": "./vendor/tracing-core",
 					"version": "0.1.34",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-core/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-core/LICENSE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-core/src/spin/LICENSE"
 					]
@@ -3481,6 +3959,7 @@
 					"sourcePath": "./vendor/tracing-log",
 					"version": "0.2.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-log/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-log/LICENSE"
 					]
 				},
@@ -3490,6 +3969,7 @@
 					"sourcePath": "./vendor/tracing-subscriber",
 					"version": "0.3.19",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-subscriber/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-subscriber/LICENSE"
 					]
 				},
@@ -3499,6 +3979,7 @@
 					"sourcePath": "./vendor/unicode-ident",
 					"version": "1.0.18",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-ident/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-ident/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-ident/LICENSE-MIT",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-ident/LICENSE-UNICODE"
@@ -3511,6 +3992,7 @@
 					"version": "0.2.1",
 					"licenseFiles": [
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-width/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-width/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-width/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-width/LICENSE-MIT"
 					]
@@ -3521,6 +4003,7 @@
 					"sourcePath": "./vendor/url",
 					"version": "2.5.4",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/url/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/url/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/url/LICENSE-MIT"
 					]
@@ -3532,6 +4015,7 @@
 					"version": "1.0.4",
 					"licenseFiles": [
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8_iter/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8_iter/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8_iter/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8_iter/LICENSE-MIT"
 					]
@@ -3542,6 +4026,7 @@
 					"sourcePath": "./vendor/utf8parse",
 					"version": "0.2.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8parse/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8parse/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8parse/LICENSE-MIT"
 					]
@@ -3552,6 +4037,7 @@
 					"sourcePath": "./vendor/v_frame",
 					"version": "0.3.9",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/v_frame/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/v_frame/LICENSE"
 					]
 				},
@@ -3561,7 +4047,7 @@
 					"sourcePath": "./vendor/valuable",
 					"version": "0.1.1",
 					"licenseFiles": [
-						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT"
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/valuable/Cargo.toml"
 					]
 				},
 				{
@@ -3570,6 +4056,7 @@
 					"sourcePath": "./vendor/vcpkg",
 					"version": "0.2.15",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/vcpkg/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/vcpkg/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/vcpkg/LICENSE-MIT"
 					]
@@ -3580,6 +4067,7 @@
 					"sourcePath": "./vendor/version-compare",
 					"version": "0.2.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/version-compare/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/version-compare/LICENSE"
 					]
 				},
@@ -3589,6 +4077,7 @@
 					"sourcePath": "./vendor/wait-timeout",
 					"version": "0.2.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wait-timeout/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/wait-timeout/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/wait-timeout/LICENSE-MIT"
 					]
@@ -3600,6 +4089,7 @@
 					"version": "2.5.0",
 					"licenseFiles": [
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/walkdir/COPYING",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/walkdir/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/walkdir/LICENSE-MIT"
 					]
 				},
@@ -3609,6 +4099,7 @@
 					"sourcePath": "./vendor/wasi",
 					"version": "0.14.2+wasi-0.2.4",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi/LICENSE-Apache-2.0_WITH_LLVM-exception",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi/LICENSE-MIT"
@@ -3620,6 +4111,7 @@
 					"sourcePath": "./vendor/wasi-0.11.1+wasi-snapshot-preview1",
 					"version": "0.11.1+wasi-snapshot-preview1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi-0.11.1+wasi-snapshot-preview1/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi-0.11.1+wasi-snapshot-preview1/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi-0.11.1+wasi-snapshot-preview1/LICENSE-Apache-2.0_WITH_LLVM-exception",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi-0.11.1+wasi-snapshot-preview1/LICENSE-MIT"
@@ -3631,6 +4123,7 @@
 					"sourcePath": "./vendor/wasm-bindgen",
 					"version": "0.2.100",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen/LICENSE-MIT"
 					]
@@ -3641,6 +4134,7 @@
 					"sourcePath": "./vendor/wasm-bindgen-backend",
 					"version": "0.2.100",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-backend/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-backend/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-backend/LICENSE-MIT"
 					]
@@ -3651,6 +4145,7 @@
 					"sourcePath": "./vendor/wasm-bindgen-macro",
 					"version": "0.2.100",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-macro/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-macro/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-macro/LICENSE-MIT"
 					]
@@ -3661,6 +4156,7 @@
 					"sourcePath": "./vendor/wasm-bindgen-macro-support",
 					"version": "0.2.100",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-macro-support/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-macro-support/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-macro-support/LICENSE-MIT"
 					]
@@ -3671,6 +4167,7 @@
 					"sourcePath": "./vendor/wasm-bindgen-shared",
 					"version": "0.2.100",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-shared/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-shared/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-shared/LICENSE-MIT"
 					]
@@ -3681,6 +4178,7 @@
 					"sourcePath": "./vendor/web-sys",
 					"version": "0.3.77",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/web-sys/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/web-sys/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/web-sys/LICENSE-MIT"
 					]
@@ -3691,6 +4189,7 @@
 					"sourcePath": "./vendor/which",
 					"version": "4.4.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/which/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/which/LICENSE.txt"
 					]
 				},
@@ -3700,6 +4199,7 @@
 					"sourcePath": "./vendor/winapi",
 					"version": "0.3.9",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi/LICENSE-MIT"
 					]
@@ -3710,8 +4210,7 @@
 					"sourcePath": "./vendor/winapi-i686-pc-windows-gnu",
 					"version": "0.4.0",
 					"licenseFiles": [
-						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT",
-						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-APACHE"
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi-i686-pc-windows-gnu/Cargo.toml"
 					]
 				},
 				{
@@ -3721,6 +4220,7 @@
 					"version": "0.1.9",
 					"licenseFiles": [
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi-util/COPYING",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi-util/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi-util/LICENSE-MIT"
 					]
 				},
@@ -3730,8 +4230,7 @@
 					"sourcePath": "./vendor/winapi-x86_64-pc-windows-gnu",
 					"version": "0.4.0",
 					"licenseFiles": [
-						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT",
-						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-APACHE"
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi-x86_64-pc-windows-gnu/Cargo.toml"
 					]
 				},
 				{
@@ -3740,6 +4239,7 @@
 					"sourcePath": "./vendor/windows-sys",
 					"version": "0.59.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-sys/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-sys/license-apache-2.0",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-sys/license-mit"
 					]
@@ -3750,6 +4250,7 @@
 					"sourcePath": "./vendor/windows-targets",
 					"version": "0.53.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-targets/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-targets/license-apache-2.0",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-targets/license-mit"
 					]
@@ -3760,6 +4261,7 @@
 					"sourcePath": "./vendor/windows-targets-0.52.6",
 					"version": "0.52.6",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-targets-0.52.6/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-targets-0.52.6/license-apache-2.0",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-targets-0.52.6/license-mit"
 					]
@@ -3770,6 +4272,7 @@
 					"sourcePath": "./vendor/windows_aarch64_gnullvm",
 					"version": "0.53.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_gnullvm/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_gnullvm/license-apache-2.0",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_gnullvm/license-mit"
 					]
@@ -3780,6 +4283,7 @@
 					"sourcePath": "./vendor/windows_aarch64_gnullvm-0.52.6",
 					"version": "0.52.6",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_gnullvm-0.52.6/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_gnullvm-0.52.6/license-apache-2.0",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_gnullvm-0.52.6/license-mit"
 					]
@@ -3790,6 +4294,7 @@
 					"sourcePath": "./vendor/windows_aarch64_msvc",
 					"version": "0.53.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_msvc/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_msvc/license-apache-2.0",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_msvc/license-mit"
 					]
@@ -3800,6 +4305,7 @@
 					"sourcePath": "./vendor/windows_aarch64_msvc-0.52.6",
 					"version": "0.52.6",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_msvc-0.52.6/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_msvc-0.52.6/license-apache-2.0",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_msvc-0.52.6/license-mit"
 					]
@@ -3810,6 +4316,7 @@
 					"sourcePath": "./vendor/windows_i686_gnu",
 					"version": "0.53.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnu/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnu/license-apache-2.0",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnu/license-mit"
 					]
@@ -3820,6 +4327,7 @@
 					"sourcePath": "./vendor/windows_i686_gnu-0.52.6",
 					"version": "0.52.6",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnu-0.52.6/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnu-0.52.6/license-apache-2.0",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnu-0.52.6/license-mit"
 					]
@@ -3830,6 +4338,7 @@
 					"sourcePath": "./vendor/windows_i686_gnullvm",
 					"version": "0.53.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnullvm/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnullvm/license-apache-2.0",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnullvm/license-mit"
 					]
@@ -3840,6 +4349,7 @@
 					"sourcePath": "./vendor/windows_i686_gnullvm-0.52.6",
 					"version": "0.52.6",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnullvm-0.52.6/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnullvm-0.52.6/license-apache-2.0",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnullvm-0.52.6/license-mit"
 					]
@@ -3850,6 +4360,7 @@
 					"sourcePath": "./vendor/windows_i686_msvc",
 					"version": "0.53.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_msvc/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_msvc/license-apache-2.0",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_msvc/license-mit"
 					]
@@ -3860,6 +4371,7 @@
 					"sourcePath": "./vendor/windows_i686_msvc-0.52.6",
 					"version": "0.52.6",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_msvc-0.52.6/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_msvc-0.52.6/license-apache-2.0",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_msvc-0.52.6/license-mit"
 					]
@@ -3870,6 +4382,7 @@
 					"sourcePath": "./vendor/windows_x86_64_gnu",
 					"version": "0.53.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnu/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnu/license-apache-2.0",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnu/license-mit"
 					]
@@ -3880,6 +4393,7 @@
 					"sourcePath": "./vendor/windows_x86_64_gnu-0.52.6",
 					"version": "0.52.6",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnu-0.52.6/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnu-0.52.6/license-apache-2.0",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnu-0.52.6/license-mit"
 					]
@@ -3890,6 +4404,7 @@
 					"sourcePath": "./vendor/windows_x86_64_gnullvm",
 					"version": "0.53.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnullvm/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnullvm/license-apache-2.0",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnullvm/license-mit"
 					]
@@ -3900,6 +4415,7 @@
 					"sourcePath": "./vendor/windows_x86_64_gnullvm-0.52.6",
 					"version": "0.52.6",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnullvm-0.52.6/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnullvm-0.52.6/license-apache-2.0",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnullvm-0.52.6/license-mit"
 					]
@@ -3910,6 +4426,7 @@
 					"sourcePath": "./vendor/windows_x86_64_msvc",
 					"version": "0.53.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_msvc/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_msvc/license-apache-2.0",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_msvc/license-mit"
 					]
@@ -3920,6 +4437,7 @@
 					"sourcePath": "./vendor/windows_x86_64_msvc-0.52.6",
 					"version": "0.52.6",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_msvc-0.52.6/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_msvc-0.52.6/license-apache-2.0",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_msvc-0.52.6/license-mit"
 					]
@@ -3930,6 +4448,7 @@
 					"sourcePath": "./vendor/winnow",
 					"version": "0.7.11",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/winnow/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/winnow/LICENSE-MIT"
 					]
 				},
@@ -3939,9 +4458,7 @@
 					"sourcePath": "./vendor/wit-bindgen-rt",
 					"version": "0.39.0",
 					"licenseFiles": [
-						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT",
-						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-APACHE",
-						"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys/LICENSE-Apache-2.0_WITH_LLVM-exception"
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wit-bindgen-rt/Cargo.toml"
 					]
 				},
 				{
@@ -3950,6 +4467,7 @@
 					"sourcePath": "./vendor/writeable",
 					"version": "0.6.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/writeable/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/writeable/LICENSE"
 					]
 				},
@@ -3959,6 +4477,7 @@
 					"sourcePath": "./vendor/y4m",
 					"version": "0.8.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/y4m/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/y4m/LICENSE"
 					]
 				},
@@ -3968,6 +4487,7 @@
 					"sourcePath": "./vendor/yansi",
 					"version": "1.0.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/yansi/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/yansi/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/yansi/LICENSE-MIT"
 					]
@@ -3978,6 +4498,7 @@
 					"sourcePath": "./vendor/yoke",
 					"version": "0.8.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/yoke/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/yoke/LICENSE"
 					]
 				},
@@ -3987,6 +4508,7 @@
 					"sourcePath": "./vendor/yoke-derive",
 					"version": "0.8.0",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/yoke-derive/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/yoke-derive/LICENSE"
 					]
 				},
@@ -3996,6 +4518,7 @@
 					"sourcePath": "./vendor/zerocopy",
 					"version": "0.8.25",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy/LICENSE-BSD",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy/LICENSE-MIT"
@@ -4007,6 +4530,7 @@
 					"sourcePath": "./vendor/zerocopy-derive",
 					"version": "0.8.25",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy-derive/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy-derive/LICENSE-APACHE",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy-derive/LICENSE-BSD",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy-derive/LICENSE-MIT"
@@ -4018,6 +4542,7 @@
 					"sourcePath": "./vendor/zerofrom",
 					"version": "0.1.6",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerofrom/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerofrom/LICENSE"
 					]
 				},
@@ -4027,6 +4552,7 @@
 					"sourcePath": "./vendor/zerofrom-derive",
 					"version": "0.1.6",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerofrom-derive/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerofrom-derive/LICENSE"
 					]
 				},
@@ -4036,6 +4562,7 @@
 					"sourcePath": "./vendor/zerotrie",
 					"version": "0.2.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerotrie/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerotrie/LICENSE"
 					]
 				},
@@ -4045,6 +4572,7 @@
 					"sourcePath": "./vendor/zerovec",
 					"version": "0.11.2",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerovec/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerovec/LICENSE"
 					]
 				},
@@ -4054,6 +4582,7 @@
 					"sourcePath": "./vendor/zerovec-derive",
 					"version": "0.11.1",
 					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerovec-derive/Cargo.toml",
 						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerovec-derive/LICENSE"
 					]
 				}
@@ -4316,7 +4845,7 @@
 	],
 	"sourceBundle": {
 		"name": "n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz",
-		"sha256": "5c8094a00f39f2419c527fe391e18a269c428a0e97bed4f408361fa84f9b293b",
+		"sha256": "3dcd8963e229e3b34fb9d0d969377e59e25a01146fd128282ad599200034e882",
 		"url": "https://github.com/aliyusufergin/n8n-nodes-yt-dlp/releases/download/v0.2.0/n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz"
 	},
 	"sourceCache": {
