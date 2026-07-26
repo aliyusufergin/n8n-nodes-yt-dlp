@@ -1,10 +1,10 @@
 {
 	"schemaVersion": 1,
-	"status": "pending-maintainer-approval",
-	"reviewer": null,
-	"reviewedAt": null,
+	"status": "approved",
+	"reviewer": "aliyusufergin",
+	"reviewedAt": "2026-07-26T11:25:00Z",
 	"decision": {
-		"separateProcessAggregate": "pending"
+		"separateProcessAggregate": "supported"
 	},
 	"bindings": {
 		"binaryAssetSha256": "7a19456683e31d937ae48d51e23dfb869dbb9db1e4d6e1b6881d7fed168fa5cf",
