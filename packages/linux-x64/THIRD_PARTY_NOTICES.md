@@ -9,5 +9,10 @@
 - yt-dlp-ejs `0.8.0` was built from source commit
   `4fb477f4af56880cfd324c48bd4294a2d2294e50`. Its self-contained library preserves the verbatim
   ISC notice for meriyah `6.1.4` and MIT notice for astring `1.9.0` in its generated header.
+- FFmpeg/FFprobe `N-125551-ga09be9b91e-20260712` came from the dated FFmpeg-Builds release
+  `autobuild-2026-07-12-15-07`, build-scripts commit
+  `832dd2f333d919790f117b054f628756c515adce`, and FFmpeg commit
+  `a09be9b91e8e1219f297586873b0d7322b47df96`. The build enables GPLv3-compatible features and
+  statically links the 109 source components inventoried in `FFMPEG-SOURCE-MANIFEST.json`.
 
 Exact distributed-asset and source-bundle SHA-256 values are recorded in `TOOLCHAIN.lock.json`.

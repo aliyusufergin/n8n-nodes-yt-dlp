@@ -1,0 +1,23 @@
+diff --git a/scripts.d/50-rav1e.sh b/scripts.d/50-rav1e.sh
+index 92bf4f9..0bc9e24 100755
+--- a/scripts.d/50-rav1e.sh
++++ b/scripts.d/50-rav1e.sh
+@@ -22,9 +22,6 @@ ffbuild_dockerbuild() {
+     # Luckily no target libraries are needed.
+     unset PKG_CONFIG_LIBDIR
+ 
+-    # The pinned version is broken, and upstream does not react
+-    cargo update cc
+-
+     export "AR_${FFBUILD_RUST_TARGET//-/_}"="${AR}"
+     export "RANLIB_${FFBUILD_RUST_TARGET//-/_}"="${RANLIB}"
+     export "NM_${FFBUILD_RUST_TARGET//-/_}"="${NM}"
+@@ -40,7 +36,7 @@ ffbuild_dockerbuild() {
+     export "LDFLAGS_${FFBUILD_RUST_TARGET//-/_}"="${LDFLAGS}"
+     unset AR RANLIB NM CC CXX LD CFLAGS CXXFLAGS LDFLAGS
+ 
+-    cargo cinstall -v "${myconf[@]}"
++    cargo cinstall --locked --offline -v "${myconf[@]}"
+ 
+     chmod 644 "${FFBUILD_DESTPREFIX}"/lib/*rav1e*
+ }

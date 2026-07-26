@@ -1,4 +1,5 @@
 import { execFile, spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { cp, lstat, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -84,8 +85,14 @@ interface ToolchainLock {
 		assets: Array<{ name: string; sha256: string }>;
 		license: string;
 		name: string;
-		sourceBundle: { name: string; sha256: string };
-		upstream: { commit: string; releaseRepository?: string; repository: string; tag: string };
+		sourceBundle: { name: string; sha256: string; url?: string };
+		upstream: {
+			commit: string;
+			ffmpegCommit?: string;
+			releaseRepository?: string;
+			repository: string;
+			tag: string;
+		};
 	}>;
 	packageName: string;
 	packageVersion: string;
@@ -131,13 +138,38 @@ beforeAll(async () => {
 			join(repositoryRoot, 'packages', 'linux-x64'),
 		].map(async (directory) => await packPackage(directory, tarballDirectory)),
 	);
-}, 60_000);
+}, 180_000);
 
 afterAll(async () => {
 	if (fixtureDirectory !== undefined) await rm(fixtureDirectory, { force: true, recursive: true });
 }, 60_000);
 
 describe('published Platform Gate packages', () => {
+	it('packages the exact dated Linux x64 GPL FFmpeg and FFprobe build', async () => {
+		const platformPackage = packages.find(
+			({ metadata }) => metadata.name === 'n8n-nodes-yt-dlp-linux-x64',
+		);
+		if (platformPackage === undefined) throw new Error('The platform package fixture is missing.');
+		const packagedBin = join(platformPackage.extractedDirectory, 'package', 'bin');
+		const [ffmpegBytes, ffprobeBytes, ffmpegVersion, ffprobeVersion] = await Promise.all([
+			readFile(join(packagedBin, 'ffmpeg')),
+			readFile(join(packagedBin, 'ffprobe')),
+			execFileAsync(join(packagedBin, 'ffmpeg'), ['-hide_banner', '-version']),
+			execFileAsync(join(packagedBin, 'ffprobe'), ['-hide_banner', '-version']),
+		]);
+
+		expect(createHash('sha256').update(ffmpegBytes).digest('hex')).toBe(
+			'ea50d9fba39cc2f57785be7d082a65d5484728d83e9f90ecc6ba4372c05fc022',
+		);
+		expect(createHash('sha256').update(ffprobeBytes).digest('hex')).toBe(
+			'7d37b347245e21cea470f7ba696f32eb918dcf485fd5ffba3b29f44c0556f7d8',
+		);
+		expect(ffmpegVersion.stdout).toContain('ffmpeg version N-125551-ga09be9b91e-20260712');
+		expect(ffmpegVersion.stdout).toContain('--enable-gpl --enable-version3');
+		expect(ffprobeVersion.stdout).toContain('ffprobe version N-125551-ga09be9b91e-20260712');
+		expect(ffprobeVersion.stdout).toContain('--enable-gpl --enable-version3');
+	});
+
 	it('solves official frozen EJS N/SIG vectors and cached players with packaged Deno', async () => {
 		const [vectorContents, syntheticPlayer, ejsLibrary, ejsCore] = await Promise.all([
 			readFile(join(repositoryRoot, 'test', 'fixtures', 'ejs', 'vectors.json'), 'utf8'),
@@ -291,6 +323,7 @@ describe('published Platform Gate packages', () => {
 					sha256: '07e2aec9b176ce346d5dd96aa4ade127add1ee88a297129e5bad854be2170dab',
 				},
 			}),
+			expect.objectContaining({ name: 'ffmpeg' }),
 			expect.objectContaining({
 				name: 'deno',
 				upstream: {
@@ -334,6 +367,122 @@ describe('published Platform Gate packages', () => {
 		]);
 	});
 
+	it('maps the source-gated FFmpeg build to its complete source inventory', async () => {
+		const platformPackage = packages.find(
+			({ metadata }) => metadata.name === 'n8n-nodes-yt-dlp-linux-x64',
+		);
+		if (platformPackage === undefined) throw new Error('The platform package fixture is missing.');
+		const packageRoot = join(platformPackage.extractedDirectory, 'package');
+		const lock = JSON.parse(
+			await readFile(join(packageRoot, 'TOOLCHAIN.lock.json'), 'utf8'),
+		) as ToolchainLock;
+		const ffmpeg = lock.components.find(({ name }) => name === 'ffmpeg');
+
+		expect(ffmpeg).toMatchObject({
+			name: 'ffmpeg',
+			upstream: {
+				repository: 'yt-dlp/FFmpeg-Builds',
+				tag: 'autobuild-2026-07-12-15-07',
+				commit: '832dd2f333d919790f117b054f628756c515adce',
+				ffmpegCommit: 'a09be9b91e8e1219f297586873b0d7322b47df96',
+			},
+			assets: [
+				{
+					name: 'ffmpeg-N-125551-ga09be9b91e-linux64-gpl.tar.xz',
+					sha256: '7a19456683e31d937ae48d51e23dfb869dbb9db1e4d6e1b6881d7fed168fa5cf',
+				},
+			],
+			license: 'GPL-3.0-or-later AND LicenseRef-FFmpeg-static-components',
+			sourceBundle: {
+				name: 'n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz',
+				url: 'https://github.com/aliyusufergin/n8n-nodes-yt-dlp/releases/download/v0.2.0/n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz',
+			},
+		});
+		expect(ffmpeg?.sourceBundle.sha256).toMatch(/^[0-9a-f]{64}$/u);
+
+		const sourceManifest = JSON.parse(
+			await readFile(join(packageRoot, 'FFMPEG-SOURCE-MANIFEST.json'), 'utf8'),
+		) as {
+			cleanRebuildOutputs: { ffmpegSha256: string; ffprobeSha256: string };
+			manualReview: { path: string; requiredStatus: string };
+			sourceArchives: Array<{
+				cargoPackages?: Array<{
+					license: string;
+					licenseFiles: string[];
+					name: string;
+					sourcePath: string;
+					version: string;
+				}>;
+				cargoVendor?: { configSha256: string; lockSha256: string; packageCount: number };
+				input?: string;
+				licenseFiles: string[];
+				name: string;
+				sha256: string;
+				vendoredSubmodules?: Array<{
+					commit: string;
+					licenseFiles: string[];
+					path: string;
+					repository: string;
+				}>;
+			}>;
+		};
+		expect(sourceManifest.sourceArchives).toHaveLength(109);
+		expect(new Set(sourceManifest.sourceArchives.map(({ name }) => name)).size).toBe(109);
+		for (const source of sourceManifest.sourceArchives) {
+			expect(source.sha256).toMatch(/^[0-9a-f]{64}$/u);
+			expect(source.licenseFiles.length).toBeGreaterThan(0);
+		}
+		const rav1e = sourceManifest.sourceArchives.find(({ name }) => name.startsWith('50-rav1e_'));
+		expect(rav1e).toMatchObject({
+			input: 'input-root',
+			cargoVendor: { packageCount: 272 },
+		});
+		expect(rav1e?.cargoVendor?.configSha256).toMatch(/^[0-9a-f]{64}$/u);
+		expect(rav1e?.cargoVendor?.lockSha256).toMatch(/^[0-9a-f]{64}$/u);
+		expect(rav1e?.cargoPackages).toHaveLength(272);
+		for (const cargoPackage of rav1e?.cargoPackages ?? []) {
+			expect(cargoPackage).toMatchObject({
+				license: expect.any(String),
+				name: expect.any(String),
+				sourcePath: expect.stringMatching(/^\.\/vendor\/[^/]+$/u),
+				version: expect.any(String),
+			});
+			expect(cargoPackage.licenseFiles.length).toBeGreaterThan(0);
+			expect(
+				cargoPackage.licenseFiles.every((path) =>
+					path.startsWith(
+						`LICENSES/ffmpeg-static/50-rav1e/${cargoPackage.sourcePath.slice(2)}/`,
+					),
+				),
+			).toBe(true);
+		}
+		const freetypeSources = sourceManifest.sourceArchives.filter(({ name }) =>
+			/^(?:25|50)-freetype_/u.test(name),
+		);
+		expect(freetypeSources).toHaveLength(2);
+		for (const freetype of freetypeSources) {
+			expect(freetype).toMatchObject({
+				input: 'input-root',
+				vendoredSubmodules: [
+					{
+						commit: '395ccad2c1e0daae535c4d20bb0a3f2424648e17',
+						path: 'subprojects/dlg',
+						repository: 'https://github.com/nyorain/dlg.git',
+					},
+				],
+			});
+			expect(freetype.vendoredSubmodules?.[0].licenseFiles).toHaveLength(1);
+		}
+		expect(sourceManifest.manualReview).toEqual({
+			path: 'toolchain/ffmpeg/LICENSE-REVIEW.json',
+			requiredStatus: 'approved',
+		});
+		expect(sourceManifest.cleanRebuildOutputs).toEqual({
+			ffmpegSha256: 'b5532ca4ce06bef2fce593e89cd6bcb2be5fa89db6fa91e876b1c16c613502b1',
+			ffprobeSha256: 'e6b5e3496cd160152898de6e86b4689fa6f2630ed7903725c50a5de3b7eeae3f',
+		});
+	});
+
 	it('carry the exact three-package dependency chain and Linux x64 metadata', async () => {
 		const byName = new Map(packages.map((packedPackage) => [packedPackage.metadata.name, packedPackage]));
 		const main = byName.get('n8n-nodes-yt-dlp')?.metadata;
@@ -359,6 +508,9 @@ describe('published Platform Gate packages', () => {
 			os: ['linux'],
 			cpu: ['x64'],
 			license: 'SEE LICENSE IN LICENSES.md',
+			scripts: {
+				prepack: 'node ../../scripts/ffmpeg-source-bundle.mjs verify-release',
+			},
 		});
 		for (const metadata of [main, selector, platform]) {
 			expect(metadata).not.toHaveProperty('libc');

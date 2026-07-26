@@ -1,0 +1,595 @@
+FROM ghcr.io/yt-dlp/ffmpeg-builds/base-linux64@sha256:2d1b4af9d22653e1fa430b7cabd36f616bebbd6c1a1f93242008f3f6869e57cf AS base-layer
+ENV TARGET=linux64 VARIANT=gpl REPO=yt-dlp/ffmpeg-builds ADDINS_STR= FFVER=99999999
+COPY --link util/run_stage.sh /usr/bin/run_stage
+FROM base-layer AS xorg-macros
+ENV SELF="scripts.d/10-xorg-macros.sh" STAGENAME="10-xorg-macros"
+RUN --mount=src=scripts.d/10-xorg-macros.sh,dst=/stage.sh --mount=src=.cache/downloads/10-xorg-macros_73cab126efc5f728ed3cb980e6fdd5847c562d4e8ec405f6fc1f371b9c83317e.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS base
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/15-base.sh" STAGENAME="15-base"
+FROM base-layer AS amf
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-amf.sh" STAGENAME="50-amf"
+RUN --mount=src=scripts.d/50-amf.sh,dst=/stage.sh --mount=src=.cache/downloads/50-amf_c83454c32a56aff71532a12b2f184b5f58c5864875aa44c0e4375aa98b7ad8f5.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS avisynth
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-avisynth.sh" STAGENAME="50-avisynth"
+RUN --mount=src=scripts.d/50-avisynth.sh,dst=/stage.sh --mount=src=.cache/downloads/50-avisynth_38862222396fc25c9a022f0fa5687a46a9e772d8ea3dd962dc6020adaee33ac3.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS dav1d
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-dav1d.sh" STAGENAME="50-dav1d"
+RUN --mount=src=scripts.d/50-dav1d.sh,dst=/stage.sh --mount=src=.cache/downloads/50-dav1d_befba75ab0276c040d9b64ec5c2e9fd9ef747b2aa8cb6b949895a07939d1431c.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS davs2
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-davs2.sh" STAGENAME="50-davs2"
+RUN --mount=src=scripts.d/50-davs2.sh,dst=/stage.sh --mount=src=.cache/downloads/50-davs2_a2d3a5d05dbd810e7a33f41ca77f70f1775ab8318ffe3e1b365105e8ad813d7e.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS dvd
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-dvd/30-libdvdcss.sh" STAGENAME="30-libdvdcss"
+RUN --mount=src=scripts.d/50-dvd/30-libdvdcss.sh,dst=/stage.sh --mount=src=.cache/downloads/30-libdvdcss_2dbef6f0ef468ff5fce4f92338bd473ce020038258634c6b763a5a4f9dcc91d8.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/50-dvd/40-libdvdread.sh" STAGENAME="40-libdvdread"
+RUN --mount=src=scripts.d/50-dvd/40-libdvdread.sh,dst=/stage.sh --mount=src=.cache/downloads/40-libdvdread_f114ee19435b2f286be2eb819f9900b7fd737761beb1003583f494d717835273.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/50-dvd/50-libdvdnav.sh" STAGENAME="50-libdvdnav"
+RUN --mount=src=scripts.d/50-dvd/50-libdvdnav.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libdvdnav_1b6528010490a41cb276f9a5772c7cf6667ec2fb8665058f727866a93761b263.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS ffnvcodec
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-ffnvcodec.sh" STAGENAME="50-ffnvcodec"
+RUN --mount=src=scripts.d/50-ffnvcodec.sh,dst=/stage.sh --mount=src=.cache/downloads/50-ffnvcodec_728e3f3bf6ba23ff4e2656c95b339091c7adfb2321e9cec494236c660f2e2c5a.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS fftw3
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/25-fftw3.sh" STAGENAME="25-fftw3"
+RUN --mount=src=scripts.d/25-fftw3.sh,dst=/stage.sh --mount=src=.cache/downloads/25-fftw3_f590d55efb2139d10bea09f7f3542f648290d35fc2ecb3122d6896bf2af049e3.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS frei0r
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-frei0r.sh" STAGENAME="50-frei0r"
+RUN --mount=src=scripts.d/50-frei0r.sh,dst=/stage.sh --mount=src=.cache/downloads/50-frei0r_133425a6de12ece3f31f1fab0e5e228703fdffa3d347dcac946a9621531acbe7.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS fribidi
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/25-fribidi.sh" STAGENAME="25-fribidi"
+RUN --mount=src=scripts.d/25-fribidi.sh,dst=/stage.sh --mount=src=.cache/downloads/25-fribidi_6478bc05fa723ee7ffb8888fd59d15915b9b17b706a5d92e106f369491025d7c.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS gme
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-gme.sh" STAGENAME="50-gme"
+RUN --mount=src=scripts.d/50-gme.sh,dst=/stage.sh --mount=src=.cache/downloads/50-gme_40bc50336a9ccf45b553298baabdfd193f173b1b1f89bc02531e5946fac0387a.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS gmp
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/25-gmp.sh" STAGENAME="25-gmp"
+RUN --mount=src=scripts.d/25-gmp.sh,dst=/stage.sh --mount=src=.cache/downloads/25-gmp_4b555c079737ef0f01f15976d7bbbff9d0dc94d7a06edd45d08a6cd2b60bdb86.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS kvazaar
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-kvazaar.sh" STAGENAME="50-kvazaar"
+RUN --mount=src=scripts.d/50-kvazaar.sh,dst=/stage.sh --mount=src=.cache/downloads/50-kvazaar_36ba4fecb23c3c52d829030be410feb99cf26cb09ddecc0108d24aa538a0f99c.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS lcevcdec
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-lcevcdec.sh" STAGENAME="50-lcevcdec"
+RUN --mount=src=scripts.d/50-lcevcdec.sh,dst=/stage.sh --mount=src=.cache/downloads/50-lcevcdec_74a493e06a33c4de0c2adcc72118cd80f1f80ed756ba9948c92ac5d0e369f1c9.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS libiconv
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/20-libiconv.sh" STAGENAME="20-libiconv"
+RUN --mount=src=scripts.d/20-libiconv.sh,dst=/stage.sh --mount=src=.cache/downloads/20-libiconv_7632ad3d8024eb671bb3476463440e9292ca281778dbc4058d77354a9da21371.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS libjxl
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-libjxl/45-brotli.sh" STAGENAME="45-brotli"
+RUN --mount=src=scripts.d/50-libjxl/45-brotli.sh,dst=/stage.sh --mount=src=.cache/downloads/45-brotli_62e458e07a4ffe9afc4b1e108241bc82e6ac2c402fa714a836835095831a578e.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/50-libjxl/45-lcms2.sh" STAGENAME="45-lcms2"
+RUN --mount=src=scripts.d/50-libjxl/45-lcms2.sh,dst=/stage.sh --mount=src=.cache/downloads/45-lcms2_d43c67c74ecc9d90604f38ff13c0435f5ad1c40bac958861eeb6141f11d319a1.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/50-libjxl/50-libjxl.sh" STAGENAME="50-libjxl"
+RUN --mount=src=scripts.d/50-libjxl/50-libjxl.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libjxl_587b4b1e8d35fe19f85fce75dafafff781a8f008e1a0f861e33c733adb092c03.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS libogg
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/25-libogg.sh" STAGENAME="25-libogg"
+RUN --mount=src=scripts.d/25-libogg.sh,dst=/stage.sh --mount=src=.cache/downloads/25-libogg_bdea5ee518d129340be457dcc11c2cef63053ac3c827e71311caff1dd3c43339.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS libopus
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-libopus.sh" STAGENAME="50-libopus"
+RUN --mount=src=scripts.d/50-libopus.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libopus_d5d6bff35ed4cca25b341844c0f89c9f98b625b904750bdd960722ea107e9a60.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS librist
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-librist/40-mbedtls.sh" STAGENAME="40-mbedtls"
+RUN --mount=src=scripts.d/50-librist/40-mbedtls.sh,dst=/stage.sh --mount=src=.cache/downloads/40-mbedtls_3b771d3c02673da6b96186969b7543643ed54c80cbf805d2b4d604160641f57a.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/50-librist/50-librist.sh" STAGENAME="50-librist"
+RUN --mount=src=scripts.d/50-librist/50-librist.sh,dst=/stage.sh --mount=src=.cache/downloads/50-librist_224cb7e74ef26cf87ac20c05976046cb5a628c7cf64bff7a64f0ed792951d8e6.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS libsamplerate
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/45-libsamplerate.sh" STAGENAME="45-libsamplerate"
+RUN --mount=src=scripts.d/45-libsamplerate.sh,dst=/stage.sh --mount=src=.cache/downloads/45-libsamplerate_3ae5a3324e89da0d7254873085ad23e2b1a0cb22c1e330b8d3beb1da0a0c0273.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS libudfread
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/45-libudfread.sh" STAGENAME="45-libudfread"
+RUN --mount=src=scripts.d/45-libudfread.sh,dst=/stage.sh --mount=src=.cache/downloads/45-libudfread_96846906ad23aa725778f07ec9cd966348205b22a9b4bed927e1986305b95c7e.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS libunibreak
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/45-libunibreak.sh" STAGENAME="45-libunibreak"
+RUN --mount=src=scripts.d/45-libunibreak.sh,dst=/stage.sh --mount=src=.cache/downloads/45-libunibreak_b853ebf9bfeb5a24db32ac3024fcb2b90a1f6906e146295a9611ea367ef90197.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS libvpx
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-libvpx.sh" STAGENAME="50-libvpx"
+RUN --mount=src=scripts.d/50-libvpx.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libvpx_7a8108f9e13a53453845471936a9705f28e2bf6aa9dac42ede1e5384288ac4f0.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS libwebp
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-libwebp.sh" STAGENAME="50-libwebp"
+RUN --mount=src=scripts.d/50-libwebp.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libwebp_b28181b353109eab229202e473a127aec9dd0844f1ad260a357f96c36f9fcd6e.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS libzmq
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-libzmq.sh" STAGENAME="50-libzmq"
+RUN --mount=src=scripts.d/50-libzmq.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libzmq_bda82769efa7aabb2af501e3be7804b449eea433a8e10a7ccec399a8de326379.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS lilv
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-lilv/96-lv2.sh" STAGENAME="96-lv2"
+RUN --mount=src=scripts.d/50-lilv/96-lv2.sh,dst=/stage.sh --mount=src=.cache/downloads/96-lv2_1833e554a5a1760aa41062569225bbb9856f09f3c23d37301074d82a17b0624e.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/50-lilv/96-serd.sh" STAGENAME="96-serd"
+RUN --mount=src=scripts.d/50-lilv/96-serd.sh,dst=/stage.sh --mount=src=.cache/downloads/96-serd_257c27b8651c05a3b7179f2477bd69ed036feac4eb253312569096821e69a8e7.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/50-lilv/96-zix.sh" STAGENAME="96-zix"
+RUN --mount=src=scripts.d/50-lilv/96-zix.sh,dst=/stage.sh --mount=src=.cache/downloads/96-zix_21e780c9ab8c0f8067c36bb53b76fcabc2dd828153b3f1ab082ed44281f62d13.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/50-lilv/97-sord.sh" STAGENAME="97-sord"
+RUN --mount=src=scripts.d/50-lilv/97-sord.sh,dst=/stage.sh --mount=src=.cache/downloads/97-sord_6ef433b3c59e64a645002e31f929dfec02cbd979f0d70b5373173e1ca217125d.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/50-lilv/98-sratom.sh" STAGENAME="98-sratom"
+RUN --mount=src=scripts.d/50-lilv/98-sratom.sh,dst=/stage.sh --mount=src=.cache/downloads/98-sratom_a7e01a157b247bfecbce4a5c63016fa503ddd5703ffc208af3f81805a7d30535.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/50-lilv/99-lilv.sh" STAGENAME="99-lilv"
+RUN --mount=src=scripts.d/50-lilv/99-lilv.sh,dst=/stage.sh --mount=src=.cache/downloads/99-lilv_0543a3c15e7971c2371260e51aad5ead6ffbc7a539de39540a906ebf944d829d.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS onevpl
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-onevpl.sh" STAGENAME="50-onevpl"
+RUN --mount=src=scripts.d/50-onevpl.sh,dst=/stage.sh --mount=src=.cache/downloads/50-onevpl_5d941b3a41ffe48ef8cecf80d28e0f16d7fbc8fe796aa02c426fb5280a1bc708.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS openal
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-openal.sh" STAGENAME="50-openal"
+RUN --mount=src=scripts.d/50-openal.sh,dst=/stage.sh --mount=src=.cache/downloads/50-openal_f95981d6e68858a6f0e5b3a4cecf6ebebc80c9d233d654345c9a3da57ba11887.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS openapv
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-openapv.sh" STAGENAME="50-openapv"
+RUN --mount=src=scripts.d/50-openapv.sh,dst=/stage.sh --mount=src=.cache/downloads/50-openapv_2948b5717bd2cb82f152768efd31189b5cfdc8b03a592a9d2a975563e6c54448.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS opencl
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/45-opencl.sh" STAGENAME="45-opencl"
+RUN --mount=src=scripts.d/45-opencl.sh,dst=/stage.sh --mount=src=.cache/downloads/45-opencl_307a126734a117d083bda73796a2c9e70a452f6478fc348addd903ebd58156ab.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS opencore-amr
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-opencore-amr.sh" STAGENAME="50-opencore-amr"
+RUN --mount=src=scripts.d/50-opencore-amr.sh,dst=/stage.sh --mount=src=.cache/downloads/50-opencore-amr_5d7ec3b8ffdd0f32309a659256916e3286724f08acf0f625a4b4f1f9c17ebf7c.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS openh264
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-openh264.sh" STAGENAME="50-openh264"
+RUN --mount=src=scripts.d/50-openh264.sh,dst=/stage.sh --mount=src=.cache/downloads/50-openh264_dd0be1df3be358a8a11eec5f958891e704696de08e0521cf9704a75bf693519d.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS openjpeg
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-openjpeg.sh" STAGENAME="50-openjpeg"
+RUN --mount=src=scripts.d/50-openjpeg.sh,dst=/stage.sh --mount=src=.cache/downloads/50-openjpeg_c2cdab7824fc83026cf46e7cef9df506767265ef79a1034ae9ea5652099b420f.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS rav1e
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-rav1e.sh" STAGENAME="50-rav1e"
+RUN --mount=src=scripts.d/50-rav1e.sh,dst=/stage.sh --mount=src=.cache/downloads/50-rav1e_0bba6aa8bbb91a3da33c9abb3e5b2e3abf0be7cd29c2f3fa395689cf0a082e9d.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS rpath
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/99-rpath.sh" STAGENAME="99-rpath"
+FROM base-layer AS snappy
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-snappy.sh" STAGENAME="50-snappy"
+RUN --mount=src=scripts.d/50-snappy.sh,dst=/stage.sh --mount=src=.cache/downloads/50-snappy_3c05d1552e076754bb5ececd08e6de9cf8e3218260643fa5dbfb66c87f5105fe.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS soxr
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-soxr.sh" STAGENAME="50-soxr"
+RUN --mount=src=scripts.d/50-soxr.sh,dst=/stage.sh --mount=src=.cache/downloads/50-soxr_d24c000584012b62b406f09325af85575932219b972b87ab3e2b1037bdc97c6a.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS svtav1
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-svtav1.sh" STAGENAME="50-svtav1"
+RUN --mount=src=scripts.d/50-svtav1.sh,dst=/stage.sh --mount=src=.cache/downloads/50-svtav1_ca448962971bfcf93e4fe58f8d0901486c24a26fb1e64d48ca99b779b5e393c0.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS twolame
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-twolame.sh" STAGENAME="50-twolame"
+RUN --mount=src=scripts.d/50-twolame.sh,dst=/stage.sh --mount=src=.cache/downloads/50-twolame_b034b56f3c8caa730922980b6e8aca15c6f3b46e3fa98d3229c337aeb7858f71.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS uavs3d
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-uavs3d.sh" STAGENAME="50-uavs3d"
+RUN --mount=src=scripts.d/50-uavs3d.sh,dst=/stage.sh --mount=src=.cache/downloads/50-uavs3d_f5c1983f0fc2360d5846298e08a8f89f2f345caa3beb83100ca9b48eff5ded6b.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS vidstab
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-vidstab.sh" STAGENAME="50-vidstab"
+RUN --mount=src=scripts.d/50-vidstab.sh,dst=/stage.sh --mount=src=.cache/downloads/50-vidstab_b2afeccab2f2f48dd56f5cadd43984011ee9bf7cf36113a0a545fe54a3368123.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS vmaf
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/45-vmaf.sh" STAGENAME="45-vmaf"
+RUN --mount=src=scripts.d/45-vmaf.sh,dst=/stage.sh --mount=src=.cache/downloads/45-vmaf_a212e3c9e675f67b7862a0717c618308e75f69391385122f9dd9042fe6628882.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS vulkan
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/47-vulkan/40-vulkan-headers.sh" STAGENAME="40-vulkan-headers"
+RUN --mount=src=scripts.d/47-vulkan/40-vulkan-headers.sh,dst=/stage.sh --mount=src=.cache/downloads/40-vulkan-headers_cb5b4cb744b3a876829819b0d217f29eca3b112da30543d45567a8765ee7996b.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/47-vulkan/45-vulkan-loader.sh" STAGENAME="45-vulkan-loader"
+RUN --mount=src=scripts.d/47-vulkan/45-vulkan-loader.sh,dst=/stage.sh --mount=src=.cache/downloads/45-vulkan-loader_93172c27a5edb69388618deed21b34eed48404fef3ea16616d52d6d45f83ba7f.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/47-vulkan/50-shaderc.sh" STAGENAME="50-shaderc"
+RUN --mount=src=scripts.d/47-vulkan/50-shaderc.sh,dst=/stage.sh --mount=src=.cache/downloads/50-shaderc_29e02a337855fa28560076383c49e2aeeefeb32ec1050d45b514b4b5482d7b51.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/47-vulkan/55-spirv-cross.sh" STAGENAME="55-spirv-cross"
+RUN --mount=src=scripts.d/47-vulkan/55-spirv-cross.sh,dst=/stage.sh --mount=src=.cache/downloads/55-spirv-cross_3748d56b8b02e28d7627725d4e9e44a22175e1de7281ad0490f90fb937d88161.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/47-vulkan/60-spirv-headers.sh" STAGENAME="60-spirv-headers"
+RUN --mount=src=scripts.d/47-vulkan/60-spirv-headers.sh,dst=/stage.sh --mount=src=.cache/downloads/60-spirv-headers_0987873192a0b04883dc8badec5a74b6698124a03683fd2ccd78df9d46e8e830.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/47-vulkan/99-enable.sh" STAGENAME="99-enable"
+RUN --mount=src=scripts.d/47-vulkan/99-enable.sh,dst=/stage.sh run_stage /stage.sh
+FROM base-layer AS vvenc
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-vvenc.sh" STAGENAME="50-vvenc"
+RUN --mount=src=scripts.d/50-vvenc.sh,dst=/stage.sh --mount=src=.cache/downloads/50-vvenc_ac154095ad373cfc25969847c29414053461991a677d5d1b3ffcae4cf22c3c05.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS x11
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/45-x11/10-xcbproto.sh" STAGENAME="10-xcbproto"
+RUN --mount=src=scripts.d/45-x11/10-xcbproto.sh,dst=/stage.sh --mount=src=.cache/downloads/10-xcbproto_aecb3156bc10c1a8bae6c1bb11f21b8d7f768876cddde7302804c9e8ffba7484.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/45-x11/10-xproto.sh" STAGENAME="10-xproto"
+RUN --mount=src=scripts.d/45-x11/10-xproto.sh,dst=/stage.sh --mount=src=.cache/downloads/10-xproto_8688412b2a40b6260fc6bc9e8f1a511b48c97addfe0af743af7cee19a31bd4c6.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/45-x11/10-xtrans.sh" STAGENAME="10-xtrans"
+RUN --mount=src=scripts.d/45-x11/10-xtrans.sh,dst=/stage.sh --mount=src=.cache/downloads/10-xtrans_0e6176d565fd1b18f5d6be8707e25768b7bf69f9579fa3ad3cba95af4f630a9d.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/45-x11/20-libxau.sh" STAGENAME="20-libxau"
+RUN --mount=src=scripts.d/45-x11/20-libxau.sh,dst=/stage.sh --mount=src=.cache/downloads/20-libxau_a77e4289ff59cebb0e2033eea922d179ad283dda050de5b6778de2a6e922e4eb.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/45-x11/30-libxcb.sh" STAGENAME="30-libxcb"
+RUN --mount=src=scripts.d/45-x11/30-libxcb.sh,dst=/stage.sh --mount=src=.cache/downloads/30-libxcb_62bd452054480ef97d75bc7acc47dae36fcb32c4ef00ca7883430c528003eab9.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/45-x11/40-libx11.sh" STAGENAME="40-libx11"
+RUN --mount=src=scripts.d/45-x11/40-libx11.sh,dst=/stage.sh --mount=src=.cache/downloads/40-libx11_d65260f4da4c64cffa0b527ea71d53daceb74021283b5492b5c5505e75890658.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/45-x11/50-libxext.sh" STAGENAME="50-libxext"
+RUN --mount=src=scripts.d/45-x11/50-libxext.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libxext_7a34fd4eccf5c92fa1873189fb11045fae39876d1600c65a436f32a13a47f912.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/45-x11/50-libxfixes.sh" STAGENAME="50-libxfixes"
+RUN --mount=src=scripts.d/45-x11/50-libxfixes.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libxfixes_b0399b879cf10da97be556a7d224dc7e04f3caad8b63a46fcc683e8507fb1495.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/45-x11/50-libxi.sh" STAGENAME="50-libxi"
+RUN --mount=src=scripts.d/45-x11/50-libxi.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libxi_a1edf30e31ce9cc9e27eb1dae07bde7eb49ccf6892c4d3ad5482fbb4b184e345.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/45-x11/50-libxinerama.sh" STAGENAME="50-libxinerama"
+RUN --mount=src=scripts.d/45-x11/50-libxinerama.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libxinerama_ba0cdf4b001e4bcb597ff1724ca04a818f15665b64bf9241c52047031c063f79.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/45-x11/50-libxrender.sh" STAGENAME="50-libxrender"
+RUN --mount=src=scripts.d/45-x11/50-libxrender.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libxrender_7d6e7a256b86772c0becc40b1a7b8e980f33a155dd1ae4266480c05406712bf6.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/45-x11/50-libxscrnsaver.sh" STAGENAME="50-libxscrnsaver"
+RUN --mount=src=scripts.d/45-x11/50-libxscrnsaver.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libxscrnsaver_5c9dcd646e93ff51cbd135d4e0985d88853f250ce626ab0889723b8bee770e3d.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/45-x11/50-libxxf86vm.sh" STAGENAME="50-libxxf86vm"
+RUN --mount=src=scripts.d/45-x11/50-libxxf86vm.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libxxf86vm_03e86e2ea8e466bee1b235888c6ce6a6239689b2dd3d8f1f2a8c2f1ce5abdadc.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/45-x11/60-libglvnd.sh" STAGENAME="60-libglvnd"
+RUN --mount=src=scripts.d/45-x11/60-libglvnd.sh,dst=/stage.sh --mount=src=.cache/downloads/60-libglvnd_b5decd6ef0d35071d5ef435a736000a7c2dfe94707206653267c61e11630c960.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/45-x11/60-libxcursor.sh" STAGENAME="60-libxcursor"
+RUN --mount=src=scripts.d/45-x11/60-libxcursor.sh,dst=/stage.sh --mount=src=.cache/downloads/60-libxcursor_899caf3541ff1f0fdf3a60cbc483877819b6bc6b8fc6d56ae9863dd95d5b4a45.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/45-x11/60-libxrandr.sh" STAGENAME="60-libxrandr"
+RUN --mount=src=scripts.d/45-x11/60-libxrandr.sh,dst=/stage.sh --mount=src=.cache/downloads/60-libxrandr_76ce7ef426d59979a255619444de369567889d5bfe2af130ef77700c096230fc.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/45-x11/60-libxv.sh" STAGENAME="60-libxv"
+RUN --mount=src=scripts.d/45-x11/60-libxv.sh,dst=/stage.sh --mount=src=.cache/downloads/60-libxv_cda840dfd0f852c6535789148438618900c0a214b03a010c02ff1364a5499e02.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/45-x11/99-finalize.sh" STAGENAME="99-finalize"
+RUN --mount=src=scripts.d/45-x11/99-finalize.sh,dst=/stage.sh run_stage /stage.sh
+FROM base-layer AS x264
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-x264.sh" STAGENAME="50-x264"
+RUN --mount=src=scripts.d/50-x264.sh,dst=/stage.sh --mount=src=.cache/downloads/50-x264_7aee4cf46b7c0eff1a5ad3d23ae43a29562065ef2866a4a883d7ad2db0fb755d.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS x265
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-x265.sh" STAGENAME="50-x265"
+RUN --mount=src=scripts.d/50-x265.sh,dst=/stage.sh --mount=src=.cache/downloads/50-x265_f5451b1fd1b436572157ea0d3fa22ad43fe83aac3640a6fcbaee0b5a8cec15bf.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS xavs2
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-xavs2.sh" STAGENAME="50-xavs2"
+RUN --mount=src=scripts.d/50-xavs2.sh,dst=/stage.sh --mount=src=.cache/downloads/50-xavs2_983aacbab6d33318bf9c4742b41a1ed9d42afc12a0493ba97d07404a99734009.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS xvid
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-xvid.sh" STAGENAME="50-xvid"
+RUN --mount=src=scripts.d/50-xvid.sh,dst=/stage.sh --mount=src=.cache/downloads/50-xvid_03619a39e7e15a372b56fc954435c35668ed47258d7e7d3f2e47ba521e3b884f.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS zimg
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/50-zimg.sh" STAGENAME="50-zimg"
+RUN --mount=src=scripts.d/50-zimg.sh,dst=/stage.sh --mount=src=.cache/downloads/50-zimg_6315e79a8732e7c94f83940865c2cdc7c3a44be0b94db8fa6b4325f652ae8b34.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS zlib
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+ENV SELF="scripts.d/20-zlib.sh" STAGENAME="20-zlib"
+RUN --mount=src=scripts.d/20-zlib.sh,dst=/stage.sh --mount=src=.cache/downloads/20-zlib_132d135e890f221364f5e66a4293ae247c65dd02d42b44d3ea02af0eeb35154a.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS aom
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=vmaf $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/50-aom.sh" STAGENAME="50-aom"
+RUN --mount=src=scripts.d/50-aom.sh,dst=/stage.sh --mount=src=.cache/downloads/50-aom_a0d7214a9128484e43242384adde49ae981b12fa85b940d49f5fe5e9013b2a59.tar.xz,dst=/cache.tar.xz --mount=src=patches/aom,dst=/patches run_stage /stage.sh
+FROM base-layer AS aribb24
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=zlib $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/50-aribb24/25-libpng.sh" STAGENAME="25-libpng"
+RUN --mount=src=scripts.d/50-aribb24/25-libpng.sh,dst=/stage.sh --mount=src=.cache/downloads/25-libpng_f695ee41ddfc411ac8050d7d4ee5ec37a63db25183186f120bcfa6056d5e8b07.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/50-aribb24/50-libaribb24.sh" STAGENAME="50-libaribb24"
+RUN --mount=src=scripts.d/50-aribb24/50-libaribb24.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libaribb24_3dd74ffb861f7ef9133dab074b9845408d84ebc49db9aee5d91829efba6d52ce.tar.xz,dst=/cache.tar.xz --mount=src=patches/aribb24,dst=/patches run_stage /stage.sh
+FROM base-layer AS chromaprint
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=fftw3 $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/50-chromaprint.sh" STAGENAME="50-chromaprint"
+RUN --mount=src=scripts.d/50-chromaprint.sh,dst=/stage.sh --mount=src=.cache/downloads/50-chromaprint_011e02218acc30fa6ea919e4ac8906fa1bd92171597c681f78dd7daf3457a1cb.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS libmp3lame
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=libiconv $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/50-libmp3lame.sh" STAGENAME="50-libmp3lame"
+RUN --mount=src=scripts.d/50-libmp3lame.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libmp3lame_572043a74090d765071c155bc1b107920cde3add6ff61932e789f12d75e0c887.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS libplacebo
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=vulkan $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=vulkan /opt/glslc /usr/bin/glslc
+ENV SELF="scripts.d/50-libplacebo.sh" STAGENAME="50-libplacebo"
+RUN --mount=src=scripts.d/50-libplacebo.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libplacebo_742888aa9930c21390aea4bfa68e1b1e535876fd7c2207b8a5d338c6b7ed47a9.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS libtheora
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=libogg $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/50-libtheora.sh" STAGENAME="50-libtheora"
+RUN --mount=src=scripts.d/50-libtheora.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libtheora_c5b1505081f2493a61c94a64ef8eef6de9b851447fab834bd5f9b6e35ee1d008.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS libvorbis
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=libogg $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/45-libvorbis.sh" STAGENAME="45-libvorbis"
+RUN --mount=src=scripts.d/45-libvorbis.sh,dst=/stage.sh --mount=src=.cache/downloads/45-libvorbis_85e9110fb9a64a78e7b3709ea3458dba4793832034c2618145881beb9471fd8e.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS libxml2
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=libiconv $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/25-libxml2.sh" STAGENAME="25-libxml2"
+RUN --mount=src=scripts.d/25-libxml2.sh,dst=/stage.sh --mount=src=.cache/downloads/25-libxml2_13f01fe8bcf29c21f1357f29e928f2dba6f0643d7371f692bfa68b473e3b1952.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS openssl
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=zlib $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/25-openssl.sh" STAGENAME="25-openssl"
+RUN --mount=src=scripts.d/25-openssl.sh,dst=/stage.sh --mount=src=.cache/downloads/25-openssl_9b34fe90db7bf8486ec3d2bb51d8a347e64cdcbf340f615f8db1755c77156e65.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS rubberband
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=fftw3 $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libsamplerate $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/50-rubberband.sh" STAGENAME="50-rubberband"
+RUN --mount=src=scripts.d/50-rubberband.sh,dst=/stage.sh --mount=src=.cache/downloads/50-rubberband_5d3ca7b4a1f4c07ead3f23ba9c7a3736384a9394a34e41bf70a78075e0ed9593.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS vaapi
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=x11 $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=x11 $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=zlib $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/50-vaapi/30-libpciaccess.sh" STAGENAME="30-libpciaccess"
+RUN --mount=src=scripts.d/50-vaapi/30-libpciaccess.sh,dst=/stage.sh --mount=src=.cache/downloads/30-libpciaccess_7e6e74a7ea243214bf8b5e16e9bdfe5b22f577c4daba8ee93b59b3e5dfa8c1ad.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/50-vaapi/40-libdrm.sh" STAGENAME="40-libdrm"
+RUN --mount=src=scripts.d/50-vaapi/40-libdrm.sh,dst=/stage.sh --mount=src=.cache/downloads/40-libdrm_39bc4757be55014bc28a499573fede501d5ae1bcdf89a9d79df8d16f2071d478.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/50-vaapi/50-libva.sh" STAGENAME="50-libva"
+RUN --mount=src=scripts.d/50-vaapi/50-libva.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libva_dd96c4de22d3925da87a52c9ac4e8d6e611dc6b7979315b1bcdc24cd21529a3b.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/50-vaapi/99-finalize.sh" STAGENAME="99-finalize"
+RUN --mount=src=scripts.d/50-vaapi/99-finalize.sh,dst=/stage.sh run_stage /stage.sh
+FROM base-layer AS xz
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=libiconv $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/25-xz.sh" STAGENAME="25-xz"
+RUN --mount=src=scripts.d/25-xz.sh,dst=/stage.sh --mount=src=.cache/downloads/25-xz_f1b8892c4df66e1919abf7c488ea1ca25f3da29825922eb00cd9aa56f43fab12.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS zvbi
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=libiconv $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/50-zvbi.sh" STAGENAME="50-zvbi"
+RUN --mount=src=scripts.d/50-zvbi.sh,dst=/stage.sh --mount=src=.cache/downloads/50-zvbi_50436a6b2f8f37bea69ea28d5c7b0adb56a96ff85bbd93df6fd6d0f62bf26ed4.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS fonts
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=libiconv $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libxml2 $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/45-fonts/25-freetype.sh" STAGENAME="25-freetype"
+RUN --mount=src=scripts.d/45-fonts/25-freetype.sh,dst=/stage.sh --mount=src=.cache/downloads/25-freetype_fef5d53226315ab876e6276866e0f957bc81ae5b6c4a6e34708da033b0aeb239.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/45-fonts/35-fontconfig.sh" STAGENAME="35-fontconfig"
+RUN --mount=src=scripts.d/45-fonts/35-fontconfig.sh,dst=/stage.sh --mount=src=.cache/downloads/35-fontconfig_6925d420707b3f02eb6a2ada8305f471c8ba7ffe2ecac3d85451d624a68f321f.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/45-fonts/45-harfbuzz.sh" STAGENAME="45-harfbuzz"
+RUN --mount=src=scripts.d/45-fonts/45-harfbuzz.sh,dst=/stage.sh --mount=src=.cache/downloads/45-harfbuzz_40b219118341b7fe074d8aff2f0f9a07f811141c1743a14ec25f10258a7c0a62.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+ENV SELF="scripts.d/45-fonts/50-freetype.sh" STAGENAME="50-freetype"
+RUN --mount=src=scripts.d/45-fonts/50-freetype.sh,dst=/stage.sh --mount=src=.cache/downloads/50-freetype_fef5d53226315ab876e6276866e0f957bc81ae5b6c4a6e34708da033b0aeb239.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS libcurl
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=zlib $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=openssl $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/50-libcurl.sh" STAGENAME="50-libcurl"
+RUN --mount=src=scripts.d/50-libcurl.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libcurl_c58158045892b58c1898357e7b3fcd4144e51796b7584acc322ed9b12c51f124.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS libssh
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=zlib $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=openssl $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/50-libssh.sh" STAGENAME="50-libssh"
+RUN --mount=src=scripts.d/50-libssh.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libssh_067e02269d642d7889c16c309daee3cffcaa735f3a39259230c2ec2297ea7e00.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS openmpt
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=libogg $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=zlib $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libvorbis $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/50-openmpt.sh" STAGENAME="50-openmpt"
+RUN --mount=src=scripts.d/50-openmpt.sh,dst=/stage.sh --mount=src=.cache/downloads/50-openmpt_7019497984915be77e51e02643b9f0e2ccc5c39e7e34ddc03b922b68e352ed0f.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS pulseaudio
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=zlib $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libiconv $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libsamplerate $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=soxr $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=openssl $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/45-pulseaudio.sh" STAGENAME="45-pulseaudio"
+RUN --mount=src=scripts.d/45-pulseaudio.sh,dst=/stage.sh --mount=src=.cache/downloads/45-pulseaudio_5195fafb7d113a61f6eb8a1d86b17b7dec582bca129b6e620445a9534f357757.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS srt
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=zlib $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=openssl $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/50-srt.sh" STAGENAME="50-srt"
+RUN --mount=src=scripts.d/50-srt.sh,dst=/stage.sh --mount=src=.cache/downloads/50-srt_224921fa1ca86e4fb9795afc4aa246ac53510e141d15a9c0be1db5e56ecda40d.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS libaribcaption
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=libiconv $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libxml2 $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=zlib $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=fonts $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=openssl $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/50-libaribcaption.sh" STAGENAME="50-libaribcaption"
+RUN --mount=src=scripts.d/50-libaribcaption.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libaribcaption_ee3a695dd6aa684d2f1180eef7a8d6c41de01bbce8c185e74edf8472e03d495e.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS libass
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=libiconv $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libxml2 $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=fonts $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=fribidi $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libunibreak $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/50-libass.sh" STAGENAME="50-libass"
+RUN --mount=src=scripts.d/50-libass.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libass_f16ff8332a2c175333f24db916c7d6b038e7fa7116fdfb303159a9dd25e95bd2.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS libbluray
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=libiconv $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libxml2 $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=fonts $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libudfread $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/50-libbluray.sh" STAGENAME="50-libbluray"
+RUN --mount=src=scripts.d/50-libbluray.sh,dst=/stage.sh --mount=src=.cache/downloads/50-libbluray_eced7494d18fc32c91e7664e9106cf1b1211645ab13cc31eb6f4f8ccbe2a6032.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS sdl
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=zlib $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libiconv $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libsamplerate $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=soxr $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=openssl $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=x11 $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=x11 $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=pulseaudio $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+ENV SELF="scripts.d/50-sdl.sh" STAGENAME="50-sdl"
+RUN --mount=src=scripts.d/50-sdl.sh,dst=/stage.sh --mount=src=.cache/downloads/50-sdl_0ef5b5fa25ed0cc561dce0a22af586d0936ac938b5e00d5065991bbc5350db32.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+FROM base-layer AS combine-layer
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=libiconv $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=zlib $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libxml2 $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libogg $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libsamplerate $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=soxr $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=openssl $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=vmaf $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=fftw3 $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=fonts $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=fribidi $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libunibreak $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libudfread $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=vulkan $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=vulkan /opt/glslc /usr/bin/glslc
+COPY --link --from=libvorbis $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=x11 $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=x11 $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
+COPY --link --from=pulseaudio $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=gmp $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xz $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=lcevcdec $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=opencl $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=amf $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=aom $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=aribb24 $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=avisynth $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=chromaprint $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=dav1d $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=davs2 $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=dvd $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=ffnvcodec $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=frei0r $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=gme $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=kvazaar $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libaribcaption $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libass $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libbluray $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libcurl $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libjxl $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libmp3lame $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libopus $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libplacebo $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=librist $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libssh $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libtheora $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libvpx $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libwebp $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=libzmq $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=lilv $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=onevpl $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=openal $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=openapv $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=opencore-amr $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=openh264 $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=openjpeg $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=openmpt $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=rav1e $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=rubberband $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=sdl $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=snappy $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=srt $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=svtav1 $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=twolame $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=uavs3d $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=vaapi $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=vidstab $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=vvenc $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=x264 $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=x265 $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xavs2 $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=xvid $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=zimg $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+COPY --link --from=zvbi $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
+FROM base-layer
+COPY --link --from=combine-layer $FFBUILD_PREFIX/. $FFBUILD_PREFIX
+COPY --link --from=vulkan /opt/glslc /usr/bin/glslc
+ENV FREI0R_PATH=$FFBUILD_PREFIX/lib/frei0r-1
+ENV \
+    FF_CONFIGURE="--enable-gpl --enable-version3 --disable-debug --enable-iconv --enable-zlib --enable-libxml2 --enable-libsoxr --enable-openssl --enable-libvmaf --enable-fontconfig --enable-libharfbuzz --enable-libfreetype --enable-libfribidi --enable-vulkan --enable-libshaderc --enable-libvorbis --enable-libxcb --enable-xlib --enable-libpulse --enable-gmp --enable-lzma --enable-liblcevc-dec --enable-opencl --enable-amf --enable-libaom --enable-libaribb24 --enable-avisynth --enable-chromaprint --enable-libdav1d --enable-libdavs2 --enable-libdvdread --enable-libdvdnav --disable-libfdk-aac --enable-ffnvcodec --enable-cuda-llvm --enable-frei0r --enable-libgme --enable-libkvazaar --enable-libaribcaption --enable-libass --enable-libbluray --enable-libjxl --enable-libmp3lame --enable-libopus --enable-libplacebo --enable-librist --enable-libssh --enable-libtheora --enable-libvpx --enable-libwebp --enable-libzmq --enable-lv2 --enable-libvpl --enable-openal --enable-liboapv --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-librav1e --enable-librubberband --disable-schannel --enable-sdl2 --enable-libsnappy --enable-libsrt --enable-libsvtav1 --enable-libtwolame --enable-libuavs3d --enable-libdrm --enable-vaapi --enable-libvidstab --enable-libvvenc --disable-whisper --enable-libx264 --enable-libx265 --enable-libxavs2 --enable-libxvid --enable-libzimg --enable-libzvbi" \
+    FF_CFLAGS="-DLIBTWOLAME_STATIC" \
+    FF_CXXFLAGS="" \
+    FF_LDFLAGS="-pthread" \
+    FF_LDEXEFLAGS="-pie" \
+    FF_LIBS="-lgomp -ldl"

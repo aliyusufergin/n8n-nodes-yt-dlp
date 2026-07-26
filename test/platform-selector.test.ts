@@ -90,7 +90,7 @@ describe('Platform Selector', () => {
 		expect(Object.isFrozen(toolchain)).toBe(true);
 		expect(Object.values(toolchain).every(isAbsolute)).toBe(true);
 		await expect(api.getVerifiedToolchain()).resolves.toBe(toolchain);
-	});
+	}, 30_000);
 
 	it('fully re-attests an identically replaced executable after the request restat detects its fingerprint', async () => {
 		const { api } = await createSelectorFixture();
@@ -115,7 +115,7 @@ describe('Platform Selector', () => {
 		await expect(api.getVerifiedToolchain()).rejects.toMatchObject({
 			code: 'TOOLCHAIN_ATTESTATION_FAILED',
 		});
-	});
+	}, 30_000);
 
 	it.each([
 		[

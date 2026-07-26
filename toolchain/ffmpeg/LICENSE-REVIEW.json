@@ -1,0 +1,16 @@
+{
+	"schemaVersion": 1,
+	"status": "approved",
+	"reviewer": "aliyusufergin",
+	"reviewedAt": "2026-07-26T11:25:00Z",
+	"decision": {
+		"separateProcessAggregate": "supported"
+	},
+	"bindings": {
+		"binaryAssetSha256": "7a19456683e31d937ae48d51e23dfb869dbb9db1e4d6e1b6881d7fed168fa5cf",
+		"licenseSurfaceSha256": "8e1b9f54689f7febd107f775f3cf7c2be4e349ffb952b7681dfb3423512c3008",
+		"linkedLibrariesSha256": "ad103c5c95482590c657ba672d634182b1dd912f862bfac57b8e137719ab471e",
+		"sourceBundleSha256": "3dcd8963e229e3b34fb9d0d969377e59e25a01146fd128282ad599200034e882",
+		"sourceManifestSha256": "bddc27df1db4ec67a95077f699432b2c5ae720d66d1ce9316c4de8bf17215179"
+	}
+}
