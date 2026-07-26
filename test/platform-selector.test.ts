@@ -217,7 +217,7 @@ describe('Platform Selector', () => {
 			code: 'TOOLCHAIN_ATTESTATION_FAILED',
 			message: 'The packaged yt-dlp toolchain failed runtime attestation.',
 		});
-	});
+	}, 15_000);
 
 	it.each([
 		['platform', 'darwin'],

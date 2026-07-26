@@ -459,7 +459,7 @@ describe('download request', () => {
 		).toEqual([]);
 	});
 
-	it('adds fixed config isolation and node-controlled resource limits', async () => {
+	it('adds the exact node-controlled paths, progress suppression, template, and concurrency argv', async () => {
 		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-resource-argv-'));
 		temporaryDirectories.push(workspaceParent);
 		const observedArgumentsPath = join(workspaceParent, 'observed-arguments.json');
@@ -486,27 +486,46 @@ describe('download request', () => {
 		const observedArguments = JSON.parse(
 			await readFile(observedArgumentsPath, 'utf8'),
 		) as string[];
-		expect(observedArguments).toEqual(
-			expect.arrayContaining([
-				'--ignore-config',
-				'--config-locations',
-				'-',
-				'--no-update',
-				'--no-plugin-dirs',
-				'--no-js-runtimes',
-				'--js-runtimes',
-				'deno:/opt/n8n-yt-dlp/bin/deno',
-				'--no-remote-components',
-				'--ffmpeg-location',
-				'/opt/n8n-yt-dlp/bin/ffmpeg',
-				'--max-filesize',
-				String(128 * 1024 * 1024),
-				'--concurrent-fragments',
-				'1',
-				'--postprocessor-args',
-				'ffmpeg:-threads 1',
-			]),
+		const artifactsDirectory = observedArguments[observedArguments.indexOf('--paths') + 1];
+		const tempDirectory = observedArguments[observedArguments.lastIndexOf('--paths') + 1];
+		expect(artifactsDirectory).toMatch(
+			new RegExp(`^${workspaceParent}/n8n-nodes-yt-dlp-[^/]+/artifacts$`, 'u'),
 		);
+		expect(tempDirectory).toBe(
+			`temp:${artifactsDirectory.slice(0, -'artifacts'.length)}temp`,
+		);
+		expect(observedArguments).toEqual([
+			'--ignore-config',
+			'--config-locations',
+			'-',
+			'--no-update',
+			'--no-plugin-dirs',
+			'--no-js-runtimes',
+			'--js-runtimes',
+			'deno:/opt/n8n-yt-dlp/bin/deno',
+			'--no-remote-components',
+			'--ffmpeg-location',
+			'/opt/n8n-yt-dlp/bin/ffmpeg',
+			'--abort-on-error',
+			'--no-progress',
+			'--max-filesize',
+			String(128 * 1024 * 1024),
+			'--concurrent-fragments',
+			'1',
+			'--postprocessor-args',
+			'ffmpeg:-threads 1',
+			'--paths',
+			artifactsDirectory,
+			'--paths',
+			tempDirectory,
+			'--output',
+			'%(autonumber)06d-%(id)s.%(ext)s',
+			'--restrict-filenames',
+			'--trim-filenames',
+			'160',
+			'--',
+			'https://example.com/video',
+		]);
 	});
 
 	it('classifies a real workspace overshoot as an indexed request failure', async () => {
@@ -1134,13 +1153,32 @@ describe('download request', () => {
 	});
 
 	it.each([
-		{ extension: 'mp4', expectedMimeType: 'video/mp4' },
-		{ extension: 'webm', expectedMimeType: 'video/webm' },
+		{ extension: 'aac', expectedMimeType: 'audio/aac' },
 		{ extension: 'aiff', expectedMimeType: 'audio/aiff' },
 		{ extension: 'alac', expectedMimeType: 'audio/alac' },
+		{ extension: 'ass', expectedMimeType: 'text/x-ssa' },
+		{ extension: 'avi', expectedMimeType: 'video/x-msvideo' },
+		{ extension: 'flac', expectedMimeType: 'audio/flac' },
+		{ extension: 'flv', expectedMimeType: 'video/x-flv' },
 		{ extension: 'gif', expectedMimeType: 'image/gif' },
+		{ extension: 'jpeg', expectedMimeType: 'image/jpeg' },
+		{ extension: 'jpg', expectedMimeType: 'image/jpeg' },
+		{ extension: 'lrc', expectedMimeType: 'text/plain' },
+		{ extension: 'm4a', expectedMimeType: 'audio/mp4' },
 		{ extension: 'mka', expectedMimeType: 'audio/x-matroska' },
+		{ extension: 'mkv', expectedMimeType: 'video/x-matroska' },
+		{ extension: 'mov', expectedMimeType: 'video/quicktime' },
+		{ extension: 'mp3', expectedMimeType: 'audio/mpeg' },
+		{ extension: 'mp4', expectedMimeType: 'video/mp4' },
+		{ extension: 'ogg', expectedMimeType: 'audio/ogg' },
+		{ extension: 'opus', expectedMimeType: 'audio/ogg' },
+		{ extension: 'png', expectedMimeType: 'image/png' },
+		{ extension: 'srt', expectedMimeType: 'application/x-subrip' },
+		{ extension: 'vtt', expectedMimeType: 'text/vtt' },
 		{ extension: 'vorbis', expectedMimeType: 'audio/vorbis' },
+		{ extension: 'wav', expectedMimeType: 'audio/wav' },
+		{ extension: 'webm', expectedMimeType: 'video/webm' },
+		{ extension: 'webp', expectedMimeType: 'image/webp' },
 		{ extension: 'unknown', expectedMimeType: 'application/octet-stream' },
 	])('returns a .$extension local synthetic download as one Artifact Item', async ({
 		extension,
