@@ -151,6 +151,7 @@ describe('published Platform Gate packages', () => {
 		);
 		if (platformPackage === undefined) throw new Error('The platform package fixture is missing.');
 		const packagedBin = join(platformPackage.extractedDirectory, 'package', 'bin');
+		const packageRoot = join(platformPackage.extractedDirectory, 'package');
 		const [ffmpegBytes, ffprobeBytes, ffmpegVersion, ffprobeVersion] = await Promise.all([
 			readFile(join(packagedBin, 'ffmpeg')),
 			readFile(join(packagedBin, 'ffprobe')),
@@ -158,6 +159,12 @@ describe('published Platform Gate packages', () => {
 			execFileAsync(join(packagedBin, 'ffprobe'), ['-hide_banner', '-version']),
 		]);
 
+		expect((await readdir(packagedBin)).sort()).toEqual([
+			'deno',
+			'ffmpeg',
+			'ffprobe',
+			'yt-dlp',
+		]);
 		expect(createHash('sha256').update(ffmpegBytes).digest('hex')).toBe(
 			'ea50d9fba39cc2f57785be7d082a65d5484728d83e9f90ecc6ba4372c05fc022',
 		);
@@ -168,6 +175,29 @@ describe('published Platform Gate packages', () => {
 		expect(ffmpegVersion.stdout).toContain('--enable-gpl --enable-version3');
 		expect(ffprobeVersion.stdout).toContain('ffprobe version N-125551-ga09be9b91e-20260712');
 		expect(ffprobeVersion.stdout).toContain('--enable-gpl --enable-version3');
+		const manifest = JSON.parse(
+			await readFile(join(packageRoot, 'execution-manifest.json'), 'utf8'),
+		) as { files: Array<{ name: string; path: string }> };
+		expect(manifest.files.map(({ name, path }) => ({ name, path }))).toEqual([
+			{ name: 'ytDlp', path: 'bin/yt-dlp' },
+			{ name: 'ffmpeg', path: 'bin/ffmpeg' },
+			{ name: 'ffprobe', path: 'bin/ffprobe' },
+			{ name: 'deno', path: 'bin/deno' },
+			{ name: 'ejsCore', path: 'assets/ejs/yt.solver.core.js' },
+			{ name: 'ejsLib', path: 'assets/ejs/yt.solver.lib.js' },
+		]);
+		expect(await readFile(join(packageRoot, 'LICENSES.md'), 'utf8')).toContain(
+			'| `bin/ffmpeg`, `bin/ffprobe`    | FFmpeg `N-125551-ga09be9b91e-20260712`, statically linked dependencies | `LICENSES/FFmpeg-GPLv3.txt`, `LICENSES/FFmpeg-Builds-MIT.txt`, and the component-indexed verbatim materials under `LICENSES/ffmpeg-static/` |',
+		);
+		await expect(
+			readFile(join(packageRoot, 'LICENSES', 'FFmpeg-GPLv3.txt'), 'utf8'),
+		).resolves.toContain('GNU GENERAL PUBLIC LICENSE');
+		await expect(
+			readFile(join(packageRoot, 'LICENSES', 'FFmpeg-Builds-MIT.txt'), 'utf8'),
+		).resolves.toContain('Permission is hereby granted');
+		expect(
+			await readdir(join(packageRoot, 'LICENSES', 'ffmpeg-static')),
+		).not.toHaveLength(0);
 	});
 
 	it('solves official frozen EJS N/SIG vectors and cached players with packaged Deno', async () => {
