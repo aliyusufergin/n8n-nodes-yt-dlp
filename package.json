@@ -36,7 +36,8 @@
 		"test:watch": "vitest",
 		"typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
 		"verify:ffmpeg-compliance": "node scripts/ffmpeg-source-bundle.mjs verify-package",
-		"prepublishOnly": "npm run verify:ffmpeg-compliance && n8n-node prerelease"
+		"verify:ffmpeg-release": "node scripts/ffmpeg-source-bundle.mjs verify-release",
+		"prepublishOnly": "npm run verify:ffmpeg-release && n8n-node prerelease"
 	},
 	"n8n": {
 		"n8nNodesApiVersion": 1,

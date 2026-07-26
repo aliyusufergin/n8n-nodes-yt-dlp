@@ -1,4 +1,4 @@
-FROM ghcr.io/yt-dlp/ffmpeg-builds/base-linux64@sha256:0fe9fc0b0831bc8c5a54705af7d8db2aac69c69e399c44f61d28989109a961cf AS base-layer
+FROM ghcr.io/yt-dlp/ffmpeg-builds/base-linux64@sha256:2d1b4af9d22653e1fa430b7cabd36f616bebbd6c1a1f93242008f3f6869e57cf AS base-layer
 ENV TARGET=linux64 VARIANT=gpl REPO=yt-dlp/ffmpeg-builds ADDINS_STR= FFVER=99999999
 COPY --link util/run_stage.sh /usr/bin/run_stage
 FROM base-layer AS xorg-macros
@@ -192,7 +192,7 @@ FROM base-layer AS rav1e
 COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
 COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
 ENV SELF="scripts.d/50-rav1e.sh" STAGENAME="50-rav1e"
-RUN --mount=src=scripts.d/50-rav1e.sh,dst=/stage.sh --mount=src=.cache/downloads/50-rav1e_f5502fba0839b77e72f498941acc6b52cd25845005fff70a9f22bff369d96d24.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+RUN --mount=src=scripts.d/50-rav1e.sh,dst=/stage.sh --mount=src=.cache/downloads/50-rav1e_0bba6aa8bbb91a3da33c9abb3e5b2e3abf0be7cd29c2f3fa395689cf0a082e9d.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
 FROM base-layer AS rpath
 COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
 COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal
@@ -417,13 +417,13 @@ COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/ac
 COPY --link --from=libiconv $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
 COPY --link --from=libxml2 $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
 ENV SELF="scripts.d/45-fonts/25-freetype.sh" STAGENAME="25-freetype"
-RUN --mount=src=scripts.d/45-fonts/25-freetype.sh,dst=/stage.sh --mount=src=.cache/downloads/25-freetype_96c668248b384fe3a2875e4a9c9092cb746d1d243943f1367fdf9bee541681ff.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+RUN --mount=src=scripts.d/45-fonts/25-freetype.sh,dst=/stage.sh --mount=src=.cache/downloads/25-freetype_fef5d53226315ab876e6276866e0f957bc81ae5b6c4a6e34708da033b0aeb239.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
 ENV SELF="scripts.d/45-fonts/35-fontconfig.sh" STAGENAME="35-fontconfig"
 RUN --mount=src=scripts.d/45-fonts/35-fontconfig.sh,dst=/stage.sh --mount=src=.cache/downloads/35-fontconfig_6925d420707b3f02eb6a2ada8305f471c8ba7ffe2ecac3d85451d624a68f321f.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
 ENV SELF="scripts.d/45-fonts/45-harfbuzz.sh" STAGENAME="45-harfbuzz"
 RUN --mount=src=scripts.d/45-fonts/45-harfbuzz.sh,dst=/stage.sh --mount=src=.cache/downloads/45-harfbuzz_40b219118341b7fe074d8aff2f0f9a07f811141c1743a14ec25f10258a7c0a62.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
 ENV SELF="scripts.d/45-fonts/50-freetype.sh" STAGENAME="50-freetype"
-RUN --mount=src=scripts.d/45-fonts/50-freetype.sh,dst=/stage.sh --mount=src=.cache/downloads/50-freetype_96c668248b384fe3a2875e4a9c9092cb746d1d243943f1367fdf9bee541681ff.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
+RUN --mount=src=scripts.d/45-fonts/50-freetype.sh,dst=/stage.sh --mount=src=.cache/downloads/50-freetype_fef5d53226315ab876e6276866e0f957bc81ae5b6c4a6e34708da033b0aeb239.tar.xz,dst=/cache.tar.xz run_stage /stage.sh
 FROM base-layer AS libcurl
 COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/. $FFBUILD_PREFIX
 COPY --link --from=xorg-macros $FFBUILD_DESTPREFIX/share/aclocal/. /usr/share/aclocal

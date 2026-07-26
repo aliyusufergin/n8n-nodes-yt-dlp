@@ -15,19 +15,34 @@
 		"swresample",
 		"swscale"
 	],
-	"toolchainRuntime": [
-		"atomic",
-		"c",
-		"dl",
-		"gcc",
-		"gcc_s",
-		"gomp",
-		"m",
-		"pthread",
-		"rt",
-		"stdc++",
-		"util"
-	],
+	"toolchainRuntime": {
+		"incorporated": {
+			"libraries": ["atomic", "gcc", "gomp", "stdc++"],
+			"provider": "GCC 15.2.0",
+			"license": "GPL-3.0-or-later WITH GCC-exception-3.1",
+			"licenseFiles": [
+				"LICENSES/FFmpeg-GPLv3.txt",
+				"LICENSES/GCC-Runtime-Library-Exception-3.1.txt"
+			],
+			"buildInput": "FFmpeg-Builds-832dd2f333d919790f117b054f628756c515adce.tar.gz:images/base-linux64/ct-ng-config",
+			"sourceDisposition": "GCC Runtime Library Exception 3.1 permits conveying eligible Target Code under the Independent Modules' terms"
+		},
+		"hostDynamic": {
+			"linkerInputs": ["c", "dl", "gcc_s", "m", "pthread", "rt", "util"],
+			"elfNeeded": [
+				"ld-linux-x86-64.so.2",
+				"libc.so.6",
+				"libdl.so.2",
+				"libgcc_s.so.1",
+				"libm.so.6",
+				"libmvec.so.1",
+				"libpthread.so.0",
+				"librt.so.1"
+			],
+			"distributedInPackage": false,
+			"provider": "host glibc 2.28+ and libgcc_s"
+		}
+	},
 	"external": {
 		"OpenCL": "45-opencl",
 		"SvtAv1Enc": "50-svtav1",

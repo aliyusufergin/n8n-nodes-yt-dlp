@@ -403,8 +403,26 @@ describe('published Platform Gate packages', () => {
 		const sourceManifest = JSON.parse(
 			await readFile(join(packageRoot, 'FFMPEG-SOURCE-MANIFEST.json'), 'utf8'),
 		) as {
-			manualReview: { status: string };
-			sourceArchives: Array<{ licenseFiles: string[]; name: string; sha256: string }>;
+			manualReview: { path: string; requiredStatus: string };
+			sourceArchives: Array<{
+				cargoPackages?: Array<{
+					license: string;
+					licenseFiles: string[];
+					name: string;
+					version: string;
+				}>;
+				cargoVendor?: { configSha256: string; lockSha256: string; packageCount: number };
+				input?: string;
+				licenseFiles: string[];
+				name: string;
+				sha256: string;
+				vendoredSubmodules?: Array<{
+					commit: string;
+					licenseFiles: string[];
+					path: string;
+					repository: string;
+				}>;
+			}>;
 		};
 		expect(sourceManifest.sourceArchives).toHaveLength(109);
 		expect(new Set(sourceManifest.sourceArchives.map(({ name }) => name)).size).toBe(109);
@@ -412,7 +430,43 @@ describe('published Platform Gate packages', () => {
 			expect(source.sha256).toMatch(/^[0-9a-f]{64}$/u);
 			expect(source.licenseFiles.length).toBeGreaterThan(0);
 		}
-		expect(sourceManifest.manualReview.status).toBe('approved');
+		const rav1e = sourceManifest.sourceArchives.find(({ name }) => name.startsWith('50-rav1e_'));
+		expect(rav1e).toMatchObject({
+			input: 'input-root',
+			cargoVendor: { packageCount: 272 },
+		});
+		expect(rav1e?.cargoVendor?.configSha256).toMatch(/^[0-9a-f]{64}$/u);
+		expect(rav1e?.cargoVendor?.lockSha256).toMatch(/^[0-9a-f]{64}$/u);
+		expect(rav1e?.cargoPackages).toHaveLength(272);
+		for (const cargoPackage of rav1e?.cargoPackages ?? []) {
+			expect(cargoPackage).toMatchObject({
+				license: expect.any(String),
+				name: expect.any(String),
+				version: expect.any(String),
+			});
+			expect(cargoPackage.licenseFiles.length).toBeGreaterThan(0);
+		}
+		const freetypeSources = sourceManifest.sourceArchives.filter(({ name }) =>
+			/^(?:25|50)-freetype_/u.test(name),
+		);
+		expect(freetypeSources).toHaveLength(2);
+		for (const freetype of freetypeSources) {
+			expect(freetype).toMatchObject({
+				input: 'input-root',
+				vendoredSubmodules: [
+					{
+						commit: '395ccad2c1e0daae535c4d20bb0a3f2424648e17',
+						path: 'subprojects/dlg',
+						repository: 'https://github.com/nyorain/dlg.git',
+					},
+				],
+			});
+			expect(freetype.vendoredSubmodules?.[0].licenseFiles).toHaveLength(1);
+		}
+		expect(sourceManifest.manualReview).toEqual({
+			path: 'toolchain/ffmpeg/LICENSE-REVIEW.json',
+			requiredStatus: 'approved',
+		});
 	});
 
 	it('carry the exact three-package dependency chain and Linux x64 metadata', async () => {
@@ -440,6 +494,9 @@ describe('published Platform Gate packages', () => {
 			os: ['linux'],
 			cpu: ['x64'],
 			license: 'SEE LICENSE IN LICENSES.md',
+			scripts: {
+				prepack: 'node ../../scripts/ffmpeg-source-bundle.mjs verify-release',
+			},
 		});
 		for (const metadata of [main, selector, platform]) {
 			expect(metadata).not.toHaveProperty('libc');

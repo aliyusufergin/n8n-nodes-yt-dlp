@@ -1,0 +1,21 @@
+{
+	"schemaVersion": 1,
+	"status": "passed",
+	"completedAt": "2026-07-26T00:08:16Z",
+	"networkMode": "none",
+	"bindings": {
+		"baseImage": "ghcr.io/yt-dlp/ffmpeg-builds/base-linux64@sha256:2d1b4af9d22653e1fa430b7cabd36f616bebbd6c1a1f93242008f3f6869e57cf",
+		"binaryAssetSha256": "7a19456683e31d937ae48d51e23dfb869dbb9db1e4d6e1b6881d7fed168fa5cf",
+		"buildScriptSha256": "ce1d582d04bf55743ff4bddc6d6b3439cdfe424f064844e427dfd7cc62b35156",
+		"dependencyDockerfileSha256": "c6dcf6ad867076a322ff0f179d37da30d7ecec689eec3cc7ce990ff502558b20",
+		"rav1ePatchSha256": "a83e8e2476c8123026c486113538271615311c62fcaa5dbbf5bf330f142bc1ee",
+		"rebuildScriptSha256": "b9a07c89afd715b6f83feaf7f3e296d4a8857b00de14982e718b88ed80c0d496",
+		"sourceInventorySha256": "ced7dff380098d0dacfba68ec371886162c2fac9762c61f42f7f5ea907f2e1f3"
+	},
+	"outputs": {
+		"ffmpegSha256": "b5532ca4ce06bef2fce593e89cd6bcb2be5fa89db6fa91e876b1c16c613502b1",
+		"ffprobeSha256": "e6b5e3496cd160152898de6e86b4689fa6f2630ed7903725c50a5de3b7eeae3f",
+		"ffmpegConfigEvidenceSha256": "8976eb01dc2bdccb0c5b14ec9ed642206390bcaac9a4067c2e2920cfea579c4f",
+		"ffprobeConfigEvidenceSha256": "41835ffc57b60075fcc06637c6f27b660c6fc94241729c2c68b0fc3af8af50d7"
+	}
+}

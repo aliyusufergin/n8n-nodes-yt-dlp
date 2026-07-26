@@ -9,12 +9,12 @@
 		"workflowRun": 29196749904
 	},
 	"buildContainer": {
-		"baseImage": "ghcr.io/yt-dlp/ffmpeg-builds/base-linux64@sha256:0fe9fc0b0831bc8c5a54705af7d8db2aac69c69e399c44f61d28989109a961cf",
+		"baseImage": "ghcr.io/yt-dlp/ffmpeg-builds/base-linux64@sha256:2d1b4af9d22653e1fa430b7cabd36f616bebbd6c1a1f93242008f3f6869e57cf",
 		"dependencyImage": "ghcr.io/yt-dlp/ffmpeg-builds/linux64-gpl@sha256:59abf3d43b3ae3acc15c2d3a04e9fc3c863292d38c233d878ef7070696a9c6c5"
 	},
 	"manualReview": {
-		"path": "toolchain/ffmpeg/MANUAL-LICENSE-REVIEW.md",
-		"status": "approved"
+		"path": "toolchain/ffmpeg/LICENSE-REVIEW.json",
+		"requiredStatus": "approved"
 	},
 	"primarySources": [
 		{
@@ -131,10 +131,27 @@
 		},
 		{
 			"licenseFiles": [
-				"LICENSES/ffmpeg-static/25-freetype/LICENSE.TXT"
+				"LICENSES/ffmpeg-static/25-freetype/LICENSE.TXT",
+				"LICENSES/ffmpeg-static/25-freetype/subprojects/dlg/LICENSE"
 			],
-			"name": "25-freetype_96c668248b384fe3a2875e4a9c9092cb746d1d243943f1367fdf9bee541681ff.tar.xz",
-			"sha256": "282ec662fe205af227353f68dc8ff6ec89c7d0d73249aa961b8a7dc85409ce81"
+			"name": "25-freetype_fef5d53226315ab876e6276866e0f957bc81ae5b6c4a6e34708da033b0aeb239.tar.xz",
+			"sha256": "fef5d53226315ab876e6276866e0f957bc81ae5b6c4a6e34708da033b0aeb239",
+			"input": "input-root",
+			"upstream": {
+				"archive": "25-freetype_96c668248b384fe3a2875e4a9c9092cb746d1d243943f1367fdf9bee541681ff.tar.xz",
+				"archiveSha256": "282ec662fe205af227353f68dc8ff6ec89c7d0d73249aa961b8a7dc85409ce81",
+				"commit": "5336c0d4da22a13dab3389eb153b12672fdf841c"
+			},
+			"vendoredSubmodules": [
+				{
+					"commit": "395ccad2c1e0daae535c4d20bb0a3f2424648e17",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/25-freetype/subprojects/dlg/LICENSE"
+					],
+					"path": "subprojects/dlg",
+					"repository": "https://github.com/nyorain/dlg.git"
+				}
+			]
 		},
 		{
 			"licenseFiles": [
@@ -457,10 +474,27 @@
 		},
 		{
 			"licenseFiles": [
-				"LICENSES/ffmpeg-static/50-freetype/LICENSE.TXT"
+				"LICENSES/ffmpeg-static/50-freetype/LICENSE.TXT",
+				"LICENSES/ffmpeg-static/50-freetype/subprojects/dlg/LICENSE"
 			],
-			"name": "50-freetype_96c668248b384fe3a2875e4a9c9092cb746d1d243943f1367fdf9bee541681ff.tar.xz",
-			"sha256": "0a63de5f0a39d5537a59ff3a6f4acf905329235de124f9df26bc561d9f7f3d06"
+			"name": "50-freetype_fef5d53226315ab876e6276866e0f957bc81ae5b6c4a6e34708da033b0aeb239.tar.xz",
+			"sha256": "fef5d53226315ab876e6276866e0f957bc81ae5b6c4a6e34708da033b0aeb239",
+			"input": "input-root",
+			"upstream": {
+				"archive": "50-freetype_96c668248b384fe3a2875e4a9c9092cb746d1d243943f1367fdf9bee541681ff.tar.xz",
+				"archiveSha256": "0a63de5f0a39d5537a59ff3a6f4acf905329235de124f9df26bc561d9f7f3d06",
+				"commit": "5336c0d4da22a13dab3389eb153b12672fdf841c"
+			},
+			"vendoredSubmodules": [
+				{
+					"commit": "395ccad2c1e0daae535c4d20bb0a3f2424648e17",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-freetype/subprojects/dlg/LICENSE"
+					],
+					"path": "subprojects/dlg",
+					"repository": "https://github.com/nyorain/dlg.git"
+				}
+			]
 		},
 		{
 			"licenseFiles": [
@@ -824,10 +858,3212 @@
 				"LICENSES/ffmpeg-static/50-rav1e/LICENSE",
 				"LICENSES/ffmpeg-static/50-rav1e/PATENTS",
 				"LICENSES/ffmpeg-static/50-rav1e/ivf/LICENSE",
-				"LICENSES/ffmpeg-static/50-rav1e/license_template.txt"
+				"LICENSES/ffmpeg-static/50-rav1e/license_template.txt",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/adler2/LICENSE-0BSD",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/adler2/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/adler2/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/aho-corasick/COPYING",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/aho-corasick/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/aligned-vec/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/aligned/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/aligned/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstream/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstream/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-parse/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-parse/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-query/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-query/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-wincon/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-wincon/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/anyhow/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/anyhow/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/aom-sys/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/arbitrary/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/arbitrary/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/arg_enum_proc_macro/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/arrayvec/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/arrayvec/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/as-slice/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/as-slice/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/assert_cmd/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/assert_cmd/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/autocfg/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/autocfg/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/av-metrics/src/video/ciede/delta_e/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/av-metrics/src/video/ciede/rgbtolab/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/av-scenechange/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/av1-grain/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/backtrace/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/backtrace/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bindgen/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bitflags-1.3.2/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bitflags-1.3.2/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bitflags/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bitflags/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bitstream-io/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bitstream-io/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bstr/COPYING",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bstr/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bstr/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/built/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bumpalo/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bumpalo/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bytemuck/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bytemuck/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/bytemuck/LICENSE-ZLIB",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/byteorder-lite/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/byteorder/COPYING",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/byteorder/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/cast/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/cast/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/cc/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/cc/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/cexpr/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/cexpr/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/cfg-expr/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/cfg-expr/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/cfg-if/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/cfg-if/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/ciborium-io/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/ciborium-ll/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/ciborium/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/clang-sys/LICENSE.txt",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_builder/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_builder/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_complete/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_complete/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_derive/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_derive/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_lex/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_lex/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/colorchoice/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/colorchoice/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/console/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/core2/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/core2/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crc32fast/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crc32fast/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/criterion-plot/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/criterion-plot/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/criterion/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/criterion/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-channel/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-channel/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-channel/LICENSE-THIRD-PARTY",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-deque/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-deque/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-epoch/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-epoch/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-queue/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-queue/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-utils/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-utils/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/crunchy/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/diff/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/diff/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/displaydoc/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/displaydoc/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/doc-comment/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/either/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/either/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/encode_unicode/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/encode_unicode/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/env_logger/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/env_logger/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/equator-macro/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/equator/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/equivalent/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/equivalent/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/errno/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/errno/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/fdeflate/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/fdeflate/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/fern/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/find-msvc-tools/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/find-msvc-tools/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/flate2/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/flate2/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/form_urlencoded/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/form_urlencoded/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/getrandom-0.2.16/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/getrandom-0.2.16/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/getrandom/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/getrandom/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/gimli/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/gimli/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/git2/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/git2/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/glob/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/glob/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/half/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/half/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/hashbrown/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/hashbrown/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/heck/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/heck/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/home/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/home/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_collections/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_locale_core/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_normalizer/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_normalizer_data/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_properties/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_properties_data/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_provider/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/idna/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/idna/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/idna_adapter/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/idna_adapter/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/image/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/image/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/indexmap/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/indexmap/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/interpolate_name/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/is_terminal_polyfill/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/is_terminal_polyfill/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.10.5/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.10.5/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.12.1/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.12.1/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.13.0/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.13.0/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/itoa/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/itoa/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/jobserver/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/jobserver/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/js-sys/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/js-sys/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/lab/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/lazy_static/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/lazy_static/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/lazycell/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/lazycell/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libc/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libc/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libdav1d-sys/vendor/COPYING",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libdav1d-sys/vendor/doc/PATENTS",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libfuzzer-sys/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libfuzzer-sys/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/COPYING",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/deps/llhttp/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/deps/pcre/COPYING",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/deps/pcre/LICENCE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/deps/pcre/cmake/COPYING-CMAKE-SCRIPTS",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/deps/winhttp/COPYING.GPL",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/deps/winhttp/COPYING.LGPL",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/deps/zlib/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libloading/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libz-sys/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libz-sys/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libz-sys/src/zlib-ng/LICENSE.md",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libz-sys/src/zlib/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/libz-sys/src/zlib/contrib/dotzlib/LICENSE_1_0.txt",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys-0.4.15/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys-0.4.15/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys-0.4.15/LICENSE-Apache-2.0_WITH_LLVM-exception",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys-0.4.15/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys/LICENSE-Apache-2.0_WITH_LLVM-exception",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/litemap/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/log/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/log/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/maybe-rayon/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/memchr/COPYING",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/memchr/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/minimal-lexical/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/minimal-lexical/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/minimal-lexical/LICENSE.md",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/miniz_oxide/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/miniz_oxide/LICENSE-APACHE.md",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/miniz_oxide/LICENSE-MIT.md",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/miniz_oxide/LICENSE-ZLIB.md",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/nasm-rs/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/nasm-rs/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/new_debug_unreachable/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/nom-7.1.3/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/nom/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/noop_proc_macro/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/nu-ansi-term/LICENCE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-bigint/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-bigint/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-derive/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-derive/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-integer/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-integer/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-rational/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-rational/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-traits/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/num-traits/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/object/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/object/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/once_cell/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/once_cell/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/once_cell_polyfill/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/once_cell_polyfill/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/oorandom/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/overload/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/pastey/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/pastey/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/percent-encoding/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/percent-encoding/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/pin-project-lite/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/pin-project-lite/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/pkg-config/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/pkg-config/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/plotters-backend/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/plotters-svg/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/plotters/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/png/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/png/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/potential_utf/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/ppv-lite86/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/ppv-lite86/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates-core/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates-core/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates-tree/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates-tree/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/pretty_assertions/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/pretty_assertions/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/prettyplease/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/prettyplease/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/proc-macro2/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/proc-macro2/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/quickcheck/COPYING",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/quickcheck/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/quote/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/quote/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand-0.8.5/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand-0.8.5/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand-0.8.5/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_chacha/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_chacha/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_chacha/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core-0.6.4/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core-0.6.4/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core-0.6.4/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rayon-core/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rayon-core/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rayon/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rayon/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-automata/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-automata/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-syntax/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-syntax/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-syntax/src/unicode_tables/LICENSE-UNICODE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/regex/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/regex/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustc-demangle/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustc-demangle/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustc-hash/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustc-hash/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix-0.38.44/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix-0.38.44/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix-0.38.44/LICENSE-Apache-2.0_WITH_LLVM-exception",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix-0.38.44/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix/LICENSE-Apache-2.0_WITH_LLVM-exception",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustversion/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/rustversion/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/ryu/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/ryu/LICENSE-BOOST",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/same-file/COPYING",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/same-file/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/scan_fmt/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/semver/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/semver/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde-big-array/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde-big-array/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_derive/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_derive/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_json/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_json/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_spanned/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_spanned/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/sharded-slab/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/shlex-1.3.0/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/shlex-1.3.0/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/shlex/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/shlex/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/signal-hook-registry/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/signal-hook-registry/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/signal-hook/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/signal-hook/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/simd-adler32/LICENSE.md",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/smallvec/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/smallvec/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/stable_deref_trait/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/stable_deref_trait/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/syn/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/syn/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/synstructure/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/system-deps/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/system-deps/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/target-lexicon/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/terminal_size/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/terminal_size/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/termtree/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-1.0.69/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-1.0.69/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-impl-1.0.69/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-impl-1.0.69/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-impl/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-impl/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/thread_local/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/thread_local/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/tinystr/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/tinytemplate/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/tinytemplate/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/toml/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/toml/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_datetime/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_datetime/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_edit/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_edit/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_write/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_write/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-attributes/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-chrome/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-core/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-core/src/spin/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-log/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-subscriber/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-ident/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-ident/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-ident/LICENSE-UNICODE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-width/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-width/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-width/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/url/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/url/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8_iter/COPYRIGHT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8_iter/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8_iter/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8parse/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8parse/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/v_frame/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/vcpkg/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/vcpkg/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/version-compare/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wait-timeout/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wait-timeout/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/walkdir/COPYING",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/walkdir/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi-0.11.1+wasi-snapshot-preview1/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi-0.11.1+wasi-snapshot-preview1/LICENSE-Apache-2.0_WITH_LLVM-exception",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi-0.11.1+wasi-snapshot-preview1/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi/LICENSE-Apache-2.0_WITH_LLVM-exception",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-backend/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-backend/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-macro-support/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-macro-support/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-macro/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-macro/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-shared/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-shared/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/web-sys/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/web-sys/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/which/LICENSE.txt",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi-util/COPYING",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi-util/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-sys/license-apache-2.0",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-sys/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-targets-0.52.6/license-apache-2.0",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-targets-0.52.6/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-targets/license-apache-2.0",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-targets/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_gnullvm-0.52.6/license-apache-2.0",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_gnullvm-0.52.6/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_gnullvm/license-apache-2.0",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_gnullvm/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_msvc-0.52.6/license-apache-2.0",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_msvc-0.52.6/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_msvc/license-apache-2.0",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_msvc/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnu-0.52.6/license-apache-2.0",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnu-0.52.6/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnu/license-apache-2.0",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnu/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnullvm-0.52.6/license-apache-2.0",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnullvm-0.52.6/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnullvm/license-apache-2.0",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnullvm/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_msvc-0.52.6/license-apache-2.0",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_msvc-0.52.6/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_msvc/license-apache-2.0",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_msvc/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnu-0.52.6/license-apache-2.0",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnu-0.52.6/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnu/license-apache-2.0",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnu/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnullvm-0.52.6/license-apache-2.0",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnullvm-0.52.6/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnullvm/license-apache-2.0",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnullvm/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_msvc-0.52.6/license-apache-2.0",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_msvc-0.52.6/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_msvc/license-apache-2.0",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_msvc/license-mit",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/winnow/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/writeable/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/y4m/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/yansi/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/yansi/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/yoke-derive/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/yoke/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy-derive/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy-derive/LICENSE-BSD",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy-derive/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy/LICENSE-APACHE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy/LICENSE-BSD",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy/LICENSE-MIT",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerofrom-derive/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerofrom/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerotrie/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerovec-derive/LICENSE",
+				"LICENSES/ffmpeg-static/50-rav1e/vendor/zerovec/LICENSE"
 			],
-			"name": "50-rav1e_f5502fba0839b77e72f498941acc6b52cd25845005fff70a9f22bff369d96d24.tar.xz",
-			"sha256": "20acab70634fd59187c6c9ed7dde0076909592e6ca1ead8e8872991ab83fa1f0"
+			"name": "50-rav1e_0bba6aa8bbb91a3da33c9abb3e5b2e3abf0be7cd29c2f3fa395689cf0a082e9d.tar.xz",
+			"sha256": "0bba6aa8bbb91a3da33c9abb3e5b2e3abf0be7cd29c2f3fa395689cf0a082e9d",
+			"cargoVendor": {
+				"configSha256": "992df442f8e3a3e2188c6088a75abaf7a6311926e02e1392d4090b1a5b27fd62",
+				"lockSha256": "fe4d0e91d4d4656b60eb4f6ca66629a127a995f5f131b80e11429956aadd0e8a",
+				"packageCount": 272
+			},
+			"cargoPackages": [
+				{
+					"license": "Apache-2.0 OR MIT",
+					"name": "addr2line",
+					"sourcePath": "./vendor/addr2line",
+					"version": "0.24.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "0BSD OR MIT OR Apache-2.0",
+					"name": "adler2",
+					"sourcePath": "./vendor/adler2",
+					"version": "2.0.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/adler2/LICENSE-0BSD",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/adler2/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/adler2/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Unlicense OR MIT",
+					"name": "aho-corasick",
+					"sourcePath": "./vendor/aho-corasick",
+					"version": "1.1.3",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/aho-corasick/COPYING",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/aho-corasick/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "aligned",
+					"sourcePath": "./vendor/aligned",
+					"version": "0.4.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/aligned/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/aligned/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "aligned-vec",
+					"sourcePath": "./vendor/aligned-vec",
+					"version": "0.6.4",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/aligned-vec/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "anes",
+					"sourcePath": "./vendor/anes",
+					"version": "0.1.6",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-APACHE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "anstream",
+					"sourcePath": "./vendor/anstream",
+					"version": "0.6.19",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstream/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstream/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "anstyle",
+					"sourcePath": "./vendor/anstyle",
+					"version": "1.0.11",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "anstyle-parse",
+					"sourcePath": "./vendor/anstyle-parse",
+					"version": "0.2.7",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-parse/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-parse/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "anstyle-query",
+					"sourcePath": "./vendor/anstyle-query",
+					"version": "1.1.3",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-query/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-query/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "anstyle-wincon",
+					"sourcePath": "./vendor/anstyle-wincon",
+					"version": "3.0.9",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-wincon/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/anstyle-wincon/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "anyhow",
+					"sourcePath": "./vendor/anyhow",
+					"version": "1.0.98",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/anyhow/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/anyhow/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "aom-sys",
+					"sourcePath": "./vendor/aom-sys",
+					"version": "0.3.3",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/aom-sys/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "arbitrary",
+					"sourcePath": "./vendor/arbitrary",
+					"version": "1.4.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/arbitrary/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/arbitrary/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "arg_enum_proc_macro",
+					"sourcePath": "./vendor/arg_enum_proc_macro",
+					"version": "0.3.4",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/arg_enum_proc_macro/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "arrayvec",
+					"sourcePath": "./vendor/arrayvec",
+					"version": "0.7.6",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/arrayvec/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/arrayvec/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "as-slice",
+					"sourcePath": "./vendor/as-slice",
+					"version": "0.2.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/as-slice/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/as-slice/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "assert_cmd",
+					"sourcePath": "./vendor/assert_cmd",
+					"version": "2.0.17",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/assert_cmd/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/assert_cmd/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0 OR MIT",
+					"name": "autocfg",
+					"sourcePath": "./vendor/autocfg",
+					"version": "1.4.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/autocfg/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/autocfg/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "av-metrics",
+					"sourcePath": "./vendor/av-metrics",
+					"version": "0.9.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/av-metrics/src/video/ciede/delta_e/LICENSE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/av-metrics/src/video/ciede/rgbtolab/LICENSE"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "av-scenechange",
+					"sourcePath": "./vendor/av-scenechange",
+					"version": "0.14.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/av-scenechange/LICENSE"
+					]
+				},
+				{
+					"license": "BSD-2-Clause",
+					"name": "av1-grain",
+					"sourcePath": "./vendor/av1-grain",
+					"version": "0.2.4",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/av1-grain/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "backtrace",
+					"sourcePath": "./vendor/backtrace",
+					"version": "0.3.75",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/backtrace/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/backtrace/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "BSD-3-Clause",
+					"name": "bindgen",
+					"sourcePath": "./vendor/bindgen",
+					"version": "0.69.5",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bindgen/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "bitflags",
+					"sourcePath": "./vendor/bitflags",
+					"version": "2.9.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bitflags/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bitflags/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT/Apache-2.0",
+					"name": "bitflags",
+					"sourcePath": "./vendor/bitflags-1.3.2",
+					"version": "1.3.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bitflags-1.3.2/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bitflags-1.3.2/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT/Apache-2.0",
+					"name": "bitstream-io",
+					"sourcePath": "./vendor/bitstream-io",
+					"version": "4.2.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bitstream-io/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bitstream-io/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "bstr",
+					"sourcePath": "./vendor/bstr",
+					"version": "1.12.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bstr/COPYING",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bstr/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bstr/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "built",
+					"sourcePath": "./vendor/built",
+					"version": "0.8.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/built/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "bumpalo",
+					"sourcePath": "./vendor/bumpalo",
+					"version": "3.18.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bumpalo/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bumpalo/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Zlib OR Apache-2.0 OR MIT",
+					"name": "bytemuck",
+					"sourcePath": "./vendor/bytemuck",
+					"version": "1.23.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bytemuck/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bytemuck/LICENSE-MIT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/bytemuck/LICENSE-ZLIB"
+					]
+				},
+				{
+					"license": "Unlicense OR MIT",
+					"name": "byteorder",
+					"sourcePath": "./vendor/byteorder",
+					"version": "1.5.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/byteorder/COPYING",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/byteorder/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Unlicense OR MIT",
+					"name": "byteorder-lite",
+					"sourcePath": "./vendor/byteorder-lite",
+					"version": "0.1.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/byteorder-lite/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "cast",
+					"sourcePath": "./vendor/cast",
+					"version": "0.3.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/cast/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/cast/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "cc",
+					"sourcePath": "./vendor/cc",
+					"version": "1.3.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/cc/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/cc/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0/MIT",
+					"name": "cexpr",
+					"sourcePath": "./vendor/cexpr",
+					"version": "0.6.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/cexpr/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/cexpr/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "cfg-expr",
+					"sourcePath": "./vendor/cfg-expr",
+					"version": "0.15.8",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/cfg-expr/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/cfg-expr/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "cfg-if",
+					"sourcePath": "./vendor/cfg-if",
+					"version": "1.0.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/cfg-if/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/cfg-if/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0",
+					"name": "ciborium",
+					"sourcePath": "./vendor/ciborium",
+					"version": "0.2.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/ciborium/LICENSE"
+					]
+				},
+				{
+					"license": "Apache-2.0",
+					"name": "ciborium-io",
+					"sourcePath": "./vendor/ciborium-io",
+					"version": "0.2.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/ciborium-io/LICENSE"
+					]
+				},
+				{
+					"license": "Apache-2.0",
+					"name": "ciborium-ll",
+					"sourcePath": "./vendor/ciborium-ll",
+					"version": "0.2.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/ciborium-ll/LICENSE"
+					]
+				},
+				{
+					"license": "Apache-2.0",
+					"name": "clang-sys",
+					"sourcePath": "./vendor/clang-sys",
+					"version": "1.8.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/clang-sys/LICENSE.txt"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "clap",
+					"sourcePath": "./vendor/clap",
+					"version": "4.5.40",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "clap_builder",
+					"sourcePath": "./vendor/clap_builder",
+					"version": "4.5.40",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_builder/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_builder/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "clap_complete",
+					"sourcePath": "./vendor/clap_complete",
+					"version": "4.5.54",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_complete/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_complete/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "clap_derive",
+					"sourcePath": "./vendor/clap_derive",
+					"version": "4.5.40",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_derive/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_derive/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "clap_lex",
+					"sourcePath": "./vendor/clap_lex",
+					"version": "0.7.5",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_lex/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/clap_lex/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "colorchoice",
+					"sourcePath": "./vendor/colorchoice",
+					"version": "1.0.4",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/colorchoice/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/colorchoice/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "console",
+					"sourcePath": "./vendor/console",
+					"version": "0.15.11",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/console/LICENSE"
+					]
+				},
+				{
+					"license": "Apache-2.0 OR MIT",
+					"name": "core2",
+					"sourcePath": "./vendor/core2",
+					"version": "0.4.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/core2/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/core2/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "crc32fast",
+					"sourcePath": "./vendor/crc32fast",
+					"version": "1.4.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crc32fast/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crc32fast/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0 OR MIT",
+					"name": "criterion",
+					"sourcePath": "./vendor/criterion",
+					"version": "0.6.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/criterion/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/criterion/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT/Apache-2.0",
+					"name": "criterion-plot",
+					"sourcePath": "./vendor/criterion-plot",
+					"version": "0.5.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/criterion-plot/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/criterion-plot/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "crossbeam",
+					"sourcePath": "./vendor/crossbeam",
+					"version": "0.8.4",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "crossbeam-channel",
+					"sourcePath": "./vendor/crossbeam-channel",
+					"version": "0.5.15",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-channel/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-channel/LICENSE-MIT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-channel/LICENSE-THIRD-PARTY"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "crossbeam-deque",
+					"sourcePath": "./vendor/crossbeam-deque",
+					"version": "0.8.6",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-deque/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-deque/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "crossbeam-epoch",
+					"sourcePath": "./vendor/crossbeam-epoch",
+					"version": "0.9.18",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-epoch/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-epoch/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "crossbeam-queue",
+					"sourcePath": "./vendor/crossbeam-queue",
+					"version": "0.3.12",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-queue/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-queue/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "crossbeam-utils",
+					"sourcePath": "./vendor/crossbeam-utils",
+					"version": "0.8.21",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-utils/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crossbeam-utils/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "crunchy",
+					"sourcePath": "./vendor/crunchy",
+					"version": "0.2.3",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/crunchy/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "diff",
+					"sourcePath": "./vendor/diff",
+					"version": "0.1.13",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/diff/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/diff/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "difflib",
+					"sourcePath": "./vendor/difflib",
+					"version": "0.4.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "displaydoc",
+					"sourcePath": "./vendor/displaydoc",
+					"version": "0.2.5",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/displaydoc/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/displaydoc/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "doc-comment",
+					"sourcePath": "./vendor/doc-comment",
+					"version": "0.3.3",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/doc-comment/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "either",
+					"sourcePath": "./vendor/either",
+					"version": "1.15.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/either/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/either/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0 OR MIT",
+					"name": "encode_unicode",
+					"sourcePath": "./vendor/encode_unicode",
+					"version": "1.0.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/encode_unicode/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/encode_unicode/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT/Apache-2.0",
+					"name": "env_logger",
+					"sourcePath": "./vendor/env_logger",
+					"version": "0.8.4",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/env_logger/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/env_logger/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "equator",
+					"sourcePath": "./vendor/equator",
+					"version": "0.4.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/equator/LICENSE"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "equator-macro",
+					"sourcePath": "./vendor/equator-macro",
+					"version": "0.4.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/equator-macro/LICENSE"
+					]
+				},
+				{
+					"license": "Apache-2.0 OR MIT",
+					"name": "equivalent",
+					"sourcePath": "./vendor/equivalent",
+					"version": "1.0.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/equivalent/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/equivalent/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "errno",
+					"sourcePath": "./vendor/errno",
+					"version": "0.3.12",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/errno/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/errno/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "fdeflate",
+					"sourcePath": "./vendor/fdeflate",
+					"version": "0.3.7",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/fdeflate/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/fdeflate/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "fern",
+					"sourcePath": "./vendor/fern",
+					"version": "0.7.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/fern/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "find-msvc-tools",
+					"sourcePath": "./vendor/find-msvc-tools",
+					"version": "0.1.9",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/find-msvc-tools/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/find-msvc-tools/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "flate2",
+					"sourcePath": "./vendor/flate2",
+					"version": "1.1.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/flate2/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/flate2/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "form_urlencoded",
+					"sourcePath": "./vendor/form_urlencoded",
+					"version": "1.2.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/form_urlencoded/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/form_urlencoded/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "getrandom",
+					"sourcePath": "./vendor/getrandom",
+					"version": "0.3.3",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/getrandom/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/getrandom/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "getrandom",
+					"sourcePath": "./vendor/getrandom-0.2.16",
+					"version": "0.2.16",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/getrandom-0.2.16/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/getrandom-0.2.16/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "gimli",
+					"sourcePath": "./vendor/gimli",
+					"version": "0.31.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/gimli/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/gimli/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "git2",
+					"sourcePath": "./vendor/git2",
+					"version": "0.20.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/git2/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/git2/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "glob",
+					"sourcePath": "./vendor/glob",
+					"version": "0.3.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/glob/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/glob/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "half",
+					"sourcePath": "./vendor/half",
+					"version": "2.6.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/half/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/half/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "hashbrown",
+					"sourcePath": "./vendor/hashbrown",
+					"version": "0.15.4",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/hashbrown/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/hashbrown/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "heck",
+					"sourcePath": "./vendor/heck",
+					"version": "0.5.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/heck/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/heck/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "home",
+					"sourcePath": "./vendor/home",
+					"version": "0.5.11",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/home/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/home/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Unicode-3.0",
+					"name": "icu_collections",
+					"sourcePath": "./vendor/icu_collections",
+					"version": "2.0.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_collections/LICENSE"
+					]
+				},
+				{
+					"license": "Unicode-3.0",
+					"name": "icu_locale_core",
+					"sourcePath": "./vendor/icu_locale_core",
+					"version": "2.0.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_locale_core/LICENSE"
+					]
+				},
+				{
+					"license": "Unicode-3.0",
+					"name": "icu_normalizer",
+					"sourcePath": "./vendor/icu_normalizer",
+					"version": "2.0.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_normalizer/LICENSE"
+					]
+				},
+				{
+					"license": "Unicode-3.0",
+					"name": "icu_normalizer_data",
+					"sourcePath": "./vendor/icu_normalizer_data",
+					"version": "2.0.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_normalizer_data/LICENSE"
+					]
+				},
+				{
+					"license": "Unicode-3.0",
+					"name": "icu_properties",
+					"sourcePath": "./vendor/icu_properties",
+					"version": "2.0.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_properties/LICENSE"
+					]
+				},
+				{
+					"license": "Unicode-3.0",
+					"name": "icu_properties_data",
+					"sourcePath": "./vendor/icu_properties_data",
+					"version": "2.0.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_properties_data/LICENSE"
+					]
+				},
+				{
+					"license": "Unicode-3.0",
+					"name": "icu_provider",
+					"sourcePath": "./vendor/icu_provider",
+					"version": "2.0.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/icu_provider/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "idna",
+					"sourcePath": "./vendor/idna",
+					"version": "1.0.3",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/idna/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/idna/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0 OR MIT",
+					"name": "idna_adapter",
+					"sourcePath": "./vendor/idna_adapter",
+					"version": "1.2.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/idna_adapter/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/idna_adapter/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "image",
+					"sourcePath": "./vendor/image",
+					"version": "0.25.6",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/image/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/image/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0 OR MIT",
+					"name": "indexmap",
+					"sourcePath": "./vendor/indexmap",
+					"version": "2.9.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/indexmap/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/indexmap/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "interpolate_name",
+					"sourcePath": "./vendor/interpolate_name",
+					"version": "0.2.4",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/interpolate_name/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "is_terminal_polyfill",
+					"sourcePath": "./vendor/is_terminal_polyfill",
+					"version": "1.70.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/is_terminal_polyfill/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/is_terminal_polyfill/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "itertools",
+					"sourcePath": "./vendor/itertools",
+					"version": "0.14.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT/Apache-2.0",
+					"name": "itertools",
+					"sourcePath": "./vendor/itertools-0.10.5",
+					"version": "0.10.5",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.10.5/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.10.5/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "itertools",
+					"sourcePath": "./vendor/itertools-0.12.1",
+					"version": "0.12.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.12.1/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.12.1/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "itertools",
+					"sourcePath": "./vendor/itertools-0.13.0",
+					"version": "0.13.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.13.0/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/itertools-0.13.0/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "itoa",
+					"sourcePath": "./vendor/itoa",
+					"version": "1.0.15",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/itoa/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/itoa/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "jobserver",
+					"sourcePath": "./vendor/jobserver",
+					"version": "0.1.33",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/jobserver/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/jobserver/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "js-sys",
+					"sourcePath": "./vendor/js-sys",
+					"version": "0.3.77",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/js-sys/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/js-sys/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "lab",
+					"sourcePath": "./vendor/lab",
+					"version": "0.11.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/lab/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "lazy_static",
+					"sourcePath": "./vendor/lazy_static",
+					"version": "1.5.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/lazy_static/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/lazy_static/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT/Apache-2.0",
+					"name": "lazycell",
+					"sourcePath": "./vendor/lazycell",
+					"version": "1.3.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/lazycell/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/lazycell/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "libc",
+					"sourcePath": "./vendor/libc",
+					"version": "0.2.172",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libc/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libc/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "BSD-2-Clause",
+					"name": "libdav1d-sys",
+					"sourcePath": "./vendor/libdav1d-sys",
+					"version": "0.7.1+libdav1d.1.4.3",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libdav1d-sys/vendor/COPYING",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libdav1d-sys/vendor/doc/PATENTS"
+					]
+				},
+				{
+					"license": "(MIT OR Apache-2.0) AND NCSA",
+					"name": "libfuzzer-sys",
+					"sourcePath": "./vendor/libfuzzer-sys",
+					"version": "0.4.9",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libfuzzer-sys/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libfuzzer-sys/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "libgit2-sys",
+					"sourcePath": "./vendor/libgit2-sys",
+					"version": "0.18.1+1.9.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/LICENSE-MIT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/COPYING",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/deps/llhttp/LICENSE-MIT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/deps/pcre/COPYING",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/deps/pcre/LICENCE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/deps/pcre/cmake/COPYING-CMAKE-SCRIPTS",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/deps/winhttp/COPYING.GPL",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/deps/winhttp/COPYING.LGPL",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/deps/zlib/LICENSE"
+					]
+				},
+				{
+					"license": "ISC",
+					"name": "libloading",
+					"sourcePath": "./vendor/libloading",
+					"version": "0.8.8",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libloading/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "libz-sys",
+					"sourcePath": "./vendor/libz-sys",
+					"version": "1.1.22",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libz-sys/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libz-sys/LICENSE-MIT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libz-sys/src/zlib-ng/LICENSE.md",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libz-sys/src/zlib/LICENSE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libz-sys/src/zlib/contrib/dotzlib/LICENSE_1_0.txt"
+					]
+				},
+				{
+					"license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+					"name": "linux-raw-sys",
+					"sourcePath": "./vendor/linux-raw-sys",
+					"version": "0.9.4",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys/LICENSE-Apache-2.0_WITH_LLVM-exception",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+					"name": "linux-raw-sys",
+					"sourcePath": "./vendor/linux-raw-sys-0.4.15",
+					"version": "0.4.15",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys-0.4.15/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys-0.4.15/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys-0.4.15/LICENSE-Apache-2.0_WITH_LLVM-exception",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys-0.4.15/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Unicode-3.0",
+					"name": "litemap",
+					"sourcePath": "./vendor/litemap",
+					"version": "0.8.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/litemap/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "log",
+					"sourcePath": "./vendor/log",
+					"version": "0.4.27",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/log/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/log/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "maybe-rayon",
+					"sourcePath": "./vendor/maybe-rayon",
+					"version": "0.1.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/maybe-rayon/LICENSE"
+					]
+				},
+				{
+					"license": "Unlicense OR MIT",
+					"name": "memchr",
+					"sourcePath": "./vendor/memchr",
+					"version": "2.7.5",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/memchr/COPYING",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/memchr/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT/Apache-2.0",
+					"name": "minimal-lexical",
+					"sourcePath": "./vendor/minimal-lexical",
+					"version": "0.2.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/minimal-lexical/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/minimal-lexical/LICENSE-MIT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/minimal-lexical/LICENSE.md"
+					]
+				},
+				{
+					"license": "MIT OR Zlib OR Apache-2.0",
+					"name": "miniz_oxide",
+					"sourcePath": "./vendor/miniz_oxide",
+					"version": "0.8.9",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/miniz_oxide/LICENSE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/miniz_oxide/LICENSE-APACHE.md",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/miniz_oxide/LICENSE-MIT.md",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/miniz_oxide/LICENSE-ZLIB.md"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "nasm-rs",
+					"sourcePath": "./vendor/nasm-rs",
+					"version": "0.3.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/nasm-rs/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/nasm-rs/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "new_debug_unreachable",
+					"sourcePath": "./vendor/new_debug_unreachable",
+					"version": "1.0.6",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/new_debug_unreachable/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "nom",
+					"sourcePath": "./vendor/nom",
+					"version": "8.0.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/nom/LICENSE"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "nom",
+					"sourcePath": "./vendor/nom-7.1.3",
+					"version": "7.1.3",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/nom-7.1.3/LICENSE"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "noop_proc_macro",
+					"sourcePath": "./vendor/noop_proc_macro",
+					"version": "0.3.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/noop_proc_macro/LICENSE"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "nu-ansi-term",
+					"sourcePath": "./vendor/nu-ansi-term",
+					"version": "0.46.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/nu-ansi-term/LICENCE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "num-bigint",
+					"sourcePath": "./vendor/num-bigint",
+					"version": "0.4.6",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-bigint/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-bigint/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "num-derive",
+					"sourcePath": "./vendor/num-derive",
+					"version": "0.4.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-derive/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-derive/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "num-integer",
+					"sourcePath": "./vendor/num-integer",
+					"version": "0.1.46",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-integer/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-integer/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "num-rational",
+					"sourcePath": "./vendor/num-rational",
+					"version": "0.4.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-rational/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-rational/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "num-traits",
+					"sourcePath": "./vendor/num-traits",
+					"version": "0.2.19",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-traits/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/num-traits/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0 OR MIT",
+					"name": "object",
+					"sourcePath": "./vendor/object",
+					"version": "0.36.7",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/object/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/object/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "once_cell",
+					"sourcePath": "./vendor/once_cell",
+					"version": "1.21.3",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/once_cell/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/once_cell/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "once_cell_polyfill",
+					"sourcePath": "./vendor/once_cell_polyfill",
+					"version": "1.70.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/once_cell_polyfill/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/once_cell_polyfill/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "oorandom",
+					"sourcePath": "./vendor/oorandom",
+					"version": "11.1.5",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/oorandom/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "overload",
+					"sourcePath": "./vendor/overload",
+					"version": "0.1.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/overload/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "pastey",
+					"sourcePath": "./vendor/pastey",
+					"version": "0.1.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/pastey/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/pastey/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "percent-encoding",
+					"sourcePath": "./vendor/percent-encoding",
+					"version": "2.3.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/percent-encoding/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/percent-encoding/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0 OR MIT",
+					"name": "pin-project-lite",
+					"sourcePath": "./vendor/pin-project-lite",
+					"version": "0.2.16",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/pin-project-lite/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/pin-project-lite/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "pkg-config",
+					"sourcePath": "./vendor/pkg-config",
+					"version": "0.3.32",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/pkg-config/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/pkg-config/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "plotters",
+					"sourcePath": "./vendor/plotters",
+					"version": "0.3.7",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/plotters/LICENSE"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "plotters-backend",
+					"sourcePath": "./vendor/plotters-backend",
+					"version": "0.3.7",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/plotters-backend/LICENSE"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "plotters-svg",
+					"sourcePath": "./vendor/plotters-svg",
+					"version": "0.3.7",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/plotters-svg/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "png",
+					"sourcePath": "./vendor/png",
+					"version": "0.17.16",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/png/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/png/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Unicode-3.0",
+					"name": "potential_utf",
+					"sourcePath": "./vendor/potential_utf",
+					"version": "0.1.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/potential_utf/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "ppv-lite86",
+					"sourcePath": "./vendor/ppv-lite86",
+					"version": "0.2.21",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/ppv-lite86/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/ppv-lite86/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "predicates",
+					"sourcePath": "./vendor/predicates",
+					"version": "3.1.3",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "predicates-core",
+					"sourcePath": "./vendor/predicates-core",
+					"version": "1.0.9",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates-core/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates-core/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "predicates-tree",
+					"sourcePath": "./vendor/predicates-tree",
+					"version": "1.0.12",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates-tree/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/predicates-tree/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "pretty_assertions",
+					"sourcePath": "./vendor/pretty_assertions",
+					"version": "1.4.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/pretty_assertions/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/pretty_assertions/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "prettyplease",
+					"sourcePath": "./vendor/prettyplease",
+					"version": "0.2.33",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/prettyplease/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/prettyplease/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "proc-macro2",
+					"sourcePath": "./vendor/proc-macro2",
+					"version": "1.0.95",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/proc-macro2/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/proc-macro2/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "profiling",
+					"sourcePath": "./vendor/profiling",
+					"version": "1.0.16",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-APACHE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "profiling-procmacros",
+					"sourcePath": "./vendor/profiling-procmacros",
+					"version": "1.0.16",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-APACHE"
+					]
+				},
+				{
+					"license": "Unlicense/MIT",
+					"name": "quickcheck",
+					"sourcePath": "./vendor/quickcheck",
+					"version": "1.0.3",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/quickcheck/COPYING",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/quickcheck/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "quote",
+					"sourcePath": "./vendor/quote",
+					"version": "1.0.40",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/quote/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/quote/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0 OR LGPL-2.1-or-later",
+					"name": "r-efi",
+					"sourcePath": "./vendor/r-efi",
+					"version": "5.2.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/libgit2-sys/libgit2/deps/winhttp/COPYING.LGPL"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "rand",
+					"sourcePath": "./vendor/rand",
+					"version": "0.9.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "rand",
+					"sourcePath": "./vendor/rand-0.8.5",
+					"version": "0.8.5",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand-0.8.5/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand-0.8.5/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand-0.8.5/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "rand_chacha",
+					"sourcePath": "./vendor/rand_chacha",
+					"version": "0.9.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_chacha/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_chacha/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_chacha/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "rand_core",
+					"sourcePath": "./vendor/rand_core",
+					"version": "0.9.3",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "rand_core",
+					"sourcePath": "./vendor/rand_core-0.6.4",
+					"version": "0.6.4",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core-0.6.4/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core-0.6.4/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rand_core-0.6.4/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "rayon",
+					"sourcePath": "./vendor/rayon",
+					"version": "1.10.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rayon/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rayon/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "rayon-core",
+					"sourcePath": "./vendor/rayon-core",
+					"version": "1.12.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rayon-core/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rayon-core/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "regex",
+					"sourcePath": "./vendor/regex",
+					"version": "1.11.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/regex/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/regex/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "regex-automata",
+					"sourcePath": "./vendor/regex-automata",
+					"version": "0.4.9",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-automata/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-automata/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "regex-syntax",
+					"sourcePath": "./vendor/regex-syntax",
+					"version": "0.8.5",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-syntax/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-syntax/LICENSE-MIT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/regex-syntax/src/unicode_tables/LICENSE-UNICODE"
+					]
+				},
+				{
+					"license": "MIT/Apache-2.0",
+					"name": "rustc-demangle",
+					"sourcePath": "./vendor/rustc-demangle",
+					"version": "0.1.25",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustc-demangle/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustc-demangle/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0/MIT",
+					"name": "rustc-hash",
+					"sourcePath": "./vendor/rustc-hash",
+					"version": "1.1.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustc-hash/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustc-hash/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+					"name": "rustix",
+					"sourcePath": "./vendor/rustix",
+					"version": "1.0.7",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix/LICENSE-Apache-2.0_WITH_LLVM-exception",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+					"name": "rustix",
+					"sourcePath": "./vendor/rustix-0.38.44",
+					"version": "0.38.44",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix-0.38.44/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix-0.38.44/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix-0.38.44/LICENSE-Apache-2.0_WITH_LLVM-exception",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustix-0.38.44/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "rustversion",
+					"sourcePath": "./vendor/rustversion",
+					"version": "1.0.21",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustversion/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/rustversion/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0 OR BSL-1.0",
+					"name": "ryu",
+					"sourcePath": "./vendor/ryu",
+					"version": "1.0.20",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/ryu/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/ryu/LICENSE-BOOST"
+					]
+				},
+				{
+					"license": "Unlicense/MIT",
+					"name": "same-file",
+					"sourcePath": "./vendor/same-file",
+					"version": "1.0.6",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/same-file/COPYING",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/same-file/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "scan_fmt",
+					"sourcePath": "./vendor/scan_fmt",
+					"version": "0.2.6",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/scan_fmt/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "semver",
+					"sourcePath": "./vendor/semver",
+					"version": "1.0.26",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/semver/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/semver/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "serde",
+					"sourcePath": "./vendor/serde",
+					"version": "1.0.219",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "serde-big-array",
+					"sourcePath": "./vendor/serde-big-array",
+					"version": "0.5.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde-big-array/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde-big-array/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "serde_derive",
+					"sourcePath": "./vendor/serde_derive",
+					"version": "1.0.219",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_derive/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_derive/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "serde_json",
+					"sourcePath": "./vendor/serde_json",
+					"version": "1.0.140",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_json/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_json/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "serde_spanned",
+					"sourcePath": "./vendor/serde_spanned",
+					"version": "0.6.9",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_spanned/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/serde_spanned/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "sharded-slab",
+					"sourcePath": "./vendor/sharded-slab",
+					"version": "0.1.7",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/sharded-slab/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "shlex",
+					"sourcePath": "./vendor/shlex",
+					"version": "2.0.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/shlex/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/shlex/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "shlex",
+					"sourcePath": "./vendor/shlex-1.3.0",
+					"version": "1.3.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/shlex-1.3.0/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/shlex-1.3.0/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0/MIT",
+					"name": "signal-hook",
+					"sourcePath": "./vendor/signal-hook",
+					"version": "0.3.18",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/signal-hook/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/signal-hook/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0/MIT",
+					"name": "signal-hook-registry",
+					"sourcePath": "./vendor/signal-hook-registry",
+					"version": "1.4.5",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/signal-hook-registry/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/signal-hook-registry/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "simd-adler32",
+					"sourcePath": "./vendor/simd-adler32",
+					"version": "0.3.7",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/simd-adler32/LICENSE.md"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "simd_helpers",
+					"sourcePath": "./vendor/simd_helpers",
+					"version": "0.1.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "smallvec",
+					"sourcePath": "./vendor/smallvec",
+					"version": "1.15.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/smallvec/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/smallvec/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT/Apache-2.0",
+					"name": "stable_deref_trait",
+					"sourcePath": "./vendor/stable_deref_trait",
+					"version": "1.2.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/stable_deref_trait/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/stable_deref_trait/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "syn",
+					"sourcePath": "./vendor/syn",
+					"version": "2.0.102",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/syn/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/syn/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "synstructure",
+					"sourcePath": "./vendor/synstructure",
+					"version": "0.13.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/synstructure/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "system-deps",
+					"sourcePath": "./vendor/system-deps",
+					"version": "6.2.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/system-deps/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/system-deps/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0 WITH LLVM-exception",
+					"name": "target-lexicon",
+					"sourcePath": "./vendor/target-lexicon",
+					"version": "0.12.16",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/target-lexicon/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "terminal_size",
+					"sourcePath": "./vendor/terminal_size",
+					"version": "0.4.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/terminal_size/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/terminal_size/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "termtree",
+					"sourcePath": "./vendor/termtree",
+					"version": "0.5.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/termtree/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "thiserror",
+					"sourcePath": "./vendor/thiserror",
+					"version": "2.0.12",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "thiserror",
+					"sourcePath": "./vendor/thiserror-1.0.69",
+					"version": "1.0.69",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-1.0.69/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-1.0.69/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "thiserror-impl",
+					"sourcePath": "./vendor/thiserror-impl",
+					"version": "2.0.12",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-impl/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-impl/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "thiserror-impl",
+					"sourcePath": "./vendor/thiserror-impl-1.0.69",
+					"version": "1.0.69",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-impl-1.0.69/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/thiserror-impl-1.0.69/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "thread_local",
+					"sourcePath": "./vendor/thread_local",
+					"version": "1.1.8",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/thread_local/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/thread_local/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Unicode-3.0",
+					"name": "tinystr",
+					"sourcePath": "./vendor/tinystr",
+					"version": "0.8.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/tinystr/LICENSE"
+					]
+				},
+				{
+					"license": "Apache-2.0 OR MIT",
+					"name": "tinytemplate",
+					"sourcePath": "./vendor/tinytemplate",
+					"version": "1.2.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/tinytemplate/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/tinytemplate/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "toml",
+					"sourcePath": "./vendor/toml",
+					"version": "0.8.23",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/toml/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/toml/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "toml_datetime",
+					"sourcePath": "./vendor/toml_datetime",
+					"version": "0.6.11",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_datetime/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_datetime/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "toml_edit",
+					"sourcePath": "./vendor/toml_edit",
+					"version": "0.22.27",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_edit/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_edit/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "toml_write",
+					"sourcePath": "./vendor/toml_write",
+					"version": "0.1.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_write/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/toml_write/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "tracing",
+					"sourcePath": "./vendor/tracing",
+					"version": "0.1.41",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing/LICENSE"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "tracing-attributes",
+					"sourcePath": "./vendor/tracing-attributes",
+					"version": "0.1.29",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-attributes/LICENSE"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "tracing-chrome",
+					"sourcePath": "./vendor/tracing-chrome",
+					"version": "0.7.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-chrome/LICENSE"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "tracing-core",
+					"sourcePath": "./vendor/tracing-core",
+					"version": "0.1.34",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-core/LICENSE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-core/src/spin/LICENSE"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "tracing-log",
+					"sourcePath": "./vendor/tracing-log",
+					"version": "0.2.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-log/LICENSE"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "tracing-subscriber",
+					"sourcePath": "./vendor/tracing-subscriber",
+					"version": "0.3.19",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/tracing-subscriber/LICENSE"
+					]
+				},
+				{
+					"license": "(MIT OR Apache-2.0) AND Unicode-3.0",
+					"name": "unicode-ident",
+					"sourcePath": "./vendor/unicode-ident",
+					"version": "1.0.18",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-ident/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-ident/LICENSE-MIT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-ident/LICENSE-UNICODE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "unicode-width",
+					"sourcePath": "./vendor/unicode-width",
+					"version": "0.2.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-width/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-width/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/unicode-width/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "url",
+					"sourcePath": "./vendor/url",
+					"version": "2.5.4",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/url/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/url/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0 OR MIT",
+					"name": "utf8_iter",
+					"sourcePath": "./vendor/utf8_iter",
+					"version": "1.0.4",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8_iter/COPYRIGHT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8_iter/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8_iter/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0 OR MIT",
+					"name": "utf8parse",
+					"sourcePath": "./vendor/utf8parse",
+					"version": "0.2.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8parse/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/utf8parse/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "BSD-2-Clause",
+					"name": "v_frame",
+					"sourcePath": "./vendor/v_frame",
+					"version": "0.3.9",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/v_frame/LICENSE"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "valuable",
+					"sourcePath": "./vendor/valuable",
+					"version": "0.1.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT/Apache-2.0",
+					"name": "vcpkg",
+					"sourcePath": "./vendor/vcpkg",
+					"version": "0.2.15",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/vcpkg/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/vcpkg/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "version-compare",
+					"sourcePath": "./vendor/version-compare",
+					"version": "0.2.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/version-compare/LICENSE"
+					]
+				},
+				{
+					"license": "MIT/Apache-2.0",
+					"name": "wait-timeout",
+					"sourcePath": "./vendor/wait-timeout",
+					"version": "0.2.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wait-timeout/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wait-timeout/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Unlicense/MIT",
+					"name": "walkdir",
+					"sourcePath": "./vendor/walkdir",
+					"version": "2.5.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/walkdir/COPYING",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/walkdir/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+					"name": "wasi",
+					"sourcePath": "./vendor/wasi",
+					"version": "0.14.2+wasi-0.2.4",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi/LICENSE-Apache-2.0_WITH_LLVM-exception",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+					"name": "wasi",
+					"sourcePath": "./vendor/wasi-0.11.1+wasi-snapshot-preview1",
+					"version": "0.11.1+wasi-snapshot-preview1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi-0.11.1+wasi-snapshot-preview1/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi-0.11.1+wasi-snapshot-preview1/LICENSE-Apache-2.0_WITH_LLVM-exception",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasi-0.11.1+wasi-snapshot-preview1/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "wasm-bindgen",
+					"sourcePath": "./vendor/wasm-bindgen",
+					"version": "0.2.100",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "wasm-bindgen-backend",
+					"sourcePath": "./vendor/wasm-bindgen-backend",
+					"version": "0.2.100",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-backend/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-backend/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "wasm-bindgen-macro",
+					"sourcePath": "./vendor/wasm-bindgen-macro",
+					"version": "0.2.100",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-macro/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-macro/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "wasm-bindgen-macro-support",
+					"sourcePath": "./vendor/wasm-bindgen-macro-support",
+					"version": "0.2.100",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-macro-support/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-macro-support/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "wasm-bindgen-shared",
+					"sourcePath": "./vendor/wasm-bindgen-shared",
+					"version": "0.2.100",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-shared/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/wasm-bindgen-shared/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "web-sys",
+					"sourcePath": "./vendor/web-sys",
+					"version": "0.3.77",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/web-sys/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/web-sys/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "which",
+					"sourcePath": "./vendor/which",
+					"version": "4.4.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/which/LICENSE.txt"
+					]
+				},
+				{
+					"license": "MIT/Apache-2.0",
+					"name": "winapi",
+					"sourcePath": "./vendor/winapi",
+					"version": "0.3.9",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT/Apache-2.0",
+					"name": "winapi-i686-pc-windows-gnu",
+					"sourcePath": "./vendor/winapi-i686-pc-windows-gnu",
+					"version": "0.4.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-APACHE"
+					]
+				},
+				{
+					"license": "Unlicense OR MIT",
+					"name": "winapi-util",
+					"sourcePath": "./vendor/winapi-util",
+					"version": "0.1.9",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi-util/COPYING",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/winapi-util/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "MIT/Apache-2.0",
+					"name": "winapi-x86_64-pc-windows-gnu",
+					"sourcePath": "./vendor/winapi-x86_64-pc-windows-gnu",
+					"version": "0.4.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-APACHE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "windows-sys",
+					"sourcePath": "./vendor/windows-sys",
+					"version": "0.59.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-sys/license-apache-2.0",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-sys/license-mit"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "windows-targets",
+					"sourcePath": "./vendor/windows-targets",
+					"version": "0.53.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-targets/license-apache-2.0",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-targets/license-mit"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "windows-targets",
+					"sourcePath": "./vendor/windows-targets-0.52.6",
+					"version": "0.52.6",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-targets-0.52.6/license-apache-2.0",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows-targets-0.52.6/license-mit"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "windows_aarch64_gnullvm",
+					"sourcePath": "./vendor/windows_aarch64_gnullvm",
+					"version": "0.53.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_gnullvm/license-apache-2.0",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_gnullvm/license-mit"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "windows_aarch64_gnullvm",
+					"sourcePath": "./vendor/windows_aarch64_gnullvm-0.52.6",
+					"version": "0.52.6",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_gnullvm-0.52.6/license-apache-2.0",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_gnullvm-0.52.6/license-mit"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "windows_aarch64_msvc",
+					"sourcePath": "./vendor/windows_aarch64_msvc",
+					"version": "0.53.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_msvc/license-apache-2.0",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_msvc/license-mit"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "windows_aarch64_msvc",
+					"sourcePath": "./vendor/windows_aarch64_msvc-0.52.6",
+					"version": "0.52.6",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_msvc-0.52.6/license-apache-2.0",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_aarch64_msvc-0.52.6/license-mit"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "windows_i686_gnu",
+					"sourcePath": "./vendor/windows_i686_gnu",
+					"version": "0.53.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnu/license-apache-2.0",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnu/license-mit"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "windows_i686_gnu",
+					"sourcePath": "./vendor/windows_i686_gnu-0.52.6",
+					"version": "0.52.6",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnu-0.52.6/license-apache-2.0",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnu-0.52.6/license-mit"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "windows_i686_gnullvm",
+					"sourcePath": "./vendor/windows_i686_gnullvm",
+					"version": "0.53.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnullvm/license-apache-2.0",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnullvm/license-mit"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "windows_i686_gnullvm",
+					"sourcePath": "./vendor/windows_i686_gnullvm-0.52.6",
+					"version": "0.52.6",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnullvm-0.52.6/license-apache-2.0",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_gnullvm-0.52.6/license-mit"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "windows_i686_msvc",
+					"sourcePath": "./vendor/windows_i686_msvc",
+					"version": "0.53.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_msvc/license-apache-2.0",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_msvc/license-mit"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "windows_i686_msvc",
+					"sourcePath": "./vendor/windows_i686_msvc-0.52.6",
+					"version": "0.52.6",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_msvc-0.52.6/license-apache-2.0",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_i686_msvc-0.52.6/license-mit"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "windows_x86_64_gnu",
+					"sourcePath": "./vendor/windows_x86_64_gnu",
+					"version": "0.53.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnu/license-apache-2.0",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnu/license-mit"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "windows_x86_64_gnu",
+					"sourcePath": "./vendor/windows_x86_64_gnu-0.52.6",
+					"version": "0.52.6",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnu-0.52.6/license-apache-2.0",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnu-0.52.6/license-mit"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "windows_x86_64_gnullvm",
+					"sourcePath": "./vendor/windows_x86_64_gnullvm",
+					"version": "0.53.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnullvm/license-apache-2.0",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnullvm/license-mit"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "windows_x86_64_gnullvm",
+					"sourcePath": "./vendor/windows_x86_64_gnullvm-0.52.6",
+					"version": "0.52.6",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnullvm-0.52.6/license-apache-2.0",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_gnullvm-0.52.6/license-mit"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "windows_x86_64_msvc",
+					"sourcePath": "./vendor/windows_x86_64_msvc",
+					"version": "0.53.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_msvc/license-apache-2.0",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_msvc/license-mit"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "windows_x86_64_msvc",
+					"sourcePath": "./vendor/windows_x86_64_msvc-0.52.6",
+					"version": "0.52.6",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_msvc-0.52.6/license-apache-2.0",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/windows_x86_64_msvc-0.52.6/license-mit"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "winnow",
+					"sourcePath": "./vendor/winnow",
+					"version": "0.7.11",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/winnow/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+					"name": "wit-bindgen-rt",
+					"sourcePath": "./vendor/wit-bindgen-rt",
+					"version": "0.39.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-MIT",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/addr2line/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/linux-raw-sys/LICENSE-Apache-2.0_WITH_LLVM-exception"
+					]
+				},
+				{
+					"license": "Unicode-3.0",
+					"name": "writeable",
+					"sourcePath": "./vendor/writeable",
+					"version": "0.6.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/writeable/LICENSE"
+					]
+				},
+				{
+					"license": "MIT",
+					"name": "y4m",
+					"sourcePath": "./vendor/y4m",
+					"version": "0.8.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/y4m/LICENSE"
+					]
+				},
+				{
+					"license": "MIT OR Apache-2.0",
+					"name": "yansi",
+					"sourcePath": "./vendor/yansi",
+					"version": "1.0.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/yansi/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/yansi/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Unicode-3.0",
+					"name": "yoke",
+					"sourcePath": "./vendor/yoke",
+					"version": "0.8.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/yoke/LICENSE"
+					]
+				},
+				{
+					"license": "Unicode-3.0",
+					"name": "yoke-derive",
+					"sourcePath": "./vendor/yoke-derive",
+					"version": "0.8.0",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/yoke-derive/LICENSE"
+					]
+				},
+				{
+					"license": "BSD-2-Clause OR Apache-2.0 OR MIT",
+					"name": "zerocopy",
+					"sourcePath": "./vendor/zerocopy",
+					"version": "0.8.25",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy/LICENSE-BSD",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "BSD-2-Clause OR Apache-2.0 OR MIT",
+					"name": "zerocopy-derive",
+					"sourcePath": "./vendor/zerocopy-derive",
+					"version": "0.8.25",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy-derive/LICENSE-APACHE",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy-derive/LICENSE-BSD",
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerocopy-derive/LICENSE-MIT"
+					]
+				},
+				{
+					"license": "Unicode-3.0",
+					"name": "zerofrom",
+					"sourcePath": "./vendor/zerofrom",
+					"version": "0.1.6",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerofrom/LICENSE"
+					]
+				},
+				{
+					"license": "Unicode-3.0",
+					"name": "zerofrom-derive",
+					"sourcePath": "./vendor/zerofrom-derive",
+					"version": "0.1.6",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerofrom-derive/LICENSE"
+					]
+				},
+				{
+					"license": "Unicode-3.0",
+					"name": "zerotrie",
+					"sourcePath": "./vendor/zerotrie",
+					"version": "0.2.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerotrie/LICENSE"
+					]
+				},
+				{
+					"license": "Unicode-3.0",
+					"name": "zerovec",
+					"sourcePath": "./vendor/zerovec",
+					"version": "0.11.2",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerovec/LICENSE"
+					]
+				},
+				{
+					"license": "Unicode-3.0",
+					"name": "zerovec-derive",
+					"sourcePath": "./vendor/zerovec-derive",
+					"version": "0.11.1",
+					"licenseFiles": [
+						"LICENSES/ffmpeg-static/50-rav1e/vendor/zerovec-derive/LICENSE"
+					]
+				}
+			],
+			"input": "input-root",
+			"upstream": {
+				"archive": "50-rav1e_f5502fba0839b77e72f498941acc6b52cd25845005fff70a9f22bff369d96d24.tar.xz",
+				"archiveSha256": "20acab70634fd59187c6c9ed7dde0076909592e6ca1ead8e8872991ab83fa1f0",
+				"commit": "564ae3b0007ae2b06893fd7166bf88c5a84c5b63"
+			}
 		},
 		{
 			"licenseFiles": [
@@ -1080,7 +4316,7 @@
 	],
 	"sourceBundle": {
 		"name": "n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz",
-		"sha256": "6576eef8e990c7da69b18d37f17f318ebc832365c50fd62a8a473240a6e62d54",
+		"sha256": "5c8094a00f39f2419c527fe391e18a269c428a0e97bed4f408361fa84f9b293b",
 		"url": "https://github.com/aliyusufergin/n8n-nodes-yt-dlp/releases/download/v0.2.0/n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz"
 	},
 	"sourceCache": {

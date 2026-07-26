@@ -21,6 +21,6 @@
 		"TOOLCHAIN.lock.json"
 	],
 	"scripts": {
-		"prepack": "node ../../scripts/ffmpeg-source-bundle.mjs verify-package"
+		"prepack": "node ../../scripts/ffmpeg-source-bundle.mjs verify-release"
 	}
 }
