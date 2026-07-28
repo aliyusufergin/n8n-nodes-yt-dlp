@@ -1,0 +1,183 @@
+x-n8n-environment: &n8n-environment
+  DB_TYPE: postgresdb
+  DB_POSTGRESDB_HOST: postgres
+  DB_POSTGRESDB_PORT: 5432
+  DB_POSTGRESDB_DATABASE: n8n
+  DB_POSTGRESDB_USER: n8n
+  DB_POSTGRESDB_PASSWORD: n8n-e2e-password
+  EXECUTIONS_MODE: queue
+  QUEUE_BULL_REDIS_HOST: redis
+  QUEUE_BULL_REDIS_PORT: 6379
+  N8N_DEFAULT_BINARY_DATA_MODE: database
+  N8N_BINARY_DATA_DATABASE_MAX_FILE_SIZE: 1
+  N8N_BINARY_DATA_SIGNING_SECRET: n8n-yt-dlp-e2e-signing-secret
+  N8N_ENCRYPTION_KEY: n8n-yt-dlp-e2e-encryption-key
+  N8N_COMMUNITY_PACKAGES_ENABLED: "true"
+  N8N_UNVERIFIED_PACKAGES_ENABLED: "true"
+  N8N_COMMUNITY_PACKAGES_PREVENT_LOADING: "false"
+  N8N_DIAGNOSTICS_ENABLED: "false"
+  N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+  N8N_TEMPLATES_ENABLED: "false"
+  N8N_PERSONALIZATION_ENABLED: "false"
+  N8N_SECURE_COOKIE: "false"
+  N8N_LOG_LEVEL: debug
+  N8N_LOG_FORMAT: json
+  N8N_RUNNERS_ENABLED: "false"
+  N8N_LISTEN_ADDRESS: 0.0.0.0
+  OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS: "true"
+  NODE_EXTRA_CA_CERTS: /e2e-ca/ca.pem
+
+x-n8n-service: &n8n-service
+  image: docker.n8n.io/n8nio/n8n@sha256:6dd442962208ff080af3e0a8ab5254eb4c6138f2d188d4a7e3cf84eed3b7eae1
+  platform: linux/amd64
+  environment: *n8n-environment
+  volumes:
+    - ${E2E_GENERATED_ROOT}/registry/certs/ca.pem:/e2e-ca/ca.pem:ro
+  networks:
+    - e2e
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    registry:
+      condition: service_healthy
+    fixture:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: n8n
+      POSTGRES_USER: n8n
+      POSTGRES_PASSWORD: n8n-e2e-password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U n8n -d n8n"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    networks:
+      - e2e
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    networks:
+      - e2e
+
+  registry:
+    image: node:24-alpine
+    command: ["node", "/e2e/registry-server.mjs"]
+    environment:
+      REGISTRY_PORT: 443
+      REGISTRY_ROOT: /registry
+      REGISTRY_TLS_CERT: /registry/certs/registry.pem
+      REGISTRY_TLS_KEY: /registry/certs/registry.key
+    volumes:
+      - ${E2E_SUITE_ROOT}:/e2e:ro
+      - ${E2E_GENERATED_ROOT}/registry:/registry
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "process.env.NODE_TLS_REJECT_UNAUTHORIZED='0';fetch('https://127.0.0.1/-/ping').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    networks:
+      e2e:
+        aliases:
+          - registry.npmjs.org
+          - api.n8n.io
+
+  fixture:
+    image: node:24-alpine
+    command: ["node", "/e2e/fixture-server.mjs"]
+    environment:
+      FIXTURE_ROOT: /fixtures
+      ORIGIN_PORT: 8080
+      PROXY_PORT: 8081
+    volumes:
+      - ${E2E_SUITE_ROOT}:/e2e:ro
+      - ${E2E_GENERATED_ROOT}/fixtures:/fixtures:ro
+    ports:
+      - "127.0.0.1:${E2E_FIXTURE_PORT:-18080}:8080"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8080/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    networks:
+      e2e:
+        aliases:
+          - fixture.example.test
+      control:
+
+  main:
+    <<: *n8n-service
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["set -o pipefail; n8n start 2>&1 | tee /tmp/n8n-main.log"]
+    environment:
+      <<: *n8n-environment
+      N8N_HOST: 127.0.0.1
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: http://127.0.0.1:${E2E_N8N_PORT:-15678}
+    ports:
+      - "127.0.0.1:${E2E_N8N_PORT:-15678}:5678"
+    networks:
+      - e2e
+      - control
+    volumes:
+      - ${E2E_GENERATED_ROOT}/registry/certs/ca.pem:/e2e-ca/ca.pem:ro
+      - main_data:/home/node/.n8n
+    healthcheck:
+      test: ["CMD-SHELL", "grep -q 'Editor is now accessible via' /tmp/n8n-main.log"]
+      interval: 3s
+      timeout: 3s
+      retries: 60
+
+  worker:
+    <<: *n8n-service
+    command: ["worker", "--concurrency=1"]
+    depends_on:
+      main:
+        condition: service_healthy
+    volumes:
+      - ${E2E_GENERATED_ROOT}/registry/certs/ca.pem:/e2e-ca/ca.pem:ro
+      - worker_data:/home/node/.n8n
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "process.exit(process.pid > 0 ? 0 : 1)",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+networks:
+  e2e:
+    internal: true
+  control:
+
+volumes:
+  main_data:
+  worker_data:

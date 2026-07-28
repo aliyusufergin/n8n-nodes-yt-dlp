@@ -1,3 +1,7 @@
 packages/linux-x64/bin/deno filter=lfs diff=lfs merge=lfs -text
+packages/linux-x64/bin/deno.gnu filter=lfs diff=lfs merge=lfs -text
 packages/linux-x64/bin/ffmpeg filter=lfs diff=lfs merge=lfs -text
+packages/linux-x64/bin/ffmpeg.gnu filter=lfs diff=lfs merge=lfs -text
 packages/linux-x64/bin/ffprobe filter=lfs diff=lfs merge=lfs -text
+packages/linux-x64/bin/ffprobe.gnu filter=lfs diff=lfs merge=lfs -text
+packages/linux-x64/bin/yt-dlp.musl filter=lfs diff=lfs merge=lfs -text
