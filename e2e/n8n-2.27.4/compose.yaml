@@ -9,7 +9,6 @@ x-n8n-environment: &n8n-environment
   QUEUE_BULL_REDIS_HOST: redis
   QUEUE_BULL_REDIS_PORT: 6379
   N8N_DEFAULT_BINARY_DATA_MODE: database
-  N8N_BINARY_DATA_DATABASE_MAX_FILE_SIZE: 1
   N8N_BINARY_DATA_SIGNING_SECRET: n8n-yt-dlp-e2e-signing-secret
   N8N_ENCRYPTION_KEY: n8n-yt-dlp-e2e-encryption-key
   N8N_COMMUNITY_PACKAGES_ENABLED: "true"
@@ -28,7 +27,7 @@ x-n8n-environment: &n8n-environment
   NODE_EXTRA_CA_CERTS: /e2e-ca/ca.pem
 
 x-n8n-service: &n8n-service
-  image: docker.n8n.io/n8nio/n8n@sha256:6dd442962208ff080af3e0a8ab5254eb4c6138f2d188d4a7e3cf84eed3b7eae1
+  image: ${E2E_N8N_IMAGE:?E2E_N8N_IMAGE is required}
   platform: linux/amd64
   environment: *n8n-environment
   volumes:

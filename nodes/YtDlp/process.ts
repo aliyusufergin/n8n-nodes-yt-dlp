@@ -176,7 +176,13 @@ async function workspaceApparentSize(path: string, maximumBytes: number): Promis
 	let size = stat.size;
 	if (!stat.isDirectory()) return size;
 
-	const directory = await opendir(path);
+	let directory;
+	try {
+		directory = await opendir(path);
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code === 'ENOENT') return 0;
+		throw workspaceMeasurementError(error);
+	}
 	for await (const entry of directory) {
 		size += await workspaceApparentSize(join(path, entry.name), maximumBytes - size);
 		if (size > maximumBytes) return size;

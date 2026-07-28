@@ -159,6 +159,40 @@ describe('yt-dlp process boundary', () => {
 		).rejects.toMatchObject({ code: 'RESOURCE_LIMIT' });
 	});
 
+	it('tolerates transient directories disappearing during workspace measurement', async () => {
+		const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-workspace-churn-'));
+		temporaryDirectories.push(workspace);
+		const executablePath = join(workspace, 'controlled-executable');
+		await writeFile(
+			executablePath,
+			`#!${process.execPath}\n` +
+				`const { mkdirSync, rmSync } = require('node:fs');\n` +
+				`const { join } = require('node:path');\n` +
+				`const transient = join(process.cwd(), 'transient');\n` +
+				`mkdirSync(transient, { recursive: true });\n` +
+				`for (let index = 0; index < 500; index++) {\n` +
+				`  mkdirSync(join(transient, String(index)));\n` +
+				`}\n` +
+				`const deadline = Date.now() + 1500;\n` +
+				`while (Date.now() < deadline) {\n` +
+				`  for (let index = 0; index < 500; index++) {\n` +
+				`    const directory = join(transient, String(index));\n` +
+				`    rmSync(directory, { force: true, recursive: true });\n` +
+				`    mkdirSync(directory);\n` +
+				`  }\n` +
+				`}\n`,
+			{ mode: 0o700 },
+		);
+
+		await expect(
+			superviseYtDlpExecutionPlan(
+				executablePath,
+				{ argv: [] },
+				{ cwd: workspace, timeoutMs: 3_000, workspaceLimitBytes: 64 * 1024 * 1024 },
+			),
+		).resolves.toBeUndefined();
+	});
+
 	it('emits one cancellation classification when cancellation races an output flood', async () => {
 		const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-output-cancel-race-'));
 		temporaryDirectories.push(workspace);

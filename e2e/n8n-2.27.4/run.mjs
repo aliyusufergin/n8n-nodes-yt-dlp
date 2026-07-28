@@ -8,17 +8,36 @@ import { parse as parseFlatted } from 'flatted';
 const execFileAsync = promisify(execFile);
 const repositoryRoot = resolve(process.argv[2] ?? '.');
 const suiteRoot = join(repositoryRoot, 'e2e/n8n-2.27.4');
-const generatedRoot = join(suiteRoot, '.generated');
+const n8nTag = process.env.E2E_N8N_TAG;
+const n8nImageReference = process.env.E2E_N8N_IMAGE;
+const n8nIndexDigest = process.env.E2E_N8N_INDEX_DIGEST;
+const n8nRole = process.env.E2E_N8N_ROLE;
+if (!n8nTag || !/^\d+\.\d+\.\d+$/u.test(n8nTag)) {
+	throw new Error('E2E_N8N_TAG must be an exact version.');
+}
+if (
+	!n8nImageReference ||
+	!/^docker\.n8n\.io\/n8nio\/n8n@sha256:[a-f0-9]{64}$/u.test(n8nImageReference)
+) {
+	throw new Error('E2E_N8N_IMAGE must pin an exact official n8n image digest.');
+}
+if (!n8nIndexDigest || !/^sha256:[a-f0-9]{64}$/u.test(n8nIndexDigest)) {
+	throw new Error('E2E_N8N_INDEX_DIGEST must be an exact image-index digest.');
+}
+if (!n8nRole) throw new Error('E2E_N8N_ROLE is required.');
+const generatedRoot = join(suiteRoot, '.generated', n8nTag);
 const composePath = join(suiteRoot, 'compose.yaml');
 const n8nPort = Number(process.env.E2E_N8N_PORT ?? 15678);
 const fixturePort = Number(process.env.E2E_FIXTURE_PORT ?? 18080);
 const n8nBaseUrl = `http://127.0.0.1:${n8nPort}`;
 const packageVersion = '0.2.0';
 const n8nImage = {
-	digest: 'sha256:6dd442962208ff080af3e0a8ab5254eb4c6138f2d188d4a7e3cf84eed3b7eae1',
-	indexDigest: 'sha256:cf11c96b0d0089bb24459bf97b445fd7008f41543b673cce4d955f7c0ed8752d',
+	digest: n8nImageReference.split('@')[1],
+	indexDigest: n8nIndexDigest,
 	platform: 'linux/amd64',
-	tag: '2.27.4',
+	reference: n8nImageReference,
+	role: n8nRole,
+	tag: n8nTag,
 };
 const secretSentinels = ['cookie-secret', 'proxy-password'];
 const dockerEnvironment = {
@@ -27,10 +46,17 @@ const dockerEnvironment = {
 	DOCKER_HOST: process.env.DOCKER_HOST ?? 'unix:///var/run/docker.sock',
 	E2E_FIXTURE_PORT: String(fixturePort),
 	E2E_GENERATED_ROOT: generatedRoot,
+	E2E_N8N_IMAGE: n8nImageReference,
 	E2E_N8N_PORT: String(n8nPort),
 	E2E_SUITE_ROOT: suiteRoot,
 };
-const composeArguments = ['compose', '-f', composePath, '-p', 'n8n-yt-dlp-2274'];
+const composeArguments = [
+	'compose',
+	'-f',
+	composePath,
+	'-p',
+	`n8n-yt-dlp-${n8nTag.replaceAll('.', '')}`,
+];
 
 async function run(command, arguments_, options = {}) {
 	return await execFileAsync(command, arguments_, {
@@ -120,9 +146,12 @@ class N8nClient {
 		return await this.request('/workflows', { body: workflow, method: 'POST' });
 	}
 
-	async runManual(workflowId, destinationNode) {
-		const started = await this.request(`/workflows/${workflowId}/run`, {
-			body: { destinationNode: { mode: 'inclusive', nodeName: destinationNode } },
+	async runManual(workflow, destinationNode) {
+		const started = await this.request(`/workflows/${workflow.id}/run`, {
+			body: {
+				destinationNode: { mode: 'inclusive', nodeName: destinationNode },
+				workflowData: workflow,
+			},
 			method: 'POST',
 		});
 		assert(typeof started.executionId === 'string', 'Manual execution returned no execution ID.');
@@ -233,6 +262,7 @@ function workflowDefinition({
 		};
 	}
 	return {
+		active: false,
 		connections,
 		name,
 		nodes,
@@ -267,7 +297,7 @@ function nodeItems(execution, nodeName) {
 async function createAndRunManual(client, options) {
 	const workflow = await client.createWorkflow(workflowDefinition(options));
 	const destination = options.roundTrip === false ? 'YT-DLP' : 'Round-trip';
-	const executionId = await client.runManual(workflow.id, destination);
+	const executionId = await client.runManual(workflow, destination);
 	const execution = await client.waitForExecution(executionId);
 	return {
 		execution,
@@ -301,6 +331,11 @@ process.stdout.write(JSON.stringify({
 async function binaryRowCount(executionId) {
 	assert(/^\d+$/u.test(executionId), 'Execution ID is not numeric.');
 	const query = `SELECT count(*) FROM binary_data WHERE "sourceType" = 'execution' AND "sourceId" = '${executionId}'`;
+	const stdout = await postgresQuery(query);
+	return Number(stdout.trim());
+}
+
+async function postgresQuery(query) {
 	const { stdout } = await compose([
 		'exec',
 		'-T',
@@ -313,7 +348,7 @@ async function binaryRowCount(executionId) {
 		'-Atc',
 		query,
 	]);
-	return Number(stdout.trim());
+	return stdout;
 }
 
 function successfulJson(items) {
@@ -335,7 +370,12 @@ async function main() {
 	]);
 	report('prepare:complete');
 	report('toolchain-smoke:start');
-	await run('node', [join(suiteRoot, 'toolchain-smoke.mjs')]);
+	await run('node', [
+		join(suiteRoot, 'toolchain-smoke.mjs'),
+		repositoryRoot,
+		generatedRoot,
+		n8nImageReference,
+	]);
 	report('toolchain-smoke:complete');
 	await mkdir(dockerEnvironment.DOCKER_CONFIG, { recursive: true });
 	await writeFile(join(dockerEnvironment.DOCKER_CONFIG, 'config.json'), '{}');
@@ -370,9 +410,22 @@ async function main() {
 	let stackStarted = false;
 	try {
 		report('stack:start');
-		await compose(['up', '-d', '--wait', '--quiet-pull'], { timeout: 600_000 });
 		stackStarted = true;
+		await compose(['up', '-d', '--wait', '--quiet-pull'], { timeout: 600_000 });
 		report('stack:ready');
+		const { stdout: reportedVersionOutput } = await compose([
+			'exec',
+			'-T',
+			'main',
+			'n8n',
+			'--version',
+		]);
+		const reportedVersion = reportedVersionOutput.trim();
+		assert(
+			reportedVersion === n8nTag,
+			`Pinned image reported n8n ${reportedVersion}, expected ${n8nTag}.`,
+		);
+		evidence.image.reportedVersion = reportedVersion;
 		const client = new N8nClient();
 		await poll('n8n API', async () => {
 			const response = await fetch(`${n8nBaseUrl}/healthz`);
@@ -590,42 +643,52 @@ async function main() {
 			outcome: 'pass',
 		};
 
-		const transferFailure = await createAndRunManual(client, {
-			argumentsValue: '--yes-playlist --playlist-items 1-2',
-			continueOnFail: true,
-			name: 'E2E Nth binary transfer failure',
-			roundTrip: false,
-			sourceUrl: 'http://fixture:8080/transfer-failure-playlist',
-		});
-		assert(
-			transferFailure.items.length === 1 &&
-				transferFailure.items[0].json.errorCode === 'BINARY_TRANSFER_FAILED' &&
-				transferFailure.items[0].binary === undefined,
-			`Nth binary transfer failure published a partial Artifact Item: ${JSON.stringify(
-				transferFailure.items.map((item) => ({
-					hasBinary: item.binary !== undefined,
-					json: item.json,
-				})),
-			)}`,
+		await postgresQuery(
+			'ALTER TABLE binary_data ADD CONSTRAINT e2e_binary_data_file_size CHECK ("fileSize" <= 1048576)',
 		);
-		const unreferencedBeforePruning = await binaryRowCount(transferFailure.executionId);
-		assert(
-			unreferencedBeforePruning === 1,
-			'Expected exactly one unreferenced backend write before pruning.',
-		);
-		await client.request('/executions/delete', {
-			body: { ids: [transferFailure.executionId] },
-			method: 'POST',
-		});
-		await poll('binary pruning', async () =>
-			(await binaryRowCount(transferFailure.executionId)) === 0 ? true : undefined,
-		);
-		evidence.scenarios.binaryTransferFailure = {
-			executionId: transferFailure.executionId,
-			outcome: 'pass',
-			unreferencedRowsAfterPruning: 0,
-			unreferencedRowsBeforePruning: unreferencedBeforePruning,
-		};
+		try {
+			const transferFailure = await createAndRunManual(client, {
+				argumentsValue: '--yes-playlist --playlist-items 1-2',
+				continueOnFail: true,
+				name: 'E2E Nth binary transfer failure',
+				roundTrip: false,
+				sourceUrl: 'http://fixture:8080/transfer-failure-playlist',
+			});
+			assert(
+				transferFailure.items.length === 1 &&
+					transferFailure.items[0].json.errorCode === 'BINARY_TRANSFER_FAILED' &&
+					transferFailure.items[0].binary === undefined,
+				`Nth binary transfer failure published a partial Artifact Item: ${JSON.stringify(
+					transferFailure.items.map((item) => ({
+						hasBinary: item.binary !== undefined,
+						json: item.json,
+					})),
+				)}`,
+			);
+			const unreferencedBeforePruning = await binaryRowCount(transferFailure.executionId);
+			assert(
+				unreferencedBeforePruning === 1,
+				'Expected exactly one unreferenced backend write before pruning.',
+			);
+			await client.request('/executions/delete', {
+				body: { ids: [transferFailure.executionId] },
+				method: 'POST',
+			});
+			await poll('binary pruning', async () =>
+				(await binaryRowCount(transferFailure.executionId)) === 0 ? true : undefined,
+			);
+			evidence.scenarios.binaryTransferFailure = {
+				evidenceSource: 'disposable database CHECK constraint',
+				executionId: transferFailure.executionId,
+				outcome: 'pass',
+				unreferencedRowsAfterPruning: 0,
+				unreferencedRowsBeforePruning: unreferencedBeforePruning,
+			};
+		} finally {
+			await postgresQuery(
+				'ALTER TABLE binary_data DROP CONSTRAINT IF EXISTS e2e_binary_data_file_size',
+			);
+		}
 
 		const cancellationWorkflow = await client.createWorkflow(
 			workflowDefinition({
@@ -634,7 +697,7 @@ async function main() {
 				sourceUrl: 'http://fixture:8080/slow.mp4',
 			}),
 		);
-		const cancellationId = await client.runManual(cancellationWorkflow.id, 'YT-DLP');
+		const cancellationId = await client.runManual(cancellationWorkflow, 'YT-DLP');
 		await poll('running cancellation execution', async () => {
 			const execution = await client.execution(cancellationId);
 			if (execution.status === 'new') return undefined;
@@ -725,7 +788,7 @@ async function main() {
 		}
 		evidence.registryRequests = registryRequests;
 		evidence.completedAt = new Date().toISOString();
-		const evidencePath = join(generatedRoot, 'evidence/n8n-2.27.4.json');
+		const evidencePath = join(generatedRoot, `evidence/n8n-${n8nTag}.json`);
 		await writeFile(evidencePath, JSON.stringify(evidence, null, 2));
 		report('scenarios:complete');
 		process.stdout.write(`${evidencePath}\n`);

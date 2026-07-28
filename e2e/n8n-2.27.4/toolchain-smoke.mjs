@@ -8,8 +8,10 @@ const generatedRoot = resolve(
 	process.argv[3] ?? join(repositoryRoot, 'e2e/n8n-2.27.4/.generated'),
 );
 const tarballRoot = join(generatedRoot, 'registry/tarballs');
-const image =
-	'docker.n8n.io/n8nio/n8n@sha256:6dd442962208ff080af3e0a8ab5254eb4c6138f2d188d4a7e3cf84eed3b7eae1';
+const image = process.argv[4];
+if (!image || !/^docker\.n8n\.io\/n8nio\/n8n@sha256:[a-f0-9]{64}$/u.test(image)) {
+	throw new Error('An exact official n8n image digest is required.');
+}
 
 const script = `
 	set -eu
@@ -56,7 +58,7 @@ const { stdout } = await execFileAsync(
 			DOCKER_HOST: process.env.DOCKER_HOST ?? 'unix:///var/run/docker.sock',
 		},
 		maxBuffer: 4 * 1024 * 1024,
-		timeout: 60_000,
+		timeout: 600_000,
 	},
 );
 
