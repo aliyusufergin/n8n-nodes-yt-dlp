@@ -19,8 +19,8 @@
 			},
 			"assets": [
 				{
-					"name": "yt-dlp_linux",
-					"sha256": "64ce4959c7e98b58bf4954c39d3fea5d7e26f1afef155f547f908fe8fa4eeab0"
+					"name": "yt-dlp_musllinux",
+					"sha256": "8f5d14830ffcfc2a45de3c13b0e5158bc228d8d00bc58df2196d0d14e01d7023"
 				}
 			],
 			"license": "Unlicense AND LicenseRef-yt-dlp-third-party",
@@ -68,6 +68,90 @@
 				"name": "deno_src.tar.gz",
 				"sha256": "58da10e48968a80a6c205b31584d1f1f4583226e59ebb08cb3783b12e7f22d4d"
 			}
+		},
+		{
+			"name": "linux-runtime",
+			"build": {
+				"launcherSource": {
+					"path": "toolchain/linux-x64/runtime-launcher.c",
+					"sha256": "bc6dd8ea6b0c92efe76c06b3e6ae87ff35e184517bb4e0901cdaaf41583712bf"
+				},
+				"script": {
+					"path": "toolchain/linux-x64/build-runtime.sh",
+					"sha256": "48f9a44eebfd75adff894876ee5143cd9559b432f44158937247cb91f85935fa"
+				},
+				"image": "gcc@sha256:3e239a5ea77200b9163c825a0a5ebc17ca99f3bbb4d08241ee0fb9c174325880",
+				"glibcVersion": "2.36-9+deb12u14",
+				"gccVersion": "13.4.0"
+			},
+			"runtime": {
+				"image": "ubuntu@sha256:0e0a0fc6d18feda9db1590da249ac93e8d5abfea8f4c3c0c849ce512b5ef8982",
+				"packages": {
+					"libc6": "2.35-0ubuntu3.13",
+					"libgcc-s1": "12.3.0-1ubuntu1~22.04.3",
+					"zlib1g": "1:1.2.11.dfsg-2ubuntu9.2"
+				}
+			},
+			"muslRuntime": {
+				"image": "docker.n8n.io/n8nio/n8n@sha256:6dd442962208ff080af3e0a8ab5254eb4c6138f2d188d4a7e3cf84eed3b7eae1",
+				"packages": {
+					"musl": "1.2.5-r12",
+					"zlib": "1.3.2-r0"
+				}
+			},
+			"assets": [
+				{
+					"name": "runtime-launcher",
+					"sha256": "3c8d72c82d8e6caad2a171c34ef82895a3a2d6d6a4925fe02ce1e3347879088b"
+				}
+			],
+			"license": "LGPL-2.1-or-later AND GPL-3.0-or-later WITH GCC-exception-3.1 AND Zlib AND MIT",
+			"sourceGate": {
+				"status": "pending",
+				"blockingReason": "Platform publication requires a combined immutable runtime Corresponding Source Bundle, a clean isolated rebuild, and maintainer license-review evidence."
+			},
+			"sourceBundles": [
+				{
+					"name": "glibc_2.35.orig.tar.xz",
+					"sha256": "5123732f6b67ccd319305efd399971d58592122bcc2a6518a1bd2510dd0cf52e"
+				},
+				{
+					"name": "glibc_2.35-0ubuntu3.13.debian.tar.xz",
+					"sha256": "28173285cf885df068374baf9b513ede397988ea3f93a1377f0268fe257a62f4"
+				},
+				{
+					"name": "glibc_2.36.orig.tar.xz",
+					"sha256": "a543c02070d46ccaf866957efd13f10c924daa74c86a90a0254db09a92a708ee"
+				},
+				{
+					"name": "glibc_2.36-9+deb12u14.debian.tar.xz",
+					"sha256": "cf4ac9cd98185452cae3ef34e2e4ee12753e3d93fd0c62c61396d4a47eec902f"
+				},
+				{
+					"name": "gcc-12_12.3.0.orig.tar.gz",
+					"sha256": "62b0fc89b6d41f9df2470d0fb4995f6ff5885f910518a2c6a44a6888ea5a9ea1"
+				},
+				{
+					"name": "gcc-12_12.3.0-1ubuntu1~22.04.3.debian.tar.xz",
+					"sha256": "44074c3d5e7d97365f1f7b45291ade2ee40ed6300176530d912e7cc0ceba77ab"
+				},
+				{
+					"name": "zlib_1.2.11.dfsg.orig.tar.gz",
+					"sha256": "80c481411a4fe8463aeb8270149a0e80bb9eaf7da44132b6e16f2b5af01bc899"
+				},
+				{
+					"name": "zlib_1.2.11.dfsg-2ubuntu9.2.debian.tar.xz",
+					"sha256": "5678d0b3d1e609297e5a3dedfcb3474bab1cafe82c0c29aec2cef01e49a88d39"
+				},
+				{
+					"name": "musl-1.2.5.tar.gz",
+					"sha256": "a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4"
+				},
+				{
+					"name": "zlib-1.3.2.tar.gz",
+					"sha256": "bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16"
+				}
+			]
 		},
 		{
 			"name": "yt-dlp-ejs",

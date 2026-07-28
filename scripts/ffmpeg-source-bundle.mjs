@@ -257,15 +257,26 @@ async function verifyPackage({ allowPendingBundle = false } = {}) {
 	}
 
 	for (const expected of [
-		['ffmpeg', 'ea50d9fba39cc2f57785be7d082a65d5484728d83e9f90ecc6ba4372c05fc022'],
-		['ffprobe', '7d37b347245e21cea470f7ba696f32eb918dcf485fd5ffba3b29f44c0556f7d8'],
+		[
+			'ffmpeg',
+			'ffmpegBinary',
+			'ffmpeg.gnu',
+			'ea50d9fba39cc2f57785be7d082a65d5484728d83e9f90ecc6ba4372c05fc022',
+		],
+		[
+			'ffprobe',
+			'ffprobeBinary',
+			'ffprobe.gnu',
+			'7d37b347245e21cea470f7ba696f32eb918dcf485fd5ffba3b29f44c0556f7d8',
+		],
 	]) {
-		const [name, digest] = expected;
-		await assertDigest(join(packageRoot, 'bin', name), digest, name);
-		const evidence = executionManifest.files.find((file) => file.name === name);
+		const [name, binaryName, fileName, digest] = expected;
+		await assertDigest(join(packageRoot, 'bin', fileName), digest, name);
+		const binaryEvidence = executionManifest.files.find((file) => file.name === binaryName);
+		const probeEvidence = executionManifest.files.find((file) => file.name === name);
 		if (
-			evidence?.sha256 !== digest ||
-			!evidence.probe.stdout.includes(`N-125551-ga09be9b91e-20260712`)
+			binaryEvidence?.sha256 !== digest ||
+			!probeEvidence?.probe.stdout.includes(`N-125551-ga09be9b91e-20260712`)
 		) {
 			fail(`Execution evidence does not match ${name}.`);
 		}
@@ -394,7 +405,19 @@ async function verifyPublishedSourceAsset(manifest) {
 	}
 }
 
+async function verifyLinuxRuntimeReleaseGate() {
+	const lock = await readJson(join(packageRoot, 'TOOLCHAIN.lock.json'));
+	const runtime = lock.components.find(({ name }) => name === 'linux-runtime');
+	if (runtime?.sourceGate?.status !== 'passed') {
+		fail(
+			'Platform publication is blocked until the Linux runtime Corresponding Source, clean-rebuild, and license-review gate passes.',
+		);
+	}
+	fail('The Linux runtime release-evidence verifier has not been implemented.');
+}
+
 async function verifyRelease() {
+	await verifyLinuxRuntimeReleaseGate();
 	const { executionManifest, manifest } = await verifyPackage();
 	await verifyReleaseEvidence(manifest, executionManifest);
 	await verifyPublishedSourceAsset(manifest);

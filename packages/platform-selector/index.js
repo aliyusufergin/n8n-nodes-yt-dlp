@@ -9,16 +9,42 @@ const { dirname, isAbsolute, join, relative } = require('node:path');
 const PLATFORM_PACKAGE_NAME = 'n8n-nodes-yt-dlp-linux-x64';
 const PLATFORM_PACKAGE_VERSION = '0.2.0';
 const EXECUTION_MANIFEST_DIGEST =
-	'1aaf9c783b170af2e2bd07288012c3c8a4944894a732ccc458d469da6d47581a';
+	'dacef6a3403711b72f3222b9be3238ee84b731a85a1e73cb59ce329404b0e884';
 const EXECUTION_MANIFEST_NAME = 'execution-manifest.json';
 const EXPECTED_FILES = [
-	{ name: 'ytDlp', executable: true },
-	{ name: 'ffmpeg', executable: true },
-	{ name: 'ffprobe', executable: true },
-	{ name: 'deno', executable: true },
-	{ name: 'ejsCore', executable: false },
-	{ name: 'ejsLib', executable: false },
+	{ name: 'ytDlp', executable: true, probe: true },
+	{ name: 'ffmpeg', executable: true, probe: true },
+	{ name: 'ffprobe', executable: true, probe: true },
+	{ name: 'deno', executable: true, probe: true },
+	{ name: 'ytDlpBinary', executable: true, probe: false },
+	{ name: 'ffmpegBinary', executable: true, probe: false },
+	{ name: 'ffprobeBinary', executable: true, probe: false },
+	{ name: 'denoBinary', executable: true, probe: false },
+	{ name: 'muslLoader', executable: true, probe: false },
+	{ name: 'muslZlib', executable: false, probe: false },
+	{ name: 'glibcLoader', executable: true, probe: false },
+	{ name: 'glibc', executable: false, probe: false },
+	{ name: 'glibcDl', executable: false, probe: false },
+	{ name: 'gccRuntime', executable: false, probe: false },
+	{ name: 'glibcMath', executable: false, probe: false },
+	{ name: 'glibcVectorMath', executable: false, probe: false },
+	{ name: 'glibcDns', executable: false, probe: false },
+	{ name: 'glibcFiles', executable: false, probe: false },
+	{ name: 'glibcThreads', executable: false, probe: false },
+	{ name: 'glibcResolver', executable: false, probe: false },
+	{ name: 'glibcRealtime', executable: false, probe: false },
+	{ name: 'zlib', executable: false, probe: false },
+	{ name: 'ejsCore', executable: false, probe: false },
+	{ name: 'ejsLib', executable: false, probe: false },
 ];
+const PUBLIC_TOOLCHAIN_NAMES = new Set([
+	'ytDlp',
+	'ffmpeg',
+	'ffprobe',
+	'deno',
+	'ejsCore',
+	'ejsLib',
+]);
 const PROBE_OUTPUT_LIMIT_BYTES = 64 * 1024;
 const PROBE_TIMEOUT_MS = 10_000;
 
@@ -119,7 +145,7 @@ function parseExecutionManifest(contents) {
 			entry.size < 0 ||
 			typeof entry.sha256 !== 'string' ||
 			!/^[0-9a-f]{64}$/u.test(entry.sha256) ||
-			(entry.mode.executable
+			(expected.probe
 				? entry.probe === null ||
 					typeof entry.probe !== 'object' ||
 					!Array.isArray(entry.probe.args) ||
@@ -274,10 +300,14 @@ async function attestToolchain() {
 			files.push(await verifyFile(platformRoot, entry));
 		}
 		for (const file of files) {
-			if (file.mode.executable) await runProbe(file);
+			if (file.probe !== undefined) await runProbe(file);
 		}
 		const toolchain = Object.freeze(
-			Object.fromEntries(files.map((file, index) => [manifest.files[index].name, file.path])),
+			Object.fromEntries(
+				files
+					.map((file, index) => [manifest.files[index].name, file.path])
+					.filter(([name]) => PUBLIC_TOOLCHAIN_NAMES.has(name)),
+			),
 		);
 		return { platformRoot, verifiedManifest, files, toolchain };
 	} catch (error) {

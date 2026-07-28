@@ -1,1 +1,295 @@
-{"files":[{"mode":{"executable":true,"groupWritable":false,"worldWritable":false},"name":"ytDlp","path":"bin/yt-dlp","probe":{"args":["--version"],"stdout":"2026.07.14.233956\n"},"sha256":"64ce4959c7e98b58bf4954c39d3fea5d7e26f1afef155f547f908fe8fa4eeab0","size":38283456},{"mode":{"executable":true,"groupWritable":false,"worldWritable":false},"name":"ffmpeg","path":"bin/ffmpeg","probe":{"args":["-version"],"stdout":"ffmpeg version N-125551-ga09be9b91e-20260712 Copyright (c) 2000-2026 the FFmpeg developers\nbuilt with gcc 15.2.0 (crosstool-NG 1.28.0.23_185f348)\nconfiguration: --prefix=/ffbuild/prefix --pkg-config-flags=--static --pkg-config=pkg-config --cross-prefix=x86_64-ffbuild-linux-gnu- --arch=x86_64 --target-os=linux --enable-gpl --enable-version3 --disable-debug --enable-iconv --enable-zlib --enable-libxml2 --enable-libsoxr --enable-openssl --enable-libvmaf --enable-fontconfig --enable-libharfbuzz --enable-libfreetype --enable-libfribidi --enable-vulkan --enable-libshaderc --enable-libvorbis --enable-libxcb --enable-xlib --enable-libpulse --enable-gmp --enable-lzma --enable-liblcevc-dec --enable-opencl --enable-amf --enable-libaom --enable-libaribb24 --enable-avisynth --enable-chromaprint --enable-libdav1d --enable-libdavs2 --enable-libdvdread --enable-libdvdnav --disable-libfdk-aac --enable-ffnvcodec --enable-cuda-llvm --enable-frei0r --enable-libgme --enable-libkvazaar --enable-libaribcaption --enable-libass --enable-libbluray --enable-libjxl --enable-libmp3lame --enable-libopus --enable-libplacebo --enable-librist --enable-libssh --enable-libtheora --enable-libvpx --enable-libwebp --enable-libzmq --enable-lv2 --enable-libvpl --enable-openal --enable-liboapv --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-librav1e --enable-librubberband --disable-schannel --enable-sdl2 --enable-libsnappy --enable-libsrt --enable-libsvtav1 --enable-libtwolame --enable-libuavs3d --enable-libdrm --enable-vaapi --enable-libvidstab --enable-libvvenc --disable-whisper --enable-libx264 --enable-libx265 --enable-libxavs2 --enable-libxvid --enable-libzimg --enable-libzvbi --extra-cflags=-DLIBTWOLAME_STATIC --extra-cxxflags= --extra-libs='-lgomp -ldl' --extra-ldflags=-pthread --extra-ldexeflags=-pie --cc=x86_64-ffbuild-linux-gnu-gcc --cxx=x86_64-ffbuild-linux-gnu-g++ --ar=x86_64-ffbuild-linux-gnu-gcc-ar --ranlib=x86_64-ffbuild-linux-gnu-gcc-ranlib --nm=x86_64-ffbuild-linux-gnu-gcc-nm --extra-version=20260712\nlibavutil      61.  4.100 / 61.  4.100\nlibavcodec     63.  6.100 / 63.  6.100\nlibavformat    63.  4.100 / 63.  4.100\nlibavdevice    63.  2.100 / 63.  2.100\nlibavfilter    12.  2.100 / 12.  2.100\nlibswscale     10.  2.100 / 10.  2.100\nlibswresample   7.  2.100 /  7.  2.100\n\nExiting with exit code 0\n"},"sha256":"ea50d9fba39cc2f57785be7d082a65d5484728d83e9f90ecc6ba4372c05fc022","size":145520648},{"mode":{"executable":true,"groupWritable":false,"worldWritable":false},"name":"ffprobe","path":"bin/ffprobe","probe":{"args":["-version"],"stdout":"ffprobe version N-125551-ga09be9b91e-20260712 Copyright (c) 2007-2026 the FFmpeg developers\nbuilt with gcc 15.2.0 (crosstool-NG 1.28.0.23_185f348)\nconfiguration: --prefix=/ffbuild/prefix --pkg-config-flags=--static --pkg-config=pkg-config --cross-prefix=x86_64-ffbuild-linux-gnu- --arch=x86_64 --target-os=linux --enable-gpl --enable-version3 --disable-debug --enable-iconv --enable-zlib --enable-libxml2 --enable-libsoxr --enable-openssl --enable-libvmaf --enable-fontconfig --enable-libharfbuzz --enable-libfreetype --enable-libfribidi --enable-vulkan --enable-libshaderc --enable-libvorbis --enable-libxcb --enable-xlib --enable-libpulse --enable-gmp --enable-lzma --enable-liblcevc-dec --enable-opencl --enable-amf --enable-libaom --enable-libaribb24 --enable-avisynth --enable-chromaprint --enable-libdav1d --enable-libdavs2 --enable-libdvdread --enable-libdvdnav --disable-libfdk-aac --enable-ffnvcodec --enable-cuda-llvm --enable-frei0r --enable-libgme --enable-libkvazaar --enable-libaribcaption --enable-libass --enable-libbluray --enable-libjxl --enable-libmp3lame --enable-libopus --enable-libplacebo --enable-librist --enable-libssh --enable-libtheora --enable-libvpx --enable-libwebp --enable-libzmq --enable-lv2 --enable-libvpl --enable-openal --enable-liboapv --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-librav1e --enable-librubberband --disable-schannel --enable-sdl2 --enable-libsnappy --enable-libsrt --enable-libsvtav1 --enable-libtwolame --enable-libuavs3d --enable-libdrm --enable-vaapi --enable-libvidstab --enable-libvvenc --disable-whisper --enable-libx264 --enable-libx265 --enable-libxavs2 --enable-libxvid --enable-libzimg --enable-libzvbi --extra-cflags=-DLIBTWOLAME_STATIC --extra-cxxflags= --extra-libs='-lgomp -ldl' --extra-ldflags=-pthread --extra-ldexeflags=-pie --cc=x86_64-ffbuild-linux-gnu-gcc --cxx=x86_64-ffbuild-linux-gnu-g++ --ar=x86_64-ffbuild-linux-gnu-gcc-ar --ranlib=x86_64-ffbuild-linux-gnu-gcc-ranlib --nm=x86_64-ffbuild-linux-gnu-gcc-nm --extra-version=20260712\nlibavutil      61.  4.100 / 61.  4.100\nlibavcodec     63.  6.100 / 63.  6.100\nlibavformat    63.  4.100 / 63.  4.100\nlibavdevice    63.  2.100 / 63.  2.100\nlibavfilter    12.  2.100 / 12.  2.100\nlibswscale     10.  2.100 / 10.  2.100\nlibswresample   7.  2.100 /  7.  2.100\n"},"sha256":"7d37b347245e21cea470f7ba696f32eb918dcf485fd5ffba3b29f44c0556f7d8","size":145295368},{"mode":{"executable":true,"groupWritable":false,"worldWritable":false},"name":"deno","path":"bin/deno","probe":{"args":["--version"],"stdout":"deno 2.9.3 (stable, release, x86_64-unknown-linux-gnu)\nv8 14.9.207.2-rusty\ntypescript 6.0.3\n"},"sha256":"8570c9cdebe936ba744e12a6d329e0a17ea505b4e5f89b654473a2efc2d2e3ba","size":106313392},{"mode":{"executable":false,"groupWritable":false,"worldWritable":false},"name":"ejsCore","path":"assets/ejs/yt.solver.core.js","sha256":"ca259e4e3cdd37d92fc266d9af08d4fd66da8479e240f4d984f29da402c22ead","size":12607},{"mode":{"executable":false,"groupWritable":false,"worldWritable":false},"name":"ejsLib","path":"assets/ejs/yt.solver.lib.js","sha256":"770831df5c46474fbff06732315b28f4fb090e427ca669a51da61e2457d41c82","size":366728}],"packageName":"n8n-nodes-yt-dlp-linux-x64","packageVersion":"0.2.0","schemaVersion":1}
+{
+  "files": [
+    {
+      "mode": {
+        "executable": true,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "ytDlp",
+      "path": "bin/yt-dlp",
+      "probe": {
+        "args": [
+          "--version"
+        ],
+        "stdout": "2026.07.14.233956\n"
+      },
+      "sha256": "3c8d72c82d8e6caad2a171c34ef82895a3a2d6d6a4925fe02ce1e3347879088b",
+      "size": 694616
+    },
+    {
+      "mode": {
+        "executable": true,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "ffmpeg",
+      "path": "bin/ffmpeg",
+      "probe": {
+        "args": [
+          "-version"
+        ],
+        "stdout": "ffmpeg version N-125551-ga09be9b91e-20260712 Copyright (c) 2000-2026 the FFmpeg developers\nbuilt with gcc 15.2.0 (crosstool-NG 1.28.0.23_185f348)\nconfiguration: --prefix=/ffbuild/prefix --pkg-config-flags=--static --pkg-config=pkg-config --cross-prefix=x86_64-ffbuild-linux-gnu- --arch=x86_64 --target-os=linux --enable-gpl --enable-version3 --disable-debug --enable-iconv --enable-zlib --enable-libxml2 --enable-libsoxr --enable-openssl --enable-libvmaf --enable-fontconfig --enable-libharfbuzz --enable-libfreetype --enable-libfribidi --enable-vulkan --enable-libshaderc --enable-libvorbis --enable-libxcb --enable-xlib --enable-libpulse --enable-gmp --enable-lzma --enable-liblcevc-dec --enable-opencl --enable-amf --enable-libaom --enable-libaribb24 --enable-avisynth --enable-chromaprint --enable-libdav1d --enable-libdavs2 --enable-libdvdread --enable-libdvdnav --disable-libfdk-aac --enable-ffnvcodec --enable-cuda-llvm --enable-frei0r --enable-libgme --enable-libkvazaar --enable-libaribcaption --enable-libass --enable-libbluray --enable-libjxl --enable-libmp3lame --enable-libopus --enable-libplacebo --enable-librist --enable-libssh --enable-libtheora --enable-libvpx --enable-libwebp --enable-libzmq --enable-lv2 --enable-libvpl --enable-openal --enable-liboapv --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-librav1e --enable-librubberband --disable-schannel --enable-sdl2 --enable-libsnappy --enable-libsrt --enable-libsvtav1 --enable-libtwolame --enable-libuavs3d --enable-libdrm --enable-vaapi --enable-libvidstab --enable-libvvenc --disable-whisper --enable-libx264 --enable-libx265 --enable-libxavs2 --enable-libxvid --enable-libzimg --enable-libzvbi --extra-cflags=-DLIBTWOLAME_STATIC --extra-cxxflags= --extra-libs='-lgomp -ldl' --extra-ldflags=-pthread --extra-ldexeflags=-pie --cc=x86_64-ffbuild-linux-gnu-gcc --cxx=x86_64-ffbuild-linux-gnu-g++ --ar=x86_64-ffbuild-linux-gnu-gcc-ar --ranlib=x86_64-ffbuild-linux-gnu-gcc-ranlib --nm=x86_64-ffbuild-linux-gnu-gcc-nm --extra-version=20260712\nlibavutil      61.  4.100 / 61.  4.100\nlibavcodec     63.  6.100 / 63.  6.100\nlibavformat    63.  4.100 / 63.  4.100\nlibavdevice    63.  2.100 / 63.  2.100\nlibavfilter    12.  2.100 / 12.  2.100\nlibswscale     10.  2.100 / 10.  2.100\nlibswresample   7.  2.100 /  7.  2.100\n\nExiting with exit code 0\n"
+      },
+      "sha256": "3c8d72c82d8e6caad2a171c34ef82895a3a2d6d6a4925fe02ce1e3347879088b",
+      "size": 694616
+    },
+    {
+      "mode": {
+        "executable": true,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "ffprobe",
+      "path": "bin/ffprobe",
+      "probe": {
+        "args": [
+          "-version"
+        ],
+        "stdout": "ffprobe version N-125551-ga09be9b91e-20260712 Copyright (c) 2007-2026 the FFmpeg developers\nbuilt with gcc 15.2.0 (crosstool-NG 1.28.0.23_185f348)\nconfiguration: --prefix=/ffbuild/prefix --pkg-config-flags=--static --pkg-config=pkg-config --cross-prefix=x86_64-ffbuild-linux-gnu- --arch=x86_64 --target-os=linux --enable-gpl --enable-version3 --disable-debug --enable-iconv --enable-zlib --enable-libxml2 --enable-libsoxr --enable-openssl --enable-libvmaf --enable-fontconfig --enable-libharfbuzz --enable-libfreetype --enable-libfribidi --enable-vulkan --enable-libshaderc --enable-libvorbis --enable-libxcb --enable-xlib --enable-libpulse --enable-gmp --enable-lzma --enable-liblcevc-dec --enable-opencl --enable-amf --enable-libaom --enable-libaribb24 --enable-avisynth --enable-chromaprint --enable-libdav1d --enable-libdavs2 --enable-libdvdread --enable-libdvdnav --disable-libfdk-aac --enable-ffnvcodec --enable-cuda-llvm --enable-frei0r --enable-libgme --enable-libkvazaar --enable-libaribcaption --enable-libass --enable-libbluray --enable-libjxl --enable-libmp3lame --enable-libopus --enable-libplacebo --enable-librist --enable-libssh --enable-libtheora --enable-libvpx --enable-libwebp --enable-libzmq --enable-lv2 --enable-libvpl --enable-openal --enable-liboapv --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-librav1e --enable-librubberband --disable-schannel --enable-sdl2 --enable-libsnappy --enable-libsrt --enable-libsvtav1 --enable-libtwolame --enable-libuavs3d --enable-libdrm --enable-vaapi --enable-libvidstab --enable-libvvenc --disable-whisper --enable-libx264 --enable-libx265 --enable-libxavs2 --enable-libxvid --enable-libzimg --enable-libzvbi --extra-cflags=-DLIBTWOLAME_STATIC --extra-cxxflags= --extra-libs='-lgomp -ldl' --extra-ldflags=-pthread --extra-ldexeflags=-pie --cc=x86_64-ffbuild-linux-gnu-gcc --cxx=x86_64-ffbuild-linux-gnu-g++ --ar=x86_64-ffbuild-linux-gnu-gcc-ar --ranlib=x86_64-ffbuild-linux-gnu-gcc-ranlib --nm=x86_64-ffbuild-linux-gnu-gcc-nm --extra-version=20260712\nlibavutil      61.  4.100 / 61.  4.100\nlibavcodec     63.  6.100 / 63.  6.100\nlibavformat    63.  4.100 / 63.  4.100\nlibavdevice    63.  2.100 / 63.  2.100\nlibavfilter    12.  2.100 / 12.  2.100\nlibswscale     10.  2.100 / 10.  2.100\nlibswresample   7.  2.100 /  7.  2.100\n"
+      },
+      "sha256": "3c8d72c82d8e6caad2a171c34ef82895a3a2d6d6a4925fe02ce1e3347879088b",
+      "size": 694616
+    },
+    {
+      "mode": {
+        "executable": true,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "deno",
+      "path": "bin/deno",
+      "probe": {
+        "args": [
+          "--version"
+        ],
+        "stdout": "deno 2.9.3 (stable, release, x86_64-unknown-linux-gnu)\nv8 14.9.207.2-rusty\ntypescript 6.0.3\n"
+      },
+      "sha256": "3c8d72c82d8e6caad2a171c34ef82895a3a2d6d6a4925fe02ce1e3347879088b",
+      "size": 694616
+    },
+    {
+      "mode": {
+        "executable": true,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "ytDlpBinary",
+      "path": "bin/yt-dlp.musl",
+      "sha256": "8f5d14830ffcfc2a45de3c13b0e5158bc228d8d00bc58df2196d0d14e01d7023",
+      "size": 39089728
+    },
+    {
+      "mode": {
+        "executable": true,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "ffmpegBinary",
+      "path": "bin/ffmpeg.gnu",
+      "sha256": "ea50d9fba39cc2f57785be7d082a65d5484728d83e9f90ecc6ba4372c05fc022",
+      "size": 145520648
+    },
+    {
+      "mode": {
+        "executable": true,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "ffprobeBinary",
+      "path": "bin/ffprobe.gnu",
+      "sha256": "7d37b347245e21cea470f7ba696f32eb918dcf485fd5ffba3b29f44c0556f7d8",
+      "size": 145295368
+    },
+    {
+      "mode": {
+        "executable": true,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "denoBinary",
+      "path": "bin/deno.gnu",
+      "sha256": "8570c9cdebe936ba744e12a6d329e0a17ea505b4e5f89b654473a2efc2d2e3ba",
+      "size": 106313392
+    },
+    {
+      "mode": {
+        "executable": true,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "muslLoader",
+      "path": "runtime/musl/ld-musl-x86_64.so.1",
+      "sha256": "1cc5c3f502179e2a4befae29658fb109102effefc75742893aa4a449fd3fbb03",
+      "size": 662120
+    },
+    {
+      "mode": {
+        "executable": false,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "muslZlib",
+      "path": "runtime/musl/libz.so.1",
+      "sha256": "773b12b255243da0012fb837432632fbc94621cb50c7ff521f4e24ae27dbe341",
+      "size": 104280
+    },
+    {
+      "mode": {
+        "executable": true,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "glibcLoader",
+      "path": "runtime/glibc/ld-linux-x86-64.so.2",
+      "sha256": "9eb34cb2da3ae2a9398cc09b3cd2d069563ec40d9858cb711af15cd23fa80abf",
+      "size": 240936
+    },
+    {
+      "mode": {
+        "executable": false,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "glibc",
+      "path": "runtime/glibc/libc.so.6",
+      "sha256": "c53819710b163d3f1d2541778590d58d3ef31cb0ed75adcbe059faac68c1e72d",
+      "size": 2220400
+    },
+    {
+      "mode": {
+        "executable": false,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "glibcDl",
+      "path": "runtime/glibc/libdl.so.2",
+      "sha256": "bf1783273aa79484bf5f70eddc013bc3982785d8aadef224aa09beb08fa95b42",
+      "size": 14432
+    },
+    {
+      "mode": {
+        "executable": false,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "gccRuntime",
+      "path": "runtime/glibc/libgcc_s.so.1",
+      "sha256": "fc9d43b2f6c20e53b009238f767c5b949d202389e20de9e202ea684b4ba3729a",
+      "size": 125488
+    },
+    {
+      "mode": {
+        "executable": false,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "glibcMath",
+      "path": "runtime/glibc/libm.so.6",
+      "sha256": "00830df310aac5023e10bd7b715149ab8ddc682277fd8ae3539a7a44fcdd6c38",
+      "size": 940560
+    },
+    {
+      "mode": {
+        "executable": false,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "glibcVectorMath",
+      "path": "runtime/glibc/libmvec.so.1",
+      "sha256": "6f206561fc33eacfdd2d4df81949d372c0b233a68fac8f08808f4c6c52c6e737",
+      "size": 1031720
+    },
+    {
+      "mode": {
+        "executable": false,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "glibcDns",
+      "path": "runtime/glibc/libnss_dns.so.2",
+      "sha256": "b5d11c935472be35b59c0c9d15bf01f5c94e02dfd200883e9e993da09c7b73ea",
+      "size": 14352
+    },
+    {
+      "mode": {
+        "executable": false,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "glibcFiles",
+      "path": "runtime/glibc/libnss_files.so.2",
+      "sha256": "423f14091ddbd452eac7d1944cb0efd2969d5ec8707a975b2055658070d5c51a",
+      "size": 14352
+    },
+    {
+      "mode": {
+        "executable": false,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "glibcThreads",
+      "path": "runtime/glibc/libpthread.so.0",
+      "sha256": "16e807d47ff2441f0203fb2b8805d471e555d932d3d8d262ec6a58ea1d640fd8",
+      "size": 21448
+    },
+    {
+      "mode": {
+        "executable": false,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "glibcResolver",
+      "path": "runtime/glibc/libresolv.so.2",
+      "sha256": "0f40debbe0184c3a2b2f90ecb5aa7d499cae96e9d84e2859f866e5ed6e3018f8",
+      "size": 68552
+    },
+    {
+      "mode": {
+        "executable": false,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "glibcRealtime",
+      "path": "runtime/glibc/librt.so.1",
+      "sha256": "c8124d69d67c4f94c162c36550c9244d60e2e368ecae98857754e3ba11824677",
+      "size": 14664
+    },
+    {
+      "mode": {
+        "executable": false,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "zlib",
+      "path": "runtime/glibc/libz.so.1",
+      "sha256": "64c206f0146cc58bbddc4f22054436f4ff278f5a554aa3ce6921ddf7e9133370",
+      "size": 108936
+    },
+    {
+      "mode": {
+        "executable": false,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "ejsCore",
+      "path": "assets/ejs/yt.solver.core.js",
+      "sha256": "ca259e4e3cdd37d92fc266d9af08d4fd66da8479e240f4d984f29da402c22ead",
+      "size": 12607
+    },
+    {
+      "mode": {
+        "executable": false,
+        "groupWritable": false,
+        "worldWritable": false
+      },
+      "name": "ejsLib",
+      "path": "assets/ejs/yt.solver.lib.js",
+      "sha256": "770831df5c46474fbff06732315b28f4fb090e427ca669a51da61e2457d41c82",
+      "size": 366728
+    }
+  ],
+  "packageName": "n8n-nodes-yt-dlp-linux-x64",
+  "packageVersion": "0.2.0",
+  "schemaVersion": 1
+}

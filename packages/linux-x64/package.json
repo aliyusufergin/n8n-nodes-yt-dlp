@@ -18,6 +18,7 @@
 		"assets",
 		"bin",
 		"execution-manifest.json",
+		"runtime",
 		"TOOLCHAIN.lock.json"
 	],
 	"scripts": {

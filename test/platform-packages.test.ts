@@ -85,6 +85,7 @@ interface ToolchainLock {
 		assets: Array<{ name: string; sha256: string }>;
 		license: string;
 		name: string;
+		sourceGate?: { status: string };
 		sourceBundle: { name: string; sha256: string; url?: string };
 		upstream: {
 			commit: string;
@@ -153,17 +154,21 @@ describe('published Platform Gate packages', () => {
 		const packagedBin = join(platformPackage.extractedDirectory, 'package', 'bin');
 		const packageRoot = join(platformPackage.extractedDirectory, 'package');
 		const [ffmpegBytes, ffprobeBytes, ffmpegVersion, ffprobeVersion] = await Promise.all([
-			readFile(join(packagedBin, 'ffmpeg')),
-			readFile(join(packagedBin, 'ffprobe')),
+			readFile(join(packagedBin, 'ffmpeg.gnu')),
+			readFile(join(packagedBin, 'ffprobe.gnu')),
 			execFileAsync(join(packagedBin, 'ffmpeg'), ['-hide_banner', '-version']),
 			execFileAsync(join(packagedBin, 'ffprobe'), ['-hide_banner', '-version']),
 		]);
 
 		expect((await readdir(packagedBin)).sort()).toEqual([
 			'deno',
+			'deno.gnu',
 			'ffmpeg',
+			'ffmpeg.gnu',
 			'ffprobe',
+			'ffprobe.gnu',
 			'yt-dlp',
+			'yt-dlp.musl',
 		]);
 		expect(createHash('sha256').update(ffmpegBytes).digest('hex')).toBe(
 			'ea50d9fba39cc2f57785be7d082a65d5484728d83e9f90ecc6ba4372c05fc022',
@@ -183,11 +188,29 @@ describe('published Platform Gate packages', () => {
 			{ name: 'ffmpeg', path: 'bin/ffmpeg' },
 			{ name: 'ffprobe', path: 'bin/ffprobe' },
 			{ name: 'deno', path: 'bin/deno' },
+			{ name: 'ytDlpBinary', path: 'bin/yt-dlp.musl' },
+			{ name: 'ffmpegBinary', path: 'bin/ffmpeg.gnu' },
+			{ name: 'ffprobeBinary', path: 'bin/ffprobe.gnu' },
+			{ name: 'denoBinary', path: 'bin/deno.gnu' },
+			{ name: 'muslLoader', path: 'runtime/musl/ld-musl-x86_64.so.1' },
+			{ name: 'muslZlib', path: 'runtime/musl/libz.so.1' },
+			{ name: 'glibcLoader', path: 'runtime/glibc/ld-linux-x86-64.so.2' },
+			{ name: 'glibc', path: 'runtime/glibc/libc.so.6' },
+			{ name: 'glibcDl', path: 'runtime/glibc/libdl.so.2' },
+			{ name: 'gccRuntime', path: 'runtime/glibc/libgcc_s.so.1' },
+			{ name: 'glibcMath', path: 'runtime/glibc/libm.so.6' },
+			{ name: 'glibcVectorMath', path: 'runtime/glibc/libmvec.so.1' },
+			{ name: 'glibcDns', path: 'runtime/glibc/libnss_dns.so.2' },
+			{ name: 'glibcFiles', path: 'runtime/glibc/libnss_files.so.2' },
+			{ name: 'glibcThreads', path: 'runtime/glibc/libpthread.so.0' },
+			{ name: 'glibcResolver', path: 'runtime/glibc/libresolv.so.2' },
+			{ name: 'glibcRealtime', path: 'runtime/glibc/librt.so.1' },
+			{ name: 'zlib', path: 'runtime/glibc/libz.so.1' },
 			{ name: 'ejsCore', path: 'assets/ejs/yt.solver.core.js' },
 			{ name: 'ejsLib', path: 'assets/ejs/yt.solver.lib.js' },
 		]);
 		expect(await readFile(join(packageRoot, 'LICENSES.md'), 'utf8')).toContain(
-			'| `bin/ffmpeg`, `bin/ffprobe`    | FFmpeg `N-125551-ga09be9b91e-20260712`, statically linked dependencies | `LICENSES/FFmpeg-GPLv3.txt`, `LICENSES/FFmpeg-Builds-MIT.txt`, and the component-indexed verbatim materials under `LICENSES/ffmpeg-static/` |',
+			'| `bin/ffmpeg.gnu`, `bin/ffprobe.gnu`',
 		);
 		await expect(
 			readFile(join(packageRoot, 'LICENSES', 'FFmpeg-GPLv3.txt'), 'utf8'),
@@ -344,8 +367,8 @@ describe('published Platform Gate packages', () => {
 					commit: 'aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8',
 				},
 				assets: [{
-					name: 'yt-dlp_linux',
-					sha256: '64ce4959c7e98b58bf4954c39d3fea5d7e26f1afef155f547f908fe8fa4eeab0',
+					name: 'yt-dlp_musllinux',
+					sha256: '8f5d14830ffcfc2a45de3c13b0e5158bc228d8d00bc58df2196d0d14e01d7023',
 				}],
 				license: 'Unlicense AND LicenseRef-yt-dlp-third-party',
 				sourceBundle: {
@@ -372,6 +395,26 @@ describe('published Platform Gate packages', () => {
 				},
 			}),
 			expect.objectContaining({
+				name: 'linux-runtime',
+				build: expect.objectContaining({
+					image:
+						'gcc@sha256:3e239a5ea77200b9163c825a0a5ebc17ca99f3bbb4d08241ee0fb9c174325880',
+				}),
+				runtime: expect.objectContaining({
+					image:
+						'ubuntu@sha256:0e0a0fc6d18feda9db1590da249ac93e8d5abfea8f4c3c0c849ce512b5ef8982',
+				}),
+				muslRuntime: expect.objectContaining({
+					image:
+						'docker.n8n.io/n8nio/n8n@sha256:6dd442962208ff080af3e0a8ab5254eb4c6138f2d188d4a7e3cf84eed3b7eae1',
+				}),
+				sourceGate: {
+					status: 'pending',
+					blockingReason:
+						'Platform publication requires a combined immutable runtime Corresponding Source Bundle, a clean isolated rebuild, and maintainer license-review evidence.',
+				},
+			}),
+			expect.objectContaining({
 				name: 'yt-dlp-ejs',
 				upstream: {
 					repository: 'yt-dlp/ejs',
@@ -395,6 +438,20 @@ describe('published Platform Gate packages', () => {
 				},
 			}),
 		]);
+	});
+
+	it('blocks platform publication while the Linux runtime source gate is pending', async () => {
+		try {
+			await execFileAsync(process.execPath, [
+				join(repositoryRoot, 'scripts', 'ffmpeg-source-bundle.mjs'),
+				'verify-release',
+			]);
+			throw new Error('The release verification unexpectedly passed.');
+		} catch (error) {
+			expect((error as { stderr?: string }).stderr).toContain(
+				'Platform publication is blocked until the Linux runtime Corresponding Source',
+			);
+		}
 	});
 
 	it('maps the source-gated FFmpeg build to its complete source inventory', async () => {
@@ -564,7 +621,10 @@ describe('published Platform Gate packages', () => {
 		) as { files: Array<{ mode?: unknown; name: string }> };
 		for (const entry of manifest.files) {
 			expect(entry.mode).toEqual({
-				executable: !entry.name.startsWith('ejs'),
+				executable:
+					['deno', 'ffmpeg', 'ffprobe', 'ytDlp'].includes(entry.name) ||
+					entry.name.endsWith('Binary') ||
+					entry.name.endsWith('Loader'),
 				groupWritable: false,
 				worldWritable: false,
 			});
