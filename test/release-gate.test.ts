@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
@@ -46,19 +46,31 @@ describe('n8n 2.x Release Gate Matrix', () => {
 	it('attempts every anchor and reports the complete failure list', async () => {
 		const executableDirectory = await mkdtemp(join(tmpdir(), 'n8n-release-gate-path-'));
 		try {
-			await writeFile(join(executableDirectory, 'node'), '#!/bin/sh\nexit 19\n', {
-				mode: 0o700,
-			});
+			const invocationLog = join(executableDirectory, 'invocations');
+			await writeFile(
+				join(executableDirectory, 'node'),
+				'#!/bin/sh\nprintf "invoked\\n" >> "$E2E_FAKE_NODE_LOG"\nexit 19\n',
+				{ mode: 0o700 },
+			);
 			let failure: { code: number; stderr: string; stdout: string } | undefined;
 			try {
 				await execFileAsync(process.execPath, ['e2e/release-gate/run.mjs'], {
-					env: { ...process.env, PATH: executableDirectory },
+					env: {
+						...process.env,
+						E2E_FAKE_NODE_LOG: invocationLog,
+						PATH: executableDirectory,
+					},
 				});
 			} catch (error) {
 				failure = error as { code: number; stderr: string; stdout: string };
 			}
 			if (!failure) throw new Error('The release gate unexpectedly succeeded.');
 
+			expect((await readFile(invocationLog, 'utf8')).trim().split('\n')).toEqual([
+				'invoked',
+				'invoked',
+				'invoked',
+			]);
 			expect(failure.code).toBe(1);
 			expect(
 				failure.stdout
