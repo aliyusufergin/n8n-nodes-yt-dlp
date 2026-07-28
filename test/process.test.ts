@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -16,9 +16,22 @@ import {
 	type SpawnProcess,
 } from '../nodes/YtDlp/process';
 
+const fileSystemMock = vi.hoisted(() => ({
+	actualOpendir: undefined as unknown as typeof import('node:fs/promises').opendir,
+	opendir: vi.fn<typeof import('node:fs/promises').opendir>(),
+}));
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('node:fs/promises')>();
+	fileSystemMock.actualOpendir = actual.opendir;
+	fileSystemMock.opendir.mockImplementation(actual.opendir);
+	return { ...actual, opendir: fileSystemMock.opendir };
+});
+
 const temporaryDirectories: string[] = [];
 
 afterEach(async () => {
+	fileSystemMock.opendir.mockImplementation(fileSystemMock.actualOpendir);
 	await Promise.all(temporaryDirectories.splice(0).map(async (directory) => await rm(directory, { recursive: true })));
 });
 
@@ -157,6 +170,36 @@ describe('yt-dlp process boundary', () => {
 				{ cwd: workspace, timeoutMs: 1_500, workspaceLimitBytes: 1024 * 1024 },
 			),
 		).rejects.toMatchObject({ code: 'RESOURCE_LIMIT' });
+	});
+
+	it('tolerates transient directories disappearing during workspace measurement', async () => {
+		const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-workspace-churn-'));
+		temporaryDirectories.push(workspace);
+		const transientDirectory = join(workspace, 'transient');
+		await mkdir(transientDirectory);
+		const executablePath = join(workspace, 'controlled-executable');
+		await writeFile(
+			executablePath,
+			`#!${process.execPath}\nsetTimeout(() => {}, 100);\n`,
+			{ mode: 0o700 },
+		);
+		let disappearanceObserved = false;
+		fileSystemMock.opendir.mockImplementation(async (path, options) => {
+			if (path === transientDirectory) {
+				disappearanceObserved = true;
+				throw Object.assign(new Error('transient directory disappeared'), { code: 'ENOENT' });
+			}
+			return await fileSystemMock.actualOpendir(path, options);
+		});
+
+		await expect(
+			superviseYtDlpExecutionPlan(
+				executablePath,
+				{ argv: [] },
+				{ cwd: workspace, timeoutMs: 1_000, workspaceLimitBytes: 64 * 1024 * 1024 },
+			),
+		).resolves.toBeUndefined();
+		expect(disappearanceObserved).toBe(true);
 	});
 
 	it('emits one cancellation classification when cancellation races an output flood', async () => {
