@@ -12,6 +12,7 @@ const n8nTag = process.env.E2E_N8N_TAG;
 const n8nImageReference = process.env.E2E_N8N_IMAGE;
 const n8nIndexDigest = process.env.E2E_N8N_INDEX_DIGEST;
 const n8nRole = process.env.E2E_N8N_ROLE;
+const scaleRecovery = process.env.E2E_SCALE_RECOVERY === 'true';
 if (!n8nTag || !/^\d+\.\d+\.\d+$/u.test(n8nTag)) {
 	throw new Error('E2E_N8N_TAG must be an exact version.');
 }
@@ -40,6 +41,7 @@ const n8nImage = {
 	tag: n8nTag,
 };
 const secretSentinels = ['cookie-secret', 'proxy-password'];
+const composeProject = `n8n-yt-dlp-${n8nTag.replaceAll('.', '')}`;
 const dockerEnvironment = {
 	...process.env,
 	DOCKER_CONFIG: join(generatedRoot, '.docker'),
@@ -48,6 +50,7 @@ const dockerEnvironment = {
 	E2E_GENERATED_ROOT: generatedRoot,
 	E2E_N8N_IMAGE: n8nImageReference,
 	E2E_N8N_PORT: String(n8nPort),
+	E2E_REINSTALL_MISSING_PACKAGES: String(scaleRecovery),
 	E2E_SUITE_ROOT: suiteRoot,
 };
 const composeArguments = [
@@ -55,8 +58,19 @@ const composeArguments = [
 	'-f',
 	composePath,
 	'-p',
-	`n8n-yt-dlp-${n8nTag.replaceAll('.', '')}`,
+	composeProject,
 ];
+const downArguments = scaleRecovery
+	? [
+			'--profile',
+			'scale-recovery-online',
+			'--profile',
+			'scale-recovery-late',
+			'down',
+			'--volumes',
+			'--remove-orphans',
+		]
+	: ['down', '--volumes', '--remove-orphans'];
 
 async function run(command, arguments_, options = {}) {
 	return await execFileAsync(command, arguments_, {
@@ -307,6 +321,19 @@ async function createAndRunManual(client, options) {
 	};
 }
 
+function assertExactPackageState(state) {
+	assert(
+		[state.main.version, state.selector.version, state.platform.version].every(
+			(version) => version === packageVersion,
+		),
+		'Main, selector, and platform packages are not in version lockstep.',
+	);
+	assert(
+		state.platform.name === 'n8n-nodes-yt-dlp-linux-x64',
+		'Unexpected platform package was selected.',
+	);
+}
+
 async function packageState(service) {
 	const script = `
 const { createRequire } = require('node:module');
@@ -326,6 +353,161 @@ process.stdout.write(JSON.stringify({
 `;
 	const { stdout } = await compose(['exec', '-T', service, 'node', '-e', script]);
 	return JSON.parse(stdout.trim());
+}
+
+async function workerReadiness(service) {
+	const script = `
+fetch('http://127.0.0.1:5678/healthz/readiness')
+  .then(async (response) => {
+    process.stdout.write(JSON.stringify({
+      body: await response.text(),
+      status: response.status,
+    }));
+    if (!response.ok) process.exitCode = 1;
+  })
+  .catch(() => {
+    process.exitCode = 1;
+  });
+`;
+	const readiness = await poll(
+		`${service} database/Redis readiness`,
+		async () => {
+			const { stdout } = await compose(['exec', '-T', service, 'node', '-e', script]);
+			return JSON.parse(stdout.trim());
+		},
+		{ timeoutMs: 180_000, intervalMs: 2_000 },
+	);
+	return {
+		...readiness,
+		scope: 'database-and-redis-only',
+	};
+}
+
+async function startWorkers(services) {
+	await compose(['start', ...services]);
+	return await Promise.all(services.map(async (service) => await workerReadiness(service)));
+}
+
+async function executeOnOnlyWorker(client, target, workers, name) {
+	const otherWorkers = workers.filter((service) => service !== target);
+	if (otherWorkers.length > 0) await compose(['stop', ...otherWorkers]);
+	await startWorkers([target]);
+	const { stdout } = await compose(['ps', '--status', 'running', '--services']);
+	const runningWorkers = stdout
+		.trim()
+		.split('\n')
+		.filter((service) => workers.includes(service));
+	assert(
+		JSON.stringify(runningWorkers) === JSON.stringify([target]),
+		`Expected only ${target} to accept queue work, found ${runningWorkers.join(', ')}.`,
+	);
+	const run = await createAndRunManual(client, {
+		name,
+		roundTrip: false,
+		sourceUrl: 'http://fixture:8080/direct.mp4',
+	});
+	assert(run.execution.status === 'success', `${target} queue execution failed.`);
+	assert(run.items.length === 1, `${target} queue execution returned the wrong item count.`);
+	return {
+		executionId: run.executionId,
+		outcome: 'pass',
+		routingProof: 'only-running-queue-worker',
+		service: target,
+	};
+}
+
+async function recoverEmptyWorker(service, volume, profile) {
+	await compose(['rm', '--stop', '--force', service]);
+	await run('docker', ['volume', 'rm', `${composeProject}_${volume}`]);
+	const arguments_ =
+		profile === undefined
+			? ['up', '-d', '--wait', service]
+			: ['--profile', profile, 'up', '-d', '--wait', service];
+	await compose(arguments_, { timeout: 300_000 });
+	const readiness = await workerReadiness(service);
+	const packages = await poll(
+		`${service} exact-version missing-package recovery`,
+		async () => await packageState(service),
+		{ timeoutMs: 300_000, intervalMs: 2_000 },
+	);
+	assertExactPackageState(packages);
+	return { packages, readiness };
+}
+
+async function workerPackageMount(service) {
+	const { stdout: containerIdOutput } = await compose(['ps', '--all', '-q', service]);
+	const containerId = containerIdOutput.trim();
+	assert(containerId !== '', `No container found for ${service}.`);
+	const { stdout } = await run('docker', ['inspect', containerId]);
+	const inspected = JSON.parse(stdout);
+	const mount = inspected[0]?.Mounts?.find(
+		(candidate) => candidate.Destination === '/home/node/.n8n',
+	);
+	assert(mount?.Type === 'volume', `${service} does not use an isolated package volume.`);
+	return { destination: mount.Destination, source: mount.Name, type: mount.Type };
+}
+
+async function mutateWorkerToolchain(service, mutation) {
+	const script = `
+const { appendFileSync, readFileSync, renameSync, writeFileSync } = require('node:fs');
+const { createRequire } = require('node:module');
+const { dirname, join } = require('node:path');
+const mainPath = '/home/node/.n8n/nodes/node_modules/n8n-nodes-yt-dlp/package.json';
+const selectorPath = createRequire(mainPath).resolve('n8n-nodes-yt-dlp-platform/package.json');
+const platformPath = createRequire(selectorPath).resolve('n8n-nodes-yt-dlp-linux-x64/package.json');
+const platformRoot = dirname(platformPath);
+const mutation = ${JSON.stringify(mutation)};
+if (mutation === 'corrupt') {
+  appendFileSync(join(platformRoot, 'bin/yt-dlp'), '\\ncorrupt-toolchain\\n');
+} else if (mutation === 'missing') {
+  renameSync(platformRoot, platformRoot + '.missing');
+} else if (mutation === 'wrong') {
+  const metadata = JSON.parse(readFileSync(platformPath, 'utf8'));
+  metadata.version = '9.9.9';
+  writeFileSync(platformPath, JSON.stringify(metadata));
+} else {
+  throw new Error('Unknown toolchain mutation.');
+}
+process.stdout.write(JSON.stringify({ mutation, platformRoot }));
+`;
+	const { stdout } = await compose(['exec', '-T', service, 'node', '-e', script]);
+	return JSON.parse(stdout.trim());
+}
+
+async function proveToolchainFailClosed(client, service, mutation) {
+	const mutated = await mutateWorkerToolchain(service, mutation);
+	const fixtureEvidenceBefore = await readFixtureEvidence();
+	const workflow = await client.createWorkflow(
+		workflowDefinition({
+			continueOnFail: true,
+			name: `E2E ${mutation} toolchain fail-closed`,
+			roundTrip: false,
+			sourceUrl: 'http://fixture:8080/direct.mp4',
+		}),
+	);
+	const executionId = await client.runManual(workflow, 'YT-DLP');
+	const execution = await client.waitForExecution(executionId);
+	assert(
+		execution.status === 'error',
+		`${mutation} toolchain failure was not global: ${execution.status}.`,
+	);
+	const fixtureEvidenceAfter = await readFixtureEvidence();
+	assert(
+		fixtureEvidenceAfter.mediaRequests === fixtureEvidenceBefore.mediaRequests,
+		`${mutation} toolchain failure reached the media fixture.`,
+	);
+	const { stdout: workerLogs } = await compose(['logs', '--no-color', service]);
+	assert(
+		workerLogs.includes('TOOLCHAIN_ATTESTATION_FAILED'),
+		`${mutation} toolchain failure did not emit its global error code.`,
+	);
+	await compose(['exec', '-T', service, 'test', '!', '-e', '/tmp/n8n-yt-dlp-system-fallback-used']);
+	return {
+		executionId,
+		mutation: mutated.mutation,
+		outcome: 'pass',
+		systemFallbackObserved: false,
+	};
 }
 
 async function binaryRowCount(executionId) {
@@ -359,6 +541,111 @@ async function readFixtureEvidence() {
 	const response = await fetch(`http://127.0.0.1:${fixturePort}/evidence`);
 	assert(response.ok, 'Fixture evidence endpoint failed.');
 	return await response.json();
+}
+
+async function runScaleRecoveryLane(client) {
+	const onlineWorkers = ['worker', 'worker-secondary'];
+	const allWorkers = [...onlineWorkers, 'worker-late'];
+	const onlinePackageStates = [];
+	for (const service of onlineWorkers) {
+		const packages = await poll(
+			`${service} online install-event propagation`,
+			async () => await packageState(service),
+			{ timeoutMs: 300_000, intervalMs: 2_000 },
+		);
+		assertExactPackageState(packages);
+		onlinePackageStates.push({ packages, service });
+	}
+
+	const onlineExecutions = [];
+	for (const service of onlineWorkers) {
+		onlineExecutions.push(
+			await executeOnOnlyWorker(
+				client,
+				service,
+				onlineWorkers,
+				`E2E online propagation ${service}`,
+			),
+		);
+	}
+	await startWorkers(onlineWorkers);
+
+	const recreated = await recoverEmptyWorker('worker', 'worker_data');
+	const recreatedExecution = await executeOnOnlyWorker(
+		client,
+		'worker',
+		onlineWorkers,
+		'E2E recreated worker recovery',
+	);
+	await startWorkers(onlineWorkers);
+
+	await compose(['--profile', 'scale-recovery-late', 'up', '-d', '--wait', 'worker-late'], {
+		timeout: 300_000,
+	});
+	const lateReadiness = await workerReadiness('worker-late');
+	const latePackages = await poll(
+		'late worker exact-version missing-package recovery',
+		async () => await packageState('worker-late'),
+		{ timeoutMs: 300_000, intervalMs: 2_000 },
+	);
+	assertExactPackageState(latePackages);
+	const lateExecution = await executeOnOnlyWorker(
+		client,
+		'worker-late',
+		allWorkers,
+		'E2E late worker recovery',
+	);
+
+	const packageMounts = Object.fromEntries(
+		await Promise.all(
+			allWorkers.map(async (service) => [service, await workerPackageMount(service)]),
+		),
+	);
+	assert(
+		new Set(Object.values(packageMounts).map(({ source }) => source)).size === allWorkers.length,
+		'Workers unexpectedly share a Community Packages volume.',
+	);
+
+	const failClosed = [];
+	failClosed.push(await proveToolchainFailClosed(client, 'worker-late', 'corrupt'));
+	for (const mutation of ['wrong', 'missing']) {
+		await recoverEmptyWorker('worker-late', 'worker_late_data', 'scale-recovery-late');
+		failClosed.push(await proveToolchainFailClosed(client, 'worker-late', mutation));
+	}
+
+	await compose(['stop', 'worker-secondary', 'worker-late']);
+	await recoverEmptyWorker('worker', 'worker_data');
+
+	return {
+		failClosed,
+		lateWorker: {
+			execution: lateExecution,
+			nodeReadiness: {
+				exactPackageVersion: packageVersion,
+				executionOutcome: lateExecution.outcome,
+			},
+			packages: latePackages,
+			queueReadiness: lateReadiness,
+		},
+		mediaWorkspace: {
+			binaryStorage: 'database',
+			packageMounts,
+			sharedWorkerPackageVolume: false,
+			workerPackageOrContainerMediaSharing: false,
+		},
+		onlineWorkers: onlinePackageStates.map((state) => ({
+			...state,
+			execution: onlineExecutions.find(({ service }) => service === state.service),
+		})),
+		outcome: 'pass',
+		recreatedWorker: {
+			emptyPackageState: true,
+			execution: recreatedExecution,
+			missingPackageRecovery: 'N8N_REINSTALL_MISSING_PACKAGES=true',
+			packages: recreated.packages,
+			queueReadiness: recreated.readiness,
+		},
+	};
 }
 
 async function main() {
@@ -409,9 +696,15 @@ async function main() {
 
 	let stackStarted = false;
 	try {
+		report('stack:reset');
+		await compose(downArguments, { timeout: 180_000 });
+		report('stack:reset-complete');
 		report('stack:start');
 		stackStarted = true;
-		await compose(['up', '-d', '--wait', '--quiet-pull'], { timeout: 600_000 });
+		const stackArguments = scaleRecovery
+			? ['--profile', 'scale-recovery-online', 'up', '-d', '--wait', '--quiet-pull']
+			: ['up', '-d', '--wait', '--quiet-pull'];
+		await compose(stackArguments, { timeout: 600_000 });
 		report('stack:ready');
 		const { stdout: reportedVersionOutput } = await compose([
 			'exec',
@@ -460,16 +753,7 @@ async function main() {
 			{ timeoutMs: 300_000, intervalMs: 2_000 },
 		);
 		for (const state of [mainPackages, workerPackages]) {
-			assert(
-				[state.main.version, state.selector.version, state.platform.version].every(
-					(version) => version === packageVersion,
-				),
-				'Main, selector, and platform packages are not in version lockstep.',
-			);
-			assert(
-				state.platform.name === 'n8n-nodes-yt-dlp-linux-x64',
-				'Unexpected platform package was selected.',
-			);
+			assertExactPackageState(state);
 		}
 		report('worker-node-readiness:start');
 		await poll(
@@ -489,6 +773,11 @@ async function main() {
 			requestedVersion: packageVersion,
 			worker: workerPackages,
 		};
+		if (scaleRecovery) {
+			report('scale-recovery:start');
+			evidence.scenarios.scaleRecovery = await runScaleRecoveryLane(client);
+			report('scale-recovery:complete');
+		}
 
 		report('scenarios:start');
 		const manualDirect = await createAndRunManual(client, {
@@ -795,7 +1084,7 @@ async function main() {
 	} finally {
 		if (stackStarted) {
 			report('stack:stop');
-			await compose(['down', '--volumes', '--remove-orphans'], { timeout: 180_000 });
+			await compose(downArguments, { timeout: 180_000 });
 			report('stack:stopped');
 		}
 	}

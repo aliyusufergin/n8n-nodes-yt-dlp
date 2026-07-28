@@ -47,7 +47,10 @@ On success, bounded evidence is written under
 
 - the exact n8n version, role, Linux x64 image digest, and image-index digest;
 - SHA-256 and sizes for the main, selector, and Linux-x64 tarballs;
-- exact package state in both main and worker;
+- exact package state in main and every worker used by the anchor;
+- frozen-head online propagation, recreated/late-worker recovery, isolated
+  package mounts, queue-versus-node readiness, and fail-closed toolchain
+  evidence;
 - production/manual Result equivalence and database binary IDs;
 - direct, FFmpeg, playlist, credential/proxy, Continue On Fail, cancellation,
   resource/output limit, Nth-transfer, pruning, log, and cleanup outcomes.
@@ -61,6 +64,21 @@ its numeric database-size environment setting; the constraint is removed in
 stack and all named volumes are removed in `finally`; the ignored versioned
 `.generated` directories contain only local tarballs, fixtures, run-specific
 certificates, registry request logs, and evidence.
+
+The frozen-head anchor also runs the scale/recovery lane reserved by ADR 0025.
+Two online workers receive the install event and each accepts a forced queue
+execution. One worker is then recreated with an empty, isolated package volume,
+and a third worker joins late with another empty volume. Both recover the
+database-recorded exact package version through
+`N8N_REINSTALL_MISSING_PACKAGES=true` before their node executions pass. The
+lane separately records worker `/healthz/readiness` as
+`database-and-redis-only` and records exact package plus real execution proof as
+node readiness; the health endpoint is never treated as toolchain readiness.
+Corrupt, wrong-version, and missing packaged toolchains must remain global
+failures, make no fixture-media request, and leave a PATH fallback sentinel
+unused. Worker package volumes are distinct, and media crosses only the
+database binary-data boundary rather than a shared worker directory or
+container.
 
 The release command runs every frozen anchor even if an earlier anchor fails,
 then exits unsuccessfully with the complete failed-anchor list. Any failed or

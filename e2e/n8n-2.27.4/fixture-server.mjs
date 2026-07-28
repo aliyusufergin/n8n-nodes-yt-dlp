@@ -14,6 +14,7 @@ const evidence = {
 	authenticatedOriginRequests: 0,
 	authenticatedProxyRequests: 0,
 	hashRequests: 0,
+	mediaRequests: 0,
 	slowRequests: 0,
 };
 
@@ -38,6 +39,7 @@ function contentType(pathname) {
 }
 
 async function serveFile(request, response, fileName) {
+	evidence.mediaRequests += 1;
 	const path = join(fixtureRoot, basename(fileName));
 	const fileStat = await stat(path);
 	const range = request.headers.range;
