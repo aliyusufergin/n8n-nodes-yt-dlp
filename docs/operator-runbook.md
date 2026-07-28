@@ -15,6 +15,19 @@ Alert thresholds and safe worker topology are deployment-specific. Do not infer 
 defaults. Production sizing requires load evidence from the exact deployed topology described by
 ADR 0019.
 
+## Frozen-head v0.2.0 capacity decision
+
+The [n8n 2.30.7 / node 0.2.0 capacity record](capacity/n8n-2.30.7-node-0.2.0.json)
+classifies worker concurrency 10 as unsafe on its exact four-CPU, 16 GB disposable topology. Five
+of ten concurrent worst-allowed requests failed and event-loop lag crossed the one-second gate.
+Keep the v0.2.0 supported scope at worker concurrency 1 until a lower-concurrency disposable lane
+passes. Do not raise the node Resource Envelope hard caps.
+
+For that exact measured topology, alert when event-loop max lag exceeds 1 second, queue-latency p95
+exceeds 30 seconds, worker container memory exceeds 4,627,365,888 bytes, host available memory
+falls below 2 GiB, or worker temp free space falls below 6 GiB. These are versioned release gates
+for the recorded topology, not universal defaults for other deployments.
+
 Worker `/healthz/readiness` establishes only the documented database and Redis readiness. It does
 not establish Community Package availability or Toolchain Attestation. Verify each worker with a
 real node execution during release and deployment checks.

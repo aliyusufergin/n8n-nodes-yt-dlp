@@ -22,6 +22,9 @@ x-n8n-environment: &n8n-environment
   N8N_SECURE_COOKIE: "false"
   N8N_LOG_LEVEL: debug
   N8N_LOG_FORMAT: json
+  N8N_METRICS: "${E2E_METRICS_ENABLED:-false}"
+  N8N_METRICS_INCLUDE_DEFAULT_METRICS: "${E2E_METRICS_ENABLED:-false}"
+  N8N_METRICS_INCLUDE_QUEUE_METRICS: "${E2E_METRICS_ENABLED:-false}"
   N8N_RUNNERS_ENABLED: "false"
   N8N_LISTEN_ADDRESS: 0.0.0.0
   OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS: "true"
@@ -154,7 +157,7 @@ services:
 
   worker:
     <<: *n8n-service
-    command: ["worker", "--concurrency=1"]
+    command: ["worker", "--concurrency=${E2E_WORKER_CONCURRENCY:-1}"]
     environment:
       <<: *n8n-environment
       QUEUE_HEALTH_CHECK_ACTIVE: "true"
@@ -180,7 +183,7 @@ services:
   worker-secondary:
     <<: *n8n-service
     profiles: ["scale-recovery-online"]
-    command: ["worker", "--concurrency=1"]
+    command: ["worker", "--concurrency=${E2E_WORKER_CONCURRENCY:-1}"]
     environment:
       <<: *n8n-environment
       QUEUE_HEALTH_CHECK_ACTIVE: "true"
@@ -206,7 +209,7 @@ services:
   worker-late:
     <<: *n8n-service
     profiles: ["scale-recovery-late"]
-    command: ["worker", "--concurrency=1"]
+    command: ["worker", "--concurrency=${E2E_WORKER_CONCURRENCY:-1}"]
     environment:
       <<: *n8n-environment
       PATH: /e2e-fallback:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin

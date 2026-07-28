@@ -6,6 +6,7 @@ import {
 	mkdir,
 	readFile,
 	rm,
+	truncate,
 	writeFile,
 } from 'node:fs/promises';
 import { basename, join, resolve } from 'node:path';
@@ -227,13 +228,16 @@ await run(ffmpeg, [
 await Promise.all([
 	copyFile(join(fixtureRoot, 'direct.mp4'), join(fixtureRoot, 'alpha.mp4')),
 	copyFile(join(fixtureRoot, 'direct.mp4'), join(fixtureRoot, 'bravo.mp4')),
+	copyFile(join(fixtureRoot, 'direct.mp4'), join(fixtureRoot, 'capacity.mp4')),
 ]);
+await truncate(join(fixtureRoot, 'capacity.mp4'), 256 * 1024 * 1024);
 await writeFile(join(fixtureRoot, 'oversized.mp4'), Buffer.alloc(1024 * 1024 + 4096, 0x51));
 
 const fixtureEvidence = [];
 for (const fileName of [
 	'alpha.mp4',
 	'bravo.mp4',
+	'capacity.mp4',
 	'direct.mp4',
 	'manifest.mpd',
 	'oversized.mp4',
