@@ -80,6 +80,22 @@ unused. Worker package volumes are distinct, and media crosses only the
 database binary-data boundary rather than a shared worker directory or
 container.
 
+The frozen-head anchor also runs the issue-18 capacity/failure lane. One worker
+accepts ten concurrent requests whose first Artifact reaches the 256 MiB
+individual hard cap and whose second Artifact exercises packaged FFmpeg with
+the forced one-thread restriction. The lane samples worker/main/Postgres/Redis
+container CPU and memory, worker-process RSS, host CPU and memory, temp disk,
+event-loop metrics, queue latency, logical binary growth, Postgres size, and
+Redis memory. It then hard-deletes the executions through n8n's public REST
+surface and verifies pruning without an internal deletion API.
+
+Two slow requests are separately interrupted with SIGKILL. The first proves
+that an aged, owner-verified workspace is removed by the next execution's stale
+sweep without replacing the worker container. The second proves that targeted
+worker recreation replaces only the affected container and restores exact
+package/execution readiness. The bounded result is committed under
+`docs/capacity/`; raw samples remain in the ignored generated evidence.
+
 The release command runs every frozen anchor even if an earlier anchor fails,
 then exits unsuccessfully with the complete failed-anchor list. Any failed or
 skipped anchor blocks `latest` promotion; the Uyumluluk Hedefi must not be

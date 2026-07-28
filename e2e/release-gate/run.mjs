@@ -7,6 +7,7 @@ const lanePath = resolve(repositoryRoot, 'e2e/n8n-2.27.4/run.mjs');
 const releaseGate = {
 	anchors: [
 		{
+			capacity: false,
 			image:
 				'docker.n8n.io/n8nio/n8n@sha256:bd39d2d238b51af2626b2ac7b6b9938efff069390cce83ba769e52f10eedf795',
 			indexDigest: 'sha256:5b143d5ed0df23d295037408a8290872c549033709e375f920b33a94c754ea00',
@@ -15,6 +16,7 @@ const releaseGate = {
 			tag: '2.0.0',
 		},
 		{
+			capacity: false,
 			image:
 				'docker.n8n.io/n8nio/n8n@sha256:6dd442962208ff080af3e0a8ab5254eb4c6138f2d188d4a7e3cf84eed3b7eae1',
 			indexDigest: 'sha256:cf11c96b0d0089bb24459bf97b445fd7008f41543b673cce4d955f7c0ed8752d',
@@ -23,6 +25,7 @@ const releaseGate = {
 			tag: '2.27.4',
 		},
 		{
+			capacity: true,
 			image:
 				'docker.n8n.io/n8nio/n8n@sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060',
 			indexDigest: 'sha256:23a26975c21aa6f7113286668b35e2831ec898d3a7fbfa1ac8ff16f1bdf88c37',
@@ -40,6 +43,7 @@ function runAnchor(anchor) {
 			cwd: repositoryRoot,
 			env: {
 				...process.env,
+				E2E_CAPACITY: String(anchor.capacity),
 				E2E_N8N_IMAGE: anchor.image,
 				E2E_N8N_INDEX_DIGEST: anchor.indexDigest,
 				E2E_N8N_ROLE: anchor.role,

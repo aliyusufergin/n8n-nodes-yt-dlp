@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { cpus } from 'node:os';
 import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { parse as parseFlatted } from 'flatted';
@@ -12,6 +13,7 @@ const n8nTag = process.env.E2E_N8N_TAG;
 const n8nImageReference = process.env.E2E_N8N_IMAGE;
 const n8nIndexDigest = process.env.E2E_N8N_INDEX_DIGEST;
 const n8nRole = process.env.E2E_N8N_ROLE;
+const capacity = process.env.E2E_CAPACITY === 'true';
 const scaleRecovery = process.env.E2E_SCALE_RECOVERY === 'true';
 if (!n8nTag || !/^\d+\.\d+\.\d+$/u.test(n8nTag)) {
 	throw new Error('E2E_N8N_TAG must be an exact version.');
@@ -26,6 +28,9 @@ if (!n8nIndexDigest || !/^sha256:[a-f0-9]{64}$/u.test(n8nIndexDigest)) {
 	throw new Error('E2E_N8N_INDEX_DIGEST must be an exact image-index digest.');
 }
 if (!n8nRole) throw new Error('E2E_N8N_ROLE is required.');
+if (capacity && !scaleRecovery) {
+	throw new Error('The capacity lane requires the frozen-head scale/recovery topology.');
+}
 const generatedRoot = join(suiteRoot, '.generated', n8nTag);
 const composePath = join(suiteRoot, 'compose.yaml');
 const n8nPort = Number(process.env.E2E_N8N_PORT ?? 15678);
@@ -48,10 +53,12 @@ const dockerEnvironment = {
 	DOCKER_HOST: process.env.DOCKER_HOST ?? 'unix:///var/run/docker.sock',
 	E2E_FIXTURE_PORT: String(fixturePort),
 	E2E_GENERATED_ROOT: generatedRoot,
+	E2E_METRICS_ENABLED: String(capacity),
 	E2E_N8N_IMAGE: n8nImageReference,
 	E2E_N8N_PORT: String(n8nPort),
 	E2E_REINSTALL_MISSING_PACKAGES: String(scaleRecovery),
 	E2E_SUITE_ROOT: suiteRoot,
+	E2E_WORKER_CONCURRENCY: capacity ? '10' : '1',
 };
 const composeArguments = [
 	'compose',
@@ -176,7 +183,7 @@ class N8nClient {
 		return await this.request(`/executions/${executionId}`);
 	}
 
-	async waitForExecution(executionId) {
+	async waitForExecution(executionId, timeoutMs = 180_000) {
 		return await poll(
 			`execution ${executionId}`,
 			async () => {
@@ -185,7 +192,7 @@ class N8nClient {
 					? undefined
 					: execution;
 			},
-			{ timeoutMs: 180_000 },
+			{ timeoutMs },
 		);
 	}
 }
@@ -648,6 +655,656 @@ async function runScaleRecoveryLane(client) {
 	};
 }
 
+function parseByteValue(value) {
+	const match = /^([\d.]+)\s*([kmgt]?i?b)$/iu.exec(value.trim());
+	if (!match) throw new Error(`Cannot parse byte value: ${value}`);
+	const factors = {
+		b: 1,
+		gb: 1_000_000_000,
+		gib: 1024 ** 3,
+		kb: 1_000,
+		kib: 1024,
+		mb: 1_000_000,
+		mib: 1024 ** 2,
+		tb: 1_000_000_000_000,
+		tib: 1024 ** 4,
+	};
+	return Number(match[1]) * factors[match[2].toLowerCase()];
+}
+
+function percentile(values, percentileValue) {
+	assert(values.length > 0, 'Cannot calculate a percentile without measurements.');
+	const sorted = [...values].sort((left, right) => left - right);
+	return sorted[Math.ceil((percentileValue / 100) * sorted.length) - 1];
+}
+
+async function containerId(service) {
+	const { stdout } = await compose(['ps', '--all', '-q', service]);
+	const id = stdout.trim();
+	assert(id !== '', `No container found for ${service}.`);
+	return id;
+}
+
+async function containerResourceSnapshot(serviceIds) {
+	const { stdout } = await run('docker', [
+		'stats',
+		'--no-stream',
+		'--format',
+		'{{json .}}',
+		...Object.values(serviceIds),
+	]);
+	const byId = new Map(
+		stdout
+			.trim()
+			.split('\n')
+			.filter(Boolean)
+			.map((line) => {
+				const stat = JSON.parse(line);
+				return [stat.ID, stat];
+			}),
+	);
+	return Object.fromEntries(
+		Object.entries(serviceIds).map(([service, id]) => {
+			const stat = [...byId.entries()].find(([shortId]) => id.startsWith(shortId))?.[1];
+			assert(stat, `Docker stats returned no sample for ${service}.`);
+			return [
+				service,
+				{
+					blockInputBytes: parseByteValue(stat.BlockIO.split('/')[0]),
+					blockOutputBytes: parseByteValue(stat.BlockIO.split('/')[1]),
+					cpuPercent: Number.parseFloat(stat.CPUPerc),
+					memoryBytes: parseByteValue(stat.MemUsage.split('/')[0]),
+					pids: Number(stat.PIDs),
+				},
+			];
+		}),
+	);
+}
+
+async function workerMetricSnapshot() {
+	const script = `
+fetch('http://127.0.0.1:5678/metrics')
+  .then(async (response) => {
+    if (!response.ok) throw new Error('metrics status ' + response.status);
+    process.stdout.write(await response.text());
+  })
+  .catch((error) => {
+    process.stderr.write(error.message);
+    process.exitCode = 1;
+  });
+`;
+	const { stdout } = await compose(['exec', '-T', 'worker', 'node', '-e', script]);
+	const metrics = {};
+	for (const line of stdout.split('\n')) {
+		if (line.startsWith('#')) continue;
+		const match = /^([a-zA-Z_:][a-zA-Z0-9_:]*)(?:\{[^}]*\})?\s+([+\-\d.eE]+)$/u.exec(line);
+		if (!match || !/(eventloop|process_resident_memory|queue|redis)/iu.test(match[1])) continue;
+		const value = Number(match[2]);
+		if (Number.isFinite(value)) metrics[match[1]] = Math.max(metrics[match[1]] ?? value, value);
+	}
+	assert(
+		Object.keys(metrics).some((name) => /eventloop/iu.test(name)),
+		'Worker metrics exposed no event-loop health measurement.',
+	);
+	return metrics;
+}
+
+async function workerProcessSnapshot(workerId) {
+	const { stdout } = await run('docker', [
+		'top',
+		workerId,
+		'-eo',
+		'pid,ppid,rss,comm,args',
+	]);
+	const processes = stdout
+		.trim()
+		.split('\n')
+		.slice(1)
+		.map((line) => {
+			const match = /^\s*\d+\s+\d+\s+(\d+)\s+(\S+)\s+(.*)$/u.exec(line);
+			assert(match, `Cannot parse worker process sample: ${line}`);
+			const command = match[2];
+			const argumentsText = match[3].trim();
+			const arguments_ = argumentsText.split(/\s+/u);
+			const ffmpeg = /^ffmpeg(?:\.gnu)?$/u.test(command);
+			const ytDlp = /^yt-dlp(?:\.musl)?$/u.test(command);
+			return {
+				ffmpeg,
+				ffmpegThreadsOne:
+					ffmpeg &&
+					arguments_.some(
+						(argument, index) =>
+							argument === '-threads' && arguments_[index + 1] === '1',
+					),
+				n8nWorker: arguments_.some(
+					(argument, index) =>
+						argument.endsWith('/n8n') && arguments_[index + 1] === 'worker',
+				),
+				rssBytes: Number(match[1]) * 1024,
+				ytDlp,
+				ytDlpFfmpegThreadsOne:
+					ytDlp &&
+					/(?:^|\s)--postprocessor-args\s+ffmpeg:-threads\s+1(?:\s|$)/u.test(
+						argumentsText,
+					),
+			};
+		});
+	const ffmpegProcesses = processes.filter(({ ffmpeg }) => ffmpeg);
+	const ytDlpProcesses = processes.filter(({ ytDlp }) => ytDlp);
+	return {
+		ffmpegCount: ffmpegProcesses.length,
+		ffmpegThreadsOne:
+			ffmpegProcesses.length > 0 &&
+			ffmpegProcesses.every(({ ffmpegThreadsOne }) => ffmpegThreadsOne),
+		ffmpegUnrestrictedCount: ffmpegProcesses.filter(
+			({ ffmpegThreadsOne }) => !ffmpegThreadsOne,
+		).length,
+		workerRssBytes: processes
+			.filter(({ n8nWorker }) => n8nWorker)
+			.reduce((total, process_) => total + process_.rssBytes, 0),
+		ytDlpCount: ytDlpProcesses.length,
+		ytDlpMissingFfmpegThreadRestrictionCount: ytDlpProcesses.filter(
+			({ ytDlpFfmpegThreadsOne }) => !ytDlpFfmpegThreadsOne,
+		).length,
+	};
+}
+
+async function workerTemporaryDiskSnapshot() {
+	const { stdout } = await compose([
+		'exec',
+		'-T',
+		'worker',
+		'sh',
+		'-c',
+		"if [ -d /tmp/n8n-nodes-yt-dlp ]; then du -sk /tmp/n8n-nodes-yt-dlp | cut -f1; else echo 0; fi; df -Pk /tmp | awk 'NR == 2 { print $4 }'",
+	]);
+	const [usedKiB, freeKiB] = stdout
+		.trim()
+		.split('\n')
+		.map((value) => Number(value.trim()));
+	assert(Number.isFinite(usedKiB) && Number.isFinite(freeKiB), 'Invalid worker temp-disk sample.');
+	return { freeBytes: freeKiB * 1024, usedBytes: usedKiB * 1024 };
+}
+
+async function binaryStorageSnapshot() {
+	const binary = JSON.parse(
+		(
+			await postgresQuery(
+				"SELECT json_build_object('rows', count(*), 'bytes', coalesce(sum(\"fileSize\"), 0)) FROM binary_data",
+			)
+		).trim(),
+	);
+	return { bytes: Number(binary.bytes), rows: Number(binary.rows) };
+}
+
+async function storageSnapshot() {
+	const binary = await binaryStorageSnapshot();
+	const databaseBytes = Number(
+		(await postgresQuery("SELECT pg_database_size('n8n')")).trim(),
+	);
+	const { stdout: redisInfo } = await compose([
+		'exec',
+		'-T',
+		'redis',
+		'redis-cli',
+		'--raw',
+		'INFO',
+		'memory',
+	]);
+	const redisUsedMemoryBytes = Number(
+		/^used_memory:(\d+)$/mu.exec(redisInfo)?.[1],
+	);
+	assert(Number.isFinite(redisUsedMemoryBytes), 'Redis exposed no used_memory measurement.');
+	return {
+		binaryBytes: binary.bytes,
+		binaryRows: binary.rows,
+		databaseBytes,
+		redisUsedMemoryBytes,
+	};
+}
+
+async function hostSnapshot() {
+	const [meminfo, loadAverage, cpuStat] = await Promise.all([
+		readFile('/proc/meminfo', 'utf8'),
+		readFile('/proc/loadavg', 'utf8'),
+		readFile('/proc/stat', 'utf8'),
+	]);
+	const memory = Object.fromEntries(
+		meminfo
+			.trim()
+			.split('\n')
+			.map((line) => {
+				const [name, value] = line.split(/:\s+/u);
+				return [name, Number(value.split(/\s+/u)[0]) * 1024];
+			}),
+	);
+	const cpu = cpuStat
+		.split('\n')[0]
+		.trim()
+		.split(/\s+/u)
+		.slice(1)
+		.map(Number);
+	return {
+		availableMemoryBytes: memory.MemAvailable,
+		cpuIdleTicks: cpu[3] + (cpu[4] ?? 0),
+		cpuTotalTicks: cpu.reduce((total, value) => total + value, 0),
+		harnessRssBytes: process.memoryUsage().rss,
+		loadAverage1Minute: Number(loadAverage.split(/\s+/u)[0]),
+		totalMemoryBytes: memory.MemTotal,
+	};
+}
+
+async function capacitySample(serviceIds) {
+	const [containers, host, metrics, processes, storage, temporaryDisk] = await Promise.all([
+		containerResourceSnapshot(serviceIds),
+		hostSnapshot(),
+		workerMetricSnapshot(),
+		workerProcessSnapshot(serviceIds.worker),
+		storageSnapshot(),
+		workerTemporaryDiskSnapshot(),
+	]);
+	return {
+		at: new Date().toISOString(),
+		containers,
+		host,
+		metrics,
+		processes,
+		storage,
+		temporaryDisk,
+	};
+}
+
+async function collectCapacitySamples(serviceIds, operation) {
+	const samples = [];
+	const processObservations = [];
+	let complete = false;
+	const sampleUntilComplete = async (collection, snapshot, intervalMs) => {
+		while (!complete) {
+			collection.push(await snapshot());
+			await new Promise((resolveWait) => setTimeout(resolveWait, intervalMs));
+		}
+		collection.push(await snapshot());
+	};
+	const sampler = sampleUntilComplete(samples, () => capacitySample(serviceIds), 1_000);
+	const processObserver = sampleUntilComplete(
+		processObservations,
+		() => workerProcessSnapshot(serviceIds.worker),
+		100,
+	);
+	try {
+		const result = await operation();
+		complete = true;
+		await Promise.all([sampler, processObserver]);
+		return { processObservations, result, samples };
+	} catch (error) {
+		complete = true;
+		await Promise.all([sampler.catch(() => {}), processObserver.catch(() => {})]);
+		throw error;
+	}
+}
+
+async function workspaceNames(service = 'worker') {
+	const { stdout } = await compose([
+		'exec',
+		'-T',
+		service,
+		'sh',
+		'-c',
+		"find /tmp/n8n-nodes-yt-dlp -mindepth 1 -maxdepth 1 -type d -name 'n8n-nodes-yt-dlp-execution-*' 2>/dev/null | sort",
+	]);
+	return stdout.trim().split('\n').filter(Boolean);
+}
+
+async function workerContainerState() {
+	const id = await containerId('worker');
+	const { stdout } = await run('docker', [
+		'inspect',
+		'--format',
+		'{{json .State}}',
+		id,
+	]);
+	return { id, state: JSON.parse(stdout) };
+}
+
+async function runUncatchableRecovery(client, label, recreate) {
+	const fixtureBefore = await readFixtureEvidence();
+	const workflow = await client.createWorkflow(
+		workflowDefinition({
+			name: `E2E ${label} uncatchable recovery`,
+			roundTrip: false,
+			sourceUrl: 'http://fixture:8080/slow.mp4',
+		}),
+	);
+	const executionId = await client.runManual(workflow, 'YT-DLP');
+	await poll(`${label} slow request`, async () =>
+		(await readFixtureEvidence()).slowRequests > fixtureBefore.slowRequests ? true : undefined,
+	);
+	const staleWorkspaces = await poll(`${label} workspace creation`, async () => {
+		const names = await workspaceNames();
+		return names.length > 0 ? names : undefined;
+	});
+	const beforeKill = await workerContainerState();
+	const unaffectedIds = Object.fromEntries(
+		await Promise.all(
+			['main', 'postgres', 'redis'].map(async (service) => [service, await containerId(service)]),
+		),
+	);
+	await run('docker', ['kill', '--signal', 'KILL', beforeKill.id]);
+	const killed = await workerContainerState();
+	assert(killed.state.ExitCode === 137, `${label} worker did not exit from SIGKILL.`);
+
+	if (recreate) {
+		await compose(['rm', '--force', 'worker']);
+		await compose(['up', '-d', '--wait', 'worker'], { timeout: 300_000 });
+	} else {
+		await compose(['start', 'worker']);
+		await workerReadiness('worker');
+	}
+	const interrupted = await client.execution(executionId);
+	if (['new', 'running', 'waiting'].includes(interrupted.status)) {
+		await client.request(`/executions/${executionId}/stop`, { method: 'POST' });
+		await client.waitForExecution(executionId);
+	}
+	if (!recreate) {
+		for (const workspace of staleWorkspaces) {
+			await compose([
+				'exec',
+				'-T',
+				'worker',
+				'node',
+				'-e',
+				"const { utimesSync } = require('node:fs'); const old = new Date(Date.now() - 4 * 60 * 60 * 1000); utimesSync(process.argv[1], old, old);",
+				`${workspace}/.owner.json`,
+			]);
+		}
+	}
+
+	const afterRecovery = await workerContainerState();
+	assert(
+		recreate ? afterRecovery.id !== beforeKill.id : afterRecovery.id === beforeKill.id,
+		`${label} recovery used the wrong container boundary.`,
+	);
+	for (const [service, id] of Object.entries(unaffectedIds)) {
+		assert((await containerId(service)) === id, `${label} recovery recreated unaffected ${service}.`);
+	}
+	assertExactPackageState(await packageState('worker'));
+	const probe = await createAndRunManual(client, {
+		name: `E2E ${label} recovery probe`,
+		roundTrip: false,
+		sourceUrl: 'http://fixture:8080/direct.mp4',
+	});
+	assert(probe.execution.status === 'success', `${label} recovery probe failed.`);
+	assert((await workspaceNames()).length === 0, `${label} recovery retained a workspace.`);
+	return {
+		executionId,
+		killedExitCode: killed.state.ExitCode,
+		oomKilled: killed.state.OOMKilled,
+		recoveryExecutionId: probe.executionId,
+		staleWorkspaceCount: staleWorkspaces.length,
+		targetedContainerRecreation: recreate,
+		workerContainerChanged: afterRecovery.id !== beforeKill.id,
+	};
+}
+
+function summarizeCapacity(
+	samples,
+	processObservations,
+	executions,
+	binaryBefore,
+	binaryAfter,
+) {
+	const eventLoopValues = samples.flatMap(({ metrics }) =>
+		Object.entries(metrics)
+			.filter(([name]) => /eventloop.*(?:max|p99|lag_seconds$)/iu.test(name))
+			.map(([, value]) => value),
+	);
+	const workerMemoryPeakBytes = Math.max(
+		...samples.map(({ containers }) => containers.worker.memoryBytes),
+	);
+	const workerProcessRssPeakBytes = Math.max(
+		...processObservations.map(({ workerRssBytes }) => workerRssBytes),
+	);
+	const minimumHostAvailableMemoryBytes = Math.min(
+		...samples.map(({ host }) => host.availableMemoryBytes),
+	);
+	const minimumWorkerTempFreeBytes = Math.min(
+		...samples.map(({ temporaryDisk }) => temporaryDisk.freeBytes),
+	);
+	const queueLatencyMs = executions.map(({ queueLatencyMs: latency }) => latency);
+	const eventLoopLagPeakSeconds = Math.max(...eventLoopValues);
+	const firstHost = samples[0].host;
+	const lastHost = samples.at(-1).host;
+	const cpuTotalDelta = lastHost.cpuTotalTicks - firstHost.cpuTotalTicks;
+	const hostCpuPercent =
+		cpuTotalDelta === 0
+			? 0
+			: ((cpuTotalDelta - (lastHost.cpuIdleTicks - firstHost.cpuIdleTicks)) /
+					cpuTotalDelta) *
+				100;
+	const thresholds = {
+		eventLoopLagSeconds: 1,
+		hostAvailableMemoryBytes: 2 * 1024 ** 3,
+		queueLatencyP95Ms: 30_000,
+		workerContainerMemoryBytes: Math.ceil((workerMemoryPeakBytes * 1.25) / 1024 ** 2) * 1024 ** 2,
+		workerTempFreeBytes: 6 * 1024 ** 3,
+	};
+	const acceptance = {
+		allRequestsSucceeded: executions.every(({ status }) => status === 'success'),
+		binaryGrowthObserved: binaryAfter.bytes - binaryBefore.bytes >= 256 * 1024 ** 2,
+		eventLoopHealthy: eventLoopLagPeakSeconds <= thresholds.eventLoopLagSeconds,
+		ffmpegThreadsRestricted:
+			processObservations.some(({ ytDlpCount }) => ytDlpCount > 0) &&
+			processObservations.every(
+				({
+					ffmpegUnrestrictedCount,
+					ytDlpMissingFfmpegThreadRestrictionCount,
+				}) =>
+					ffmpegUnrestrictedCount === 0 &&
+					ytDlpMissingFfmpegThreadRestrictionCount === 0,
+			),
+		hostMemoryHeadroom:
+			minimumHostAvailableMemoryBytes >= thresholds.hostAvailableMemoryBytes,
+		queueLatencyBounded: percentile(queueLatencyMs, 95) <= thresholds.queueLatencyP95Ms,
+		tempDiskHeadroom: minimumWorkerTempFreeBytes >= thresholds.workerTempFreeBytes,
+	};
+	const safe = Object.values(acceptance).every(Boolean);
+	return {
+		acceptance,
+		alertThresholds: thresholds,
+		capacityDecision: {
+			concurrentRequests: safe ? 10 : 1,
+			nodeHardCapsChanged: false,
+			safeAtConcurrency10: safe,
+			supportedScope: safe
+				? 'one frozen-head worker at concurrency 10 on the measured topology'
+				: 'worker concurrency 1 until a lower-concurrency disposable load lane passes',
+		},
+		measurements: {
+			binaryGrowthBytes: binaryAfter.bytes - binaryBefore.bytes,
+			binaryRowGrowth: binaryAfter.rows - binaryBefore.rows,
+			containerPeaks: Object.fromEntries(
+				Object.keys(samples[0].containers).map((service) => [
+					service,
+					{
+						cpuPercent: Math.max(
+							...samples.map(({ containers }) => containers[service].cpuPercent),
+						),
+						memoryBytes: Math.max(
+							...samples.map(({ containers }) => containers[service].memoryBytes),
+						),
+					},
+				]),
+			),
+			databasePeakBytes: Math.max(...samples.map(({ storage }) => storage.databaseBytes)),
+			eventLoopLagPeakSeconds,
+			failureCodes: Object.fromEntries(
+				executions
+					.filter(({ status }) => status !== 'success')
+					.reduce((counts, execution) => {
+						const code = execution.errorCode ?? 'UNKNOWN';
+						counts.set(code, (counts.get(code) ?? 0) + 1);
+						return counts;
+					}, new Map()),
+			),
+			ffmpegProcessPeak: Math.max(
+				...processObservations.map(({ ffmpegCount }) => ffmpegCount),
+			),
+			ffmpegWithoutThreadRestrictionObserved: processObservations.some(
+				({ ffmpegUnrestrictedCount }) => ffmpegUnrestrictedCount > 0,
+			),
+			hostCpuPercent,
+			hostHarnessRssPeakBytes: Math.max(...samples.map(({ host }) => host.harnessRssBytes)),
+			hostTotalMemoryBytes: firstHost.totalMemoryBytes,
+			minimumHostAvailableMemoryBytes,
+			minimumWorkerTempFreeBytes,
+			queueLatencyMaximumMs: Math.max(...queueLatencyMs),
+			queueLatencyP95Ms: percentile(queueLatencyMs, 95),
+			redisUsedMemoryPeakBytes: Math.max(
+				...samples.map(({ storage }) => storage.redisUsedMemoryBytes),
+			),
+			workerProcessRssPeakBytes,
+			workerTemporaryDiskPeakBytes: Math.max(
+				...samples.map(({ temporaryDisk }) => temporaryDisk.usedBytes),
+			),
+			ytDlpProcessPeak: Math.max(
+				...processObservations.map(({ ytDlpCount }) => ytDlpCount),
+			),
+			ytDlpWithoutFfmpegThreadRestrictionObserved: processObservations.some(
+				({ ytDlpMissingFfmpegThreadRestrictionCount }) =>
+					ytDlpMissingFfmpegThreadRestrictionCount > 0,
+			),
+		},
+	};
+}
+
+async function runCapacityLane(client) {
+	await compose(['stop', 'worker-secondary', 'worker-late']);
+	const serviceIds = Object.fromEntries(
+		await Promise.all(
+			['main', 'worker', 'postgres', 'redis'].map(async (service) => [
+				service,
+				await containerId(service),
+			]),
+		),
+	);
+	const binaryBefore = await binaryStorageSnapshot();
+	const workflows = await Promise.all(
+		Array.from({ length: 10 }, async (_, index) =>
+			await client.createWorkflow(
+				workflowDefinition({
+					argumentsValue:
+						'--yes-playlist --playlist-items 1-2 -f bestvideo+bestaudio/best --merge-output-format mp4',
+					name: `E2E capacity ${index}`,
+					roundTrip: false,
+					sourceUrl: 'http://fixture:8080/capacity-playlist',
+					ytParameters: {
+						maximumArtifactCount: 50,
+						maximumArtifactSizeMiB: 256,
+						maximumTotalArtifactSizeMiB: 512,
+						requestTimeoutMinutes: 60,
+					},
+				}),
+			),
+		),
+	);
+	const startedAt = Date.now();
+	const { processObservations, result: executions, samples } = await collectCapacitySamples(
+		serviceIds,
+		async () => {
+			const submitted = await Promise.all(
+				workflows.map(async (workflow) => {
+					const submittedAt = Date.now();
+					return {
+						executionId: await client.runManual(workflow, 'YT-DLP'),
+						submittedAt,
+					};
+				}),
+			);
+			return await Promise.all(
+				submitted.map(async ({ executionId, submittedAt }) => {
+					const execution = await client.waitForExecution(executionId, 900_000);
+					const executionStartedAt = Date.parse(execution.startedAt);
+					assert(
+						Number.isFinite(executionStartedAt),
+						`Execution ${executionId} exposed no start timestamp.`,
+					);
+					assert(
+						executionStartedAt >= submittedAt,
+						`Execution ${executionId} started before its submission timestamp.`,
+					);
+						const items =
+							execution.status === 'success' ? nodeItems(execution, 'YT-DLP') : [];
+						const data = executionData(execution);
+						const executionError = data?.resultData?.error;
+						return {
+							artifactCount: items.filter((item) => item.binary?.data !== undefined).length,
+							errorCode:
+								executionError?.context?.errorCode ??
+								executionError?.cause?.context?.errorCode ??
+								executionError?.name,
+						errorName: executionError?.name,
+						executionId,
+						queueLatencyMs: executionStartedAt - submittedAt,
+						status: execution.status,
+					};
+				}),
+			);
+		},
+	);
+	const binaryAfter = await binaryStorageSnapshot();
+	const summary = summarizeCapacity(
+		samples,
+		processObservations,
+		executions,
+		binaryBefore,
+		binaryAfter,
+	);
+	await client.request('/executions/delete', {
+		body: { ids: executions.map(({ executionId }) => executionId) },
+		method: 'POST',
+	});
+	await poll('capacity binary pruning', async () => {
+		const remaining = await Promise.all(
+			executions.map(async ({ executionId }) => await binaryRowCount(executionId)),
+		);
+		return remaining.every((count) => count === 0) ? true : undefined;
+	});
+	const staleSweep = await runUncatchableRecovery(client, 'stale sweep', false);
+	const targetedRecreation = await runUncatchableRecovery(
+		client,
+		'targeted recreation',
+		true,
+	);
+	return {
+		...summary,
+		binaryPruning: {
+			hardDeleteApi: 'public REST /executions/delete',
+			internalDeletionApiUsed: false,
+			unreferencedRowsAfterPruning: 0,
+		},
+		completedRequests: executions,
+		durationMs: Date.now() - startedAt,
+		failureRecovery: { staleSweep, targetedRecreation },
+		outcome: 'pass',
+		rawProcessObservations: processObservations,
+		rawSamples: samples,
+		schemaVersion: 1,
+		topology: {
+			binaryStorage: 'database',
+			ffmpegThreads: 1,
+			hostCpuCount: cpus().length,
+			requests: 10,
+			workerConcurrency: 10,
+			workersUnderLoad: 1,
+		},
+		workload: {
+			artifactCountPerRequest: 2,
+			individualArtifactHardLimitBytes: 256 * 1024 ** 2,
+			totalArtifactHardLimitBytes: 512 * 1024 ** 2,
+		},
+	};
+}
+
 async function main() {
 	report('prepare:start');
 	await run('node', [
@@ -687,11 +1344,15 @@ async function main() {
 		'--',
 		'test/process.test.ts',
 		'-t',
-		'terminates output floods above the combined eight MiB limit',
+		'terminates output floods above the combined eight MiB limit|terminates a Process Group when workspace apparent size overshoots|times out after a TERM-cooperative leader creates an ignored-SIGTERM descendant',
 	]);
-	evidence.scenarios.outputLimit = {
+	evidence.scenarios.processBoundary = {
 		evidenceSource: 'controlled process seam',
 		outcome: 'pass',
+		processDescendants: 'terminated',
+		processOutputFlood: 'terminated',
+		requestTimeout: 'terminated',
+		workspaceDiskOvershoot: 'terminated',
 	};
 
 	let stackStarted = false;
@@ -1054,10 +1715,17 @@ async function main() {
 			'-c',
 			"find /tmp/n8n-nodes-yt-dlp -mindepth 1 -maxdepth 1 -type d -name 'n8n-nodes-yt-dlp-execution-*' 2>/dev/null | wc -l",
 		]);
-		assert(Number(workspaceCount.trim()) === 0, 'Worker retained an Execution Workspace.');
-		evidence.scenarios.cleanup = { outcome: 'pass', remainingExecutionWorkspaces: 0 };
+			assert(Number(workspaceCount.trim()) === 0, 'Worker retained an Execution Workspace.');
+			evidence.scenarios.cleanup = { outcome: 'pass', remainingExecutionWorkspaces: 0 };
 
-		const registryRequests = (
+			if (capacity) {
+				report('capacity:start');
+				evidence.scenarios.capacity = await runCapacityLane(client);
+				evidence.fixtureService = await readFixtureEvidence();
+				report('capacity:complete');
+			}
+
+			const registryRequests = (
 			await readFile(join(generatedRoot, 'registry/requests.ndjson'), 'utf8')
 		)
 			.trim()

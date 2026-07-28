@@ -87,6 +87,15 @@ async function readBoundedBody(request) {
 	return Buffer.concat(chunks, size);
 }
 
+function servePlaylist(response, title, sources) {
+	response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+	response.end(
+		`<html><head><title>${title}</title></head><body>` +
+			sources.map((source) => `<video src="${source}" controls></video>`).join('') +
+			'</body></html>',
+	);
+}
+
 const origin = createServer((request, response) => {
 	void (async () => {
 		const url = new URL(request.url ?? '/', 'http://fixture');
@@ -124,23 +133,18 @@ const origin = createServer((request, response) => {
 			return;
 		}
 		if (url.pathname === '/playlist') {
-			response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-			response.end(
-				'<html><head><title>Synthetic playlist</title></head><body>' +
-					'<video src="/alpha.mp4" controls></video>' +
-					'<video src="/bravo.mp4" controls></video>' +
-					'</body></html>',
-			);
+			servePlaylist(response, 'Synthetic playlist', ['/alpha.mp4', '/bravo.mp4']);
+			return;
+		}
+		if (url.pathname === '/capacity-playlist') {
+			servePlaylist(response, 'Capacity playlist', ['/capacity.mp4', '/manifest.mpd']);
 			return;
 		}
 		if (url.pathname === '/transfer-failure-playlist') {
-			response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-			response.end(
-				'<html><head><title>Atomic transfer fixture</title></head><body>' +
-					'<video src="/alpha.mp4" controls></video>' +
-					'<video src="/oversized.mp4" controls></video>' +
-					'</body></html>',
-			);
+			servePlaylist(response, 'Atomic transfer fixture', [
+				'/alpha.mp4',
+				'/oversized.mp4',
+			]);
 			return;
 		}
 		if (url.pathname === '/slow.mp4') {

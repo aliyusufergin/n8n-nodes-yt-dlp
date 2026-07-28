@@ -131,6 +131,14 @@ describe('n8n 2.27.4 E2E support services', () => {
 		expect(JSON.parse(evidence.body.toString('utf8'))).toMatchObject({
 			mediaRequests: 1,
 		});
+
+		const capacityPlaylist = await httpRequest({
+			path: '/capacity-playlist',
+			port: originPort,
+		});
+		expect(capacityPlaylist.statusCode).toBe(200);
+		expect(capacityPlaylist.body.toString('utf8')).toContain('/capacity.mp4');
+		expect(capacityPlaylist.body.toString('utf8')).toContain('/manifest.mpd');
 	});
 
 	it('serves only prepared package metadata and exact tarball bytes', async () => {
