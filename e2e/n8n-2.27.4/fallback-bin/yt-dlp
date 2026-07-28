@@ -1,0 +1,3 @@
+#!/bin/sh
+touch /tmp/n8n-yt-dlp-system-fallback-used
+exit 0

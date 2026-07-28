@@ -126,6 +126,11 @@ describe('n8n 2.27.4 E2E support services', () => {
 			port: proxyPort,
 		});
 		expect(authorized).toEqual({ body: fixture, statusCode: 200 });
+
+		const evidence = await httpRequest({ path: '/evidence', port: originPort });
+		expect(JSON.parse(evidence.body.toString('utf8'))).toMatchObject({
+			mediaRequests: 1,
+		});
 	});
 
 	it('serves only prepared package metadata and exact tarball bytes', async () => {

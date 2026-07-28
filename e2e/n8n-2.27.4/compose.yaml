@@ -14,6 +14,7 @@ x-n8n-environment: &n8n-environment
   N8N_COMMUNITY_PACKAGES_ENABLED: "true"
   N8N_UNVERIFIED_PACKAGES_ENABLED: "true"
   N8N_COMMUNITY_PACKAGES_PREVENT_LOADING: "false"
+  N8N_REINSTALL_MISSING_PACKAGES: "${E2E_REINSTALL_MISSING_PACKAGES:-false}"
   N8N_DIAGNOSTICS_ENABLED: "false"
   N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
   N8N_TEMPLATES_ENABLED: "false"
@@ -154,6 +155,10 @@ services:
   worker:
     <<: *n8n-service
     command: ["worker", "--concurrency=1"]
+    environment:
+      <<: *n8n-environment
+      QUEUE_HEALTH_CHECK_ACTIVE: "true"
+      QUEUE_HEALTH_CHECK_PORT: 5678
     depends_on:
       main:
         condition: service_healthy
@@ -166,7 +171,61 @@ services:
           "CMD",
           "node",
           "-e",
-          "process.exit(process.pid > 0 ? 0 : 1)",
+          "fetch('http://127.0.0.1:5678/healthz/readiness').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  worker-secondary:
+    <<: *n8n-service
+    profiles: ["scale-recovery-online"]
+    command: ["worker", "--concurrency=1"]
+    environment:
+      <<: *n8n-environment
+      QUEUE_HEALTH_CHECK_ACTIVE: "true"
+      QUEUE_HEALTH_CHECK_PORT: 5678
+    depends_on:
+      main:
+        condition: service_healthy
+    volumes:
+      - ${E2E_GENERATED_ROOT}/registry/certs/ca.pem:/e2e-ca/ca.pem:ro
+      - worker_secondary_data:/home/node/.n8n
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:5678/healthz/readiness').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  worker-late:
+    <<: *n8n-service
+    profiles: ["scale-recovery-late"]
+    command: ["worker", "--concurrency=1"]
+    environment:
+      <<: *n8n-environment
+      PATH: /e2e-fallback:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      QUEUE_HEALTH_CHECK_ACTIVE: "true"
+      QUEUE_HEALTH_CHECK_PORT: 5678
+    depends_on:
+      main:
+        condition: service_healthy
+    volumes:
+      - ${E2E_GENERATED_ROOT}/registry/certs/ca.pem:/e2e-ca/ca.pem:ro
+      - ${E2E_SUITE_ROOT}/fallback-bin:/e2e-fallback:ro
+      - worker_late_data:/home/node/.n8n
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:5678/healthz/readiness').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
         ]
       interval: 3s
       timeout: 3s
@@ -180,3 +239,5 @@ networks:
 volumes:
   main_data:
   worker_data:
+  worker_secondary_data:
+  worker_late_data:
