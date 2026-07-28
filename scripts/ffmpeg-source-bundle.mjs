@@ -384,7 +384,7 @@ async function verifyReleaseEvidence(manifest, executionManifest) {
 	}
 }
 
-async function verifyPublishedSourceAsset(manifest) {
+async function verifyPublishedAsset(bundle, description) {
 	const response = await fetch(
 		'https://api.github.com/repos/aliyusufergin/n8n-nodes-yt-dlp/releases/tags/v0.2.0',
 		{
@@ -395,25 +395,115 @@ async function verifyPublishedSourceAsset(manifest) {
 	if (!response.ok)
 		fail(`The versioned source release is not published (GitHub HTTP ${response.status}).`);
 	const release = await response.json();
-	const asset = release.assets?.find(({ name }) => name === manifest.sourceBundle.name);
+	const asset = release.assets?.find(({ name }) => name === bundle.name);
 	if (
 		asset?.state !== 'uploaded' ||
-		asset.digest !== `sha256:${manifest.sourceBundle.sha256}` ||
-		asset.browser_download_url !== manifest.sourceBundle.url
+		asset.digest !== `sha256:${bundle.sha256}` ||
+		asset.browser_download_url !== bundle.url
 	) {
-		fail('The published source asset identity or GitHub digest does not match Toolchain Lock.');
+		fail(`The published ${description} identity or GitHub digest does not match Toolchain Lock.`);
 	}
 }
 
+async function verifyPublishedSourceAsset(manifest) {
+	await verifyPublishedAsset(manifest.sourceBundle, 'FFmpeg source asset');
+}
+
 async function verifyLinuxRuntimeReleaseGate() {
-	const lock = await readJson(join(packageRoot, 'TOOLCHAIN.lock.json'));
+	const [lock, executionManifest] = await Promise.all([
+		readJson(join(packageRoot, 'TOOLCHAIN.lock.json')),
+		readJson(join(packageRoot, 'execution-manifest.json')),
+	]);
 	const runtime = lock.components.find(({ name }) => name === 'linux-runtime');
 	if (runtime?.sourceGate?.status !== 'passed') {
 		fail(
 			'Platform publication is blocked until the Linux runtime Corresponding Source, clean-rebuild, and license-review gate passes.',
 		);
 	}
-	fail('The Linux runtime release-evidence verifier has not been implemented.');
+	const bundle = runtime.sourceGate.bundle;
+	if (
+		!digestPattern.test(bundle?.sha256 ?? '') ||
+		!/^https:\/\/github\.com\/aliyusufergin\/n8n-nodes-yt-dlp\/releases\/download\/v0\.2\.0\//u.test(
+			bundle?.url ?? '',
+		)
+	) {
+		fail('The Linux runtime source gate has no direct immutable Corresponding Source Bundle.');
+	}
+	const rebuildPath = join(repositoryRoot, 'toolchain', 'linux-x64', 'REBUILD-EVIDENCE.json');
+	const reviewPath = join(repositoryRoot, 'toolchain', 'linux-x64', 'LICENSE-REVIEW.json');
+	const [rebuild, review] = await Promise.all([
+		readJson(rebuildPath),
+		readJson(reviewPath),
+	]);
+	if (
+		runtime.sourceGate.rebuildEvidence?.path !==
+			'toolchain/linux-x64/REBUILD-EVIDENCE.json' ||
+		runtime.sourceGate.rebuildEvidence?.sha256 !== (await sha256(rebuildPath)) ||
+		runtime.sourceGate.manualReview?.path !==
+			'toolchain/linux-x64/LICENSE-REVIEW.json' ||
+		runtime.sourceGate.manualReview?.sha256 !== (await sha256(reviewPath))
+	) {
+		fail('The Linux runtime source gate is not bound to its persisted evidence.');
+	}
+	const expectedBindings = {
+		buildImage: runtime.build.image,
+		buildScript: runtime.build.script,
+		launcherSource: runtime.build.launcherSource,
+		muslRuntimeImage: runtime.muslRuntime.image,
+		runtimeImage: runtime.runtime.image,
+		sourceBundleSha256: bundle.sha256,
+		sourceInputs: runtime.sourceBundles,
+	};
+	if (
+		rebuild.status !== 'passed' ||
+		rebuild.networkMode !== 'none' ||
+		Number.isNaN(Date.parse(rebuild.completedAt)) ||
+		!isDeepStrictEqual(rebuild.bindings, expectedBindings)
+	) {
+		fail('The Linux runtime clean-rebuild evidence does not match the frozen inputs.');
+	}
+	const runtimePaths = executionManifest.files.filter(
+		({ name }) =>
+			name.endsWith('Loader') ||
+			name === 'ytDlp' ||
+			name === 'ffmpeg' ||
+			name === 'ffprobe' ||
+			name === 'deno' ||
+			name === 'muslZlib' ||
+			[
+				'glibc',
+				'glibcDl',
+				'gccRuntime',
+				'glibcMath',
+				'glibcVectorMath',
+				'glibcDns',
+				'glibcFiles',
+				'glibcThreads',
+				'glibcResolver',
+				'glibcRealtime',
+				'zlib',
+			].includes(name),
+	);
+	const expectedOutputs = Object.fromEntries(
+		runtimePaths.map(({ path, sha256: outputSha256 }) => [path, outputSha256]),
+	);
+	if (!isDeepStrictEqual(rebuild.outputs, expectedOutputs)) {
+		fail('The Linux runtime clean rebuild does not reproduce every packaged runtime byte.');
+	}
+	if (
+		review.status !== 'approved' ||
+		typeof review.reviewer !== 'string' ||
+		review.reviewer.length === 0 ||
+		Number.isNaN(Date.parse(review.reviewedAt)) ||
+		!isDeepStrictEqual(review.bindings, {
+			license: runtime.license,
+			sourceBundleSha256: bundle.sha256,
+			sourceInputs: runtime.sourceBundles,
+		})
+	) {
+		fail('The Linux runtime manual license review does not match the frozen source inventory.');
+	}
+	await verifyPublishedAsset(bundle, 'Linux runtime source asset');
 }
 
 async function verifyRelease() {

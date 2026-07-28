@@ -1,0 +1,550 @@
+name: v0.2.0 Release Candidate Chain
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_mode:
+        description: Bootstrap publishes next; stage stops for human 2FA approval.
+        required: true
+        type: choice
+        options:
+          - bootstrap
+          - stage
+          - verify-existing
+      promote_latest:
+        description: Verify an interactively promoted latest candidate.
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: release-0.2.0
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  HERMETIC_IMAGE: node@sha256:8d3442d5f074940723be6eece34e992eb147ba1f59c73888e8f257918dea2e78
+  NODE_VERSION: 26.4.0
+  NPM_VERSION: 11.16.0
+  RELEASE_WORKFLOW_REF: ${{ github.ref }}
+  RUNNER_REGION: ${{ vars.RUNNER_REGION }}
+  VERSION: 0.2.0
+
+jobs:
+  candidate:
+    name: candidate
+    runs-on: ubuntu-24.04
+    permissions:
+      attestations: write
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm install --global "npm@$NPM_VERSION"
+      - run: npm ci
+      - run: |
+          test "$(node --print "require('./package.json').version")" = "$VERSION"
+          npm run release:candidate -- "$RUNNER_TEMP/release-candidate"
+      - run: sha256sum "$RUNNER_TEMP/release-candidate/release-candidate.json"
+      - uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: ${{ runner.temp }}/release-candidate/tarballs/*.tgz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-candidate-0.2.0
+          path: ${{ runner.temp }}/release-candidate
+          if-no-files-found: error
+          retention-days: 30
+
+  source-delivery:
+    name: source-delivery
+    needs: candidate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: .release-candidate
+      - run: npm ci
+      - run: npm run verify:ffmpeg-release
+      - run: |
+          node scripts/release-candidate.mjs record-gate \
+            .release-candidate/release-candidate.json \
+            source-delivery \
+            source-delivery.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gate-source-delivery
+          path: source-delivery.json
+          if-no-files-found: error
+
+  prepublication:
+    name: prepublication
+    needs: candidate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: .release-candidate
+      - run: npm ci
+      - run: npm test
+
+  three-anchor:
+    name: three-anchor
+    if: >-
+      always() &&
+      inputs.publish_mode != 'stage' &&
+      needs.registry-readback.result == 'success' &&
+      (inputs.publish_mode != 'bootstrap' || needs.bootstrap-token-retirement.result == 'success')
+    needs:
+      - registry-readback
+      - bootstrap-token-retirement
+    runs-on: [self-hosted, linux, x64, release-e2e]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: .release-candidate
+      - run: npm ci
+      - run: npm run test:e2e:release-gate
+        env:
+          E2E_RELEASE_CANDIDATE_ROOT: ${{ github.workspace }}/.release-candidate
+          E2E_REQUIRE_PUBLISHED_NEXT: 'true'
+      - run: node e2e/release-gate/run.mjs --list > three-anchor-identities.json
+      - run: |
+          node scripts/release-candidate.mjs record-gate \
+            .release-candidate/release-candidate.json \
+            three-anchor \
+            three-anchor.json \
+            three-anchor-identities.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gate-three-anchor
+          path: three-anchor.json
+          if-no-files-found: error
+
+  multiworker:
+    name: multiworker
+    if: >-
+      always() &&
+      inputs.publish_mode != 'stage' &&
+      needs.registry-readback.result == 'success' &&
+      (inputs.publish_mode != 'bootstrap' || needs.bootstrap-token-retirement.result == 'success')
+    needs:
+      - registry-readback
+      - bootstrap-token-retirement
+    runs-on: [self-hosted, linux, x64, release-e2e]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: .release-candidate
+      - run: npm ci
+      - run: npm run test:e2e:multiworker
+        env:
+          E2E_RELEASE_CANDIDATE_ROOT: ${{ github.workspace }}/.release-candidate
+          E2E_REQUIRE_PUBLISHED_NEXT: 'true'
+      - run: node e2e/release-gate/run.mjs --describe-lane multiworker > multiworker-identities.json
+      - run: |
+          node scripts/release-candidate.mjs record-gate \
+            .release-candidate/release-candidate.json \
+            multiworker \
+            multiworker.json \
+            multiworker-identities.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gate-multiworker
+          path: multiworker.json
+          if-no-files-found: error
+
+  capacity:
+    name: capacity
+    if: >-
+      always() &&
+      inputs.publish_mode != 'stage' &&
+      needs.registry-readback.result == 'success' &&
+      (inputs.publish_mode != 'bootstrap' || needs.bootstrap-token-retirement.result == 'success')
+    needs:
+      - registry-readback
+      - bootstrap-token-retirement
+    runs-on: [self-hosted, linux, x64, release-capacity]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: .release-candidate
+      - run: npm ci
+      - run: npm run test:e2e:capacity
+        env:
+          E2E_RELEASE_CANDIDATE_ROOT: ${{ github.workspace }}/.release-candidate
+          E2E_REQUIRE_PUBLISHED_NEXT: 'true'
+      - run: node e2e/release-gate/run.mjs --describe-lane capacity > capacity-identities.json
+      - run: |
+          node scripts/release-candidate.mjs record-gate \
+            .release-candidate/release-candidate.json \
+            capacity \
+            capacity.json \
+            capacity-identities.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gate-capacity
+          path: capacity.json
+          if-no-files-found: error
+
+  official-ejs:
+    name: official-ejs
+    if: >-
+      always() &&
+      inputs.publish_mode != 'stage' &&
+      needs.registry-readback.result == 'success' &&
+      (inputs.publish_mode != 'bootstrap' || needs.bootstrap-token-retirement.result == 'success')
+    needs:
+      - registry-readback
+      - bootstrap-token-retirement
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: .release-candidate
+      - run: npm ci
+      - name: solves official frozen EJS vectors
+        run: npm test -- test/platform-packages.test.ts -t "solves official frozen EJS"
+        env:
+          E2E_RELEASE_CANDIDATE_ROOT: ${{ github.workspace }}/.release-candidate
+      - run: |
+          node scripts/release-candidate.mjs record-gate \
+            .release-candidate/release-candidate.json \
+            official-ejs \
+            official-ejs.json \
+            test/fixtures/ejs/vectors.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gate-official-ejs
+          path: official-ejs.json
+          if-no-files-found: error
+
+  live-canary:
+    name: live-canary
+    if: >-
+      always() &&
+      inputs.publish_mode != 'stage' &&
+      needs.registry-readback.result == 'success' &&
+      (inputs.publish_mode != 'bootstrap' || needs.bootstrap-token-retirement.result == 'success')
+    needs:
+      - registry-readback
+      - bootstrap-token-retirement
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: .release-candidate
+      - run: npm ci
+      - run: |
+          npm run release:live-canary -- \
+            .release-candidate/release-candidate.json \
+            live-canary.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gate-live-canary
+          path: live-canary.json
+          if-no-files-found: error
+
+  publish-next:
+    name: publish-next
+    if: inputs.publish_mode != 'verify-existing'
+    needs:
+      - source-delivery
+      - prepublication
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.publish_mode == 'bootstrap' && 'npm-bootstrap' || 'npm-release' }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: .release-candidate
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: https://registry.npmjs.org
+      - run: npm install --global "npm@$NPM_VERSION"
+      - name: publish dependency-ordered next candidate
+        env:
+          NODE_AUTH_TOKEN: ${{ inputs.publish_mode == 'bootstrap' && secrets.NPM_BOOTSTRAP_TOKEN || '' }}
+        run: |
+          platform=".release-candidate/tarballs/n8n-nodes-yt-dlp-linux-x64-${VERSION}.tgz"
+          selector=".release-candidate/tarballs/n8n-nodes-yt-dlp-platform-${VERSION}.tgz"
+          main=".release-candidate/tarballs/n8n-nodes-yt-dlp-${VERSION}.tgz"
+          if [ "${{ inputs.publish_mode }}" = bootstrap ]; then
+            npm publish "$platform" --provenance --tag next --access public
+            npm publish "$selector" --provenance --tag next --access public
+            npm publish "$main" --provenance --tag next --access public
+          else
+            npm stage publish "$platform" --provenance --tag next --access public
+            npm stage publish "$selector" --provenance --tag next --access public
+            npm stage publish "$main" --provenance --tag next --access public
+          fi
+
+  registry-readback:
+    name: registry-readback
+    if: >-
+      always() &&
+      inputs.publish_mode != 'stage' &&
+      (needs.publish-next.result == 'success' || inputs.publish_mode == 'verify-existing')
+    needs: publish-next
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm ci
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: .release-candidate
+      - run: |
+          node scripts/release-candidate.mjs verify-registry \
+            .release-candidate \
+            https://registry.npmjs.org \
+            registry-readback.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gate-registry-readback
+          path: registry-readback.json
+          if-no-files-found: error
+
+  bootstrap-token-retirement:
+    name: bootstrap-token-retirement
+    if: >-
+      always() &&
+      inputs.publish_mode == 'bootstrap' &&
+      needs.registry-readback.result == 'success'
+    needs: registry-readback
+    runs-on: ubuntu-24.04
+    environment: npm-bootstrap-retirement
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: .release-candidate
+      - name: verify bootstrap token revocation and environment-secret deletion
+        env:
+          BOOTSTRAP_RETIREMENT_EVIDENCE_JSON: ${{ secrets.BOOTSTRAP_RETIREMENT_EVIDENCE_JSON }}
+        run: |
+          test -n "$BOOTSTRAP_RETIREMENT_EVIDENCE_JSON"
+          printf '%s\n' "$BOOTSTRAP_RETIREMENT_EVIDENCE_JSON" > bootstrap-token-retirement.json
+          node scripts/release-candidate.mjs verify-bootstrap-retirement \
+            .release-candidate/release-candidate.json \
+            bootstrap-token-retirement.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gate-bootstrap-token-retirement
+          path: bootstrap-token-retirement.json
+          if-no-files-found: error
+
+  hermetic:
+    name: hermetic
+    if: >-
+      always() &&
+      inputs.publish_mode != 'stage' &&
+      needs.registry-readback.result == 'success' &&
+      (inputs.publish_mode != 'bootstrap' || needs.bootstrap-token-retirement.result == 'success')
+    needs:
+      - registry-readback
+      - bootstrap-token-retirement
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: .release-candidate
+      - run: npm ci
+      - run: node scripts/release-candidate.mjs verify .release-candidate
+      - run: docker pull "$HERMETIC_IMAGE"
+      - name: run candidate-bound suite with egress denied
+        run: |
+          docker run --rm \
+            --network none \
+            --read-only \
+            --cap-drop ALL \
+            --security-opt no-new-privileges \
+            --tmpfs /tmp:rw,nosuid,nodev,exec,size=2g \
+            --user "$(id -u):$(id -g)" \
+            --env E2E_RELEASE_CANDIDATE_ROOT=/workspace/.release-candidate \
+            --env RUNNER_REGION="$RUNNER_REGION" \
+            --env npm_config_cache=/tmp/npm-cache \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspace" \
+            --workdir /workspace \
+            "$HERMETIC_IMAGE" \
+            npm test
+      - run: |
+          printf '{"isolation":{"image":"%s","network":"none"}}\n' \
+            "$HERMETIC_IMAGE" > hermetic-identities.json
+      - run: |
+          node scripts/release-candidate.mjs record-gate \
+            .release-candidate/release-candidate.json \
+            hermetic \
+            hermetic.json \
+            hermetic-identities.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gate-hermetic
+          path: hermetic.json
+          if-no-files-found: error
+
+  acceptance-stack:
+    name: acceptance-stack
+    if: >-
+      always() &&
+      inputs.publish_mode != 'stage' &&
+      needs.registry-readback.result == 'success' &&
+      (inputs.publish_mode != 'bootstrap' || needs.bootstrap-token-retirement.result == 'success')
+    needs:
+      - registry-readback
+      - bootstrap-token-retirement
+    runs-on: [self-hosted, linux, x64, acceptance-stack]
+    environment: acceptance-stack
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: .release-candidate
+      - name: verify approved narrow acceptance-stack evidence
+        env:
+          ACCEPTANCE_STACK_EVIDENCE_JSON: ${{ secrets.ACCEPTANCE_STACK_EVIDENCE_JSON }}
+        run: |
+          test -n "$ACCEPTANCE_STACK_EVIDENCE_JSON"
+          printf '%s\n' "$ACCEPTANCE_STACK_EVIDENCE_JSON" > acceptance-stack.json
+          node scripts/release-candidate.mjs verify-gate \
+            .release-candidate/release-candidate.json \
+            acceptance-stack \
+            acceptance-stack.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gate-acceptance-stack
+          path: acceptance-stack.json
+          if-no-files-found: error
+
+  release-evidence:
+    name: release-evidence
+    if: always() && inputs.publish_mode != 'stage' && needs.acceptance-stack.result == 'success'
+    needs:
+      - source-delivery
+      - hermetic
+      - three-anchor
+      - multiworker
+      - capacity
+      - official-ejs
+      - live-canary
+      - registry-readback
+      - acceptance-stack
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: .release-candidate
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: gate-*
+          path: .gate-evidence
+          merge-multiple: true
+      - run: |
+          npm run release:evidence -- \
+            .release-candidate/release-candidate.json \
+            .gate-evidence \
+            "release-evidence-${VERSION}.json"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-evidence-0.2.0
+          path: release-evidence-0.2.0.json
+          if-no-files-found: error
+          retention-days: 90
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "v${VERSION}" "release-evidence-${VERSION}.json"
+
+  promote-latest:
+    name: promote-latest
+    if: inputs.publish_mode != 'stage' && inputs.promote_latest
+    needs: release-evidence
+    runs-on: ubuntu-24.04
+    environment: npm-promotion
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: .release-candidate
+      - name: verify interactive 2FA promotion with main moved last
+        run: |
+          node scripts/release-candidate.mjs verify-promotion \
+            .release-candidate \
+            https://registry.npmjs.org \
+            promotion.json

@@ -1,28 +1,22 @@
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import {
-	chmod,
-	copyFile,
-	mkdir,
-	readFile,
-	rm,
-	truncate,
-	writeFile,
-} from 'node:fs/promises';
+import { chmod, copyFile, mkdir, readFile, rm, truncate, writeFile } from 'node:fs/promises';
 import { basename, join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 const repositoryRoot = resolve(process.argv[2] ?? '.');
-const generatedRoot = resolve(
-	process.argv[3] ?? 'e2e/n8n-2.27.4/.generated',
-);
+const generatedRoot = resolve(process.argv[3] ?? 'e2e/n8n-2.27.4/.generated');
 const registryRoot = join(generatedRoot, 'registry');
 const tarballRoot = join(registryRoot, 'tarballs');
 const certificateRoot = join(registryRoot, 'certs');
 const fixtureRoot = join(generatedRoot, 'fixtures');
 const evidenceRoot = join(generatedRoot, 'evidence');
 const packageVersion = '0.2.0';
+const candidateRoot = process.env.E2E_RELEASE_CANDIDATE_ROOT
+	? resolve(process.env.E2E_RELEASE_CANDIDATE_ROOT)
+	: undefined;
+const requirePublishedNext = process.env.E2E_REQUIRE_PUBLISHED_NEXT === 'true';
 
 async function run(command, arguments_, options = {}) {
 	return await execFileAsync(command, arguments_, {
@@ -43,35 +37,15 @@ await Promise.all(
 	),
 );
 
-await run('npm', ['run', 'build']);
-
-const packageDirectories = [
-	'./packages/linux-x64',
-	'./packages/platform-selector',
-	'.',
-];
 const packageEvidence = [];
 const registry = {};
 
-for (const packageDirectory of packageDirectories) {
-	const { stdout } = await run('npm', [
-		'pack',
-		packageDirectory,
-		'--ignore-scripts',
-		'--loglevel=error',
-		'--pack-destination',
-		tarballRoot,
-	]);
-	const packageJson = JSON.parse(
-		await readFile(join(repositoryRoot, packageDirectory, 'package.json'), 'utf8'),
-	);
-	if (packageJson.version !== packageVersion) {
-		throw new Error(`Unexpected package version for ${packageDirectory}.`);
-	}
-	const tarballName = stdout.trim().split(/\r?\n/u).at(-1);
-	if (!tarballName?.endsWith('.tgz')) {
-		throw new Error(`Unexpected npm pack output for ${packageDirectory}.`);
-	}
+async function addPackage(
+	packageJson,
+	tarballName,
+	evidence,
+	distTags = { latest: packageVersion, next: packageVersion },
+) {
 	const tarballPath = join(tarballRoot, tarballName);
 	const body = await readFile(tarballPath);
 	const tarballUrl = `https://registry.npmjs.org/${packageJson.name}/-/${tarballName}`;
@@ -84,17 +58,90 @@ for (const packageDirectory of packageDirectories) {
 		},
 	};
 	registry[packageJson.name] = {
-		'dist-tags': { latest: packageVersion, next: packageVersion },
+		'dist-tags': distTags,
 		name: packageJson.name,
 		versions: { [packageVersion]: metadata },
 	};
 	packageEvidence.push({
 		name: packageJson.name,
-		sha256: digest('sha256', body),
+		sha256: evidence?.sha256 ?? digest('sha256', body),
 		sizeBytes: body.byteLength,
 		tarball: tarballName,
 		version: packageJson.version,
 	});
+}
+
+if (candidateRoot === undefined) {
+	await run('npm', ['run', 'build']);
+	for (const packageDirectory of ['./packages/linux-x64', './packages/platform-selector', '.']) {
+		const { stdout } = await run('npm', [
+			'pack',
+			packageDirectory,
+			'--ignore-scripts',
+			'--loglevel=error',
+			'--pack-destination',
+			tarballRoot,
+		]);
+		const packageJson = JSON.parse(
+			await readFile(join(repositoryRoot, packageDirectory, 'package.json'), 'utf8'),
+		);
+		if (packageJson.version !== packageVersion) {
+			throw new Error(`Unexpected package version for ${packageDirectory}.`);
+		}
+		const tarballName = stdout.trim().split(/\r?\n/u).at(-1);
+		if (!tarballName?.endsWith('.tgz')) {
+			throw new Error(`Unexpected npm pack output for ${packageDirectory}.`);
+		}
+		await addPackage(packageJson, tarballName);
+	}
+} else {
+	await run(process.execPath, ['scripts/release-candidate.mjs', 'verify', candidateRoot]);
+	const candidate = JSON.parse(
+		await readFile(join(candidateRoot, 'release-candidate.json'), 'utf8'),
+	);
+	if (candidate.version !== packageVersion) {
+		throw new Error(`Unexpected Release Candidate version ${candidate.version}.`);
+	}
+	for (const evidence of candidate.packages) {
+		const sourceTarball = join(candidateRoot, 'tarballs', evidence.tarball);
+		const destinationTarball = join(tarballRoot, evidence.tarball);
+		let distTags;
+		if (requirePublishedNext) {
+			const packumentResponse = await fetch(
+				`https://registry.npmjs.org/${encodeURIComponent(evidence.name)}`,
+				{ signal: AbortSignal.timeout(30_000) },
+			);
+			if (!packumentResponse.ok) {
+				throw new Error(
+					`${evidence.name} public packument returned HTTP ${packumentResponse.status}.`,
+				);
+			}
+			const packument = await packumentResponse.json();
+			distTags = packument['dist-tags'];
+			const published = packument.versions?.[candidate.version];
+			if (
+				packument['dist-tags']?.next !== candidate.version ||
+				published?.dist?.integrity !== candidate.expectedRegistry.packages[evidence.name]?.integrity
+			) {
+				throw new Error(`${evidence.name}@${candidate.version} is not the exact public next.`);
+			}
+			const tarballResponse = await fetch(published.dist.tarball, {
+				signal: AbortSignal.timeout(120_000),
+			});
+			if (!tarballResponse.ok) {
+				throw new Error(`${evidence.name} public tarball returned HTTP ${tarballResponse.status}.`);
+			}
+			const publicTarball = Buffer.from(await tarballResponse.arrayBuffer());
+			if (digest('sha256', publicTarball) !== evidence.sha256) {
+				throw new Error(`${evidence.name} public next tarball digest mismatch.`);
+			}
+			await writeFile(destinationTarball, publicTarball);
+		} else {
+			await copyFile(sourceTarball, destinationTarball);
+		}
+		const { stdout } = await run('tar', ['-xOzf', destinationTarball, 'package/package.json']);
+		await addPackage(JSON.parse(stdout), evidence.tarball, evidence, distTags);
+	}
 }
 await writeFile(join(registryRoot, 'registry.json'), JSON.stringify(registry, null, 2));
 
@@ -255,8 +302,5 @@ const preparationEvidence = {
 	packages: packageEvidence,
 	schemaVersion: 1,
 };
-await writeFile(
-	join(evidenceRoot, 'prepared.json'),
-	JSON.stringify(preparationEvidence, null, 2),
-);
+await writeFile(join(evidenceRoot, 'prepared.json'), JSON.stringify(preparationEvidence, null, 2));
 process.stdout.write(`${JSON.stringify(preparationEvidence)}\n`);

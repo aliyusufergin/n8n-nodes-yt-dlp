@@ -1,0 +1,658 @@
+import { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { mkdtemp, mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { promisify } from 'node:util';
+
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+
+const execFileAsync = promisify(execFile);
+const repositoryRoot = resolve('.');
+const requiredLanes = [
+	'source-delivery',
+	'hermetic',
+	'three-anchor',
+	'multiworker',
+	'capacity',
+	'official-ejs',
+	'live-canary',
+	'registry-readback',
+	'acceptance-stack',
+] as const;
+const imagesByLane: Partial<Record<(typeof requiredLanes)[number], string[]>> = {
+	'acceptance-stack': [
+		'docker.n8n.io/n8nio/n8n@sha256:6dd442962208ff080af3e0a8ab5254eb4c6138f2d188d4a7e3cf84eed3b7eae1',
+	],
+	capacity: [
+		'docker.n8n.io/n8nio/n8n@sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060',
+	],
+	multiworker: [
+		'docker.n8n.io/n8nio/n8n@sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060',
+	],
+	'three-anchor': [
+		'docker.n8n.io/n8nio/n8n@sha256:bd39d2d238b51af2626b2ac7b6b9938efff069390cce83ba769e52f10eedf795',
+		'docker.n8n.io/n8nio/n8n@sha256:6dd442962208ff080af3e0a8ab5254eb4c6138f2d188d4a7e3cf84eed3b7eae1',
+		'docker.n8n.io/n8nio/n8n@sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060',
+	],
+};
+
+interface CandidateManifest {
+	commit: string;
+	expectedRegistry: {
+		packages: Record<
+			string,
+			{
+				dependencies?: Record<string, string>;
+				integrity: string;
+				optionalDependencies?: Record<string, string>;
+				sha256: string;
+				tarball: string;
+				version: string;
+			}
+		>;
+		provenance: {
+			builderId: string;
+			certificateIdentityURI: string;
+			certificateIssuer: string;
+			commit: string;
+			predicateType: string;
+			workflow: { path: string; repository: string };
+		};
+	};
+	packages: Array<{
+		contents: Array<{ mode: number; path: string; sha256: string; sizeBytes: number }>;
+		name: string;
+		sha256: string;
+		sizeBytes: number;
+		tarball: string;
+		version: string;
+	}>;
+	rollback: {
+		order: string[];
+		strategy: string;
+		unpublish: false;
+	};
+	schemaVersion: number;
+	source: {
+		bundles: Array<{ name: string; sha256: string; url: string }>;
+	};
+	toolchain: {
+		buildTools: { node: string; npm: string };
+		components: string[];
+		executionManifestSha256: string;
+		lockSha256: string;
+	};
+	version: string;
+}
+
+let candidateRoot: string;
+let manifest: CandidateManifest;
+
+function sha256(contents: Buffer | string): string {
+	return createHash('sha256').update(contents).digest('hex');
+}
+
+async function writeGateEvidence(
+	evidenceRoot: string,
+	candidateSha256: string,
+	overrides: Partial<Record<(typeof requiredLanes)[number], Record<string, unknown>>> = {},
+): Promise<void> {
+	await mkdir(evidenceRoot, { recursive: true });
+	for (const lane of requiredLanes) {
+		const testId =
+			lane === 'acceptance-stack'
+				? 'n8n-2.27.4-acceptance-stack'
+				: lane === 'live-canary'
+					? 'YE7VzlLtp-4'
+					: lane;
+		await writeFile(
+			join(evidenceRoot, `${lane}.json`),
+			`${JSON.stringify({
+				schemaVersion: 1,
+				candidateSha256,
+				completedAt: '2026-07-29T08:00:00.000Z',
+				diagnostics: ['bounded fixture evidence'],
+				identities: {
+					...(imagesByLane[lane] === undefined ? {} : { images: imagesByLane[lane] }),
+					...(lane === 'hermetic'
+						? {
+								isolation: {
+									image:
+										'node@sha256:8d3442d5f074940723be6eece34e992eb147ba1f59c73888e8f257918dea2e78',
+									network: 'none',
+								},
+							}
+						: {}),
+					packages: manifest.packages.map(({ name, sha256: packageSha256, version }) => ({
+						name,
+						sha256: packageSha256,
+						version,
+					})),
+					source: manifest.source,
+					test: { id: testId },
+					toolchain: manifest.toolchain,
+				},
+				lane,
+				outcome: 'pass',
+				region: 'test-region',
+				waived: false,
+				...overrides[lane],
+			})}\n`,
+		);
+	}
+}
+
+beforeAll(async () => {
+	candidateRoot = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-release-candidate-'));
+	await execFileAsync(process.execPath, ['scripts/release-candidate.mjs', 'build', candidateRoot], {
+		cwd: repositoryRoot,
+		timeout: 240_000,
+	});
+	manifest = JSON.parse(
+		await readFile(join(candidateRoot, 'release-candidate.json'), 'utf8'),
+	) as CandidateManifest;
+}, 250_000);
+
+afterAll(async () => {
+	if (candidateRoot !== undefined) {
+		await rm(candidateRoot, { force: true, recursive: true });
+	}
+});
+
+describe('immutable Release Candidate Chain', () => {
+	it('builds and attests the exact three-package chain for registry read-back', async () => {
+		expect(manifest).toMatchObject({
+			schemaVersion: 1,
+			version: '0.2.0',
+			rollback: {
+				strategy: 'dist-tags-deprecation-new-patch',
+				unpublish: false,
+				order: ['n8n-nodes-yt-dlp', 'n8n-nodes-yt-dlp-platform', 'n8n-nodes-yt-dlp-linux-x64'],
+			},
+		});
+		expect(manifest.commit).toMatch(/^[0-9a-f]{40}$/u);
+		expect(manifest.expectedRegistry.provenance).toEqual({
+			builderId: 'https://github.com/actions/runner/github-hosted',
+			certificateIdentityURI:
+				'https://github.com/aliyusufergin/n8n-nodes-yt-dlp/.github/workflows/publish.yml@refs/heads/main',
+			certificateIssuer: 'https://token.actions.githubusercontent.com',
+			commit: manifest.commit,
+			predicateType: 'https://slsa.dev/provenance/v1',
+			workflow: {
+				path: '.github/workflows/publish.yml',
+				repository: 'https://github.com/aliyusufergin/n8n-nodes-yt-dlp',
+			},
+		});
+		expect(manifest.packages.map(({ name }) => name)).toEqual([
+			'n8n-nodes-yt-dlp-linux-x64',
+			'n8n-nodes-yt-dlp-platform',
+			'n8n-nodes-yt-dlp',
+		]);
+		for (const packageEvidence of manifest.packages) {
+			expect(packageEvidence.version).toBe('0.2.0');
+			const tarball = await readFile(join(candidateRoot, 'tarballs', packageEvidence.tarball));
+			expect(packageEvidence.sha256).toBe(sha256(tarball));
+			expect(packageEvidence.sizeBytes).toBe(tarball.byteLength);
+			expect(packageEvidence.contents).toContainEqual(
+				expect.objectContaining({
+					path: 'package/package.json',
+					mode: 0o644,
+					sha256: expect.stringMatching(/^[0-9a-f]{64}$/u),
+				}),
+			);
+			expect(packageEvidence.contents.some(({ path }) => path.includes('node_modules'))).toBe(
+				false,
+			);
+			expect(manifest.expectedRegistry.packages[packageEvidence.name]).toMatchObject({
+				version: '0.2.0',
+				tarball: packageEvidence.tarball,
+				sha256: packageEvidence.sha256,
+				integrity: expect.stringMatching(/^sha512-/u),
+			});
+		}
+		expect(manifest.toolchain).toMatchObject({
+			buildTools: {
+				node: expect.stringMatching(/^v26\./u),
+				npm: expect.stringMatching(/^\d+\.\d+\.\d+$/u),
+			},
+			components: ['yt-dlp', 'ffmpeg', 'deno', 'linux-runtime', 'yt-dlp-ejs'],
+			executionManifestSha256: expect.stringMatching(/^[0-9a-f]{64}$/u),
+			lockSha256: expect.stringMatching(/^[0-9a-f]{64}$/u),
+		});
+		expect(manifest.source.bundles).toContainEqual({
+			name: 'n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz',
+			sha256: '3dcd8963e229e3b34fb9d0d969377e59e25a01146fd128282ad599200034e882',
+			url: 'https://github.com/aliyusufergin/n8n-nodes-yt-dlp/releases/download/v0.2.0/n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz',
+		});
+
+		const attestation = JSON.parse(
+			await readFile(join(candidateRoot, 'build-provenance.json'), 'utf8'),
+		) as { predicateType: string; subject: Array<{ digest: { sha256: string }; name: string }> };
+		expect(attestation.predicateType).toBe('https://slsa.dev/provenance/v1');
+		expect(attestation.subject).toEqual(
+			manifest.packages.map(({ name, sha256: digest, version }) => ({
+				digest: { sha256: digest },
+				name: `pkg:npm/${name}@${version}`,
+			})),
+		);
+		expect((await readdir(join(candidateRoot, 'tarballs'))).sort()).toEqual(
+			manifest.packages.map(({ tarball }) => tarball).sort(),
+		);
+	});
+
+	it('finalizes bounded, identity-bound evidence only when every lane passes', async () => {
+		const candidateBytes = await readFile(join(candidateRoot, 'release-candidate.json'));
+		const candidateSha256 = sha256(candidateBytes);
+		const evidenceRoot = join(candidateRoot, 'passing-evidence');
+		const outputPath = join(candidateRoot, 'release-evidence-0.2.0.json');
+		await writeGateEvidence(evidenceRoot, candidateSha256);
+
+		await execFileAsync(
+			process.execPath,
+			[
+				'scripts/release-candidate.mjs',
+				'finalize-evidence',
+				join(candidateRoot, 'release-candidate.json'),
+				evidenceRoot,
+				outputPath,
+			],
+			{ cwd: repositoryRoot },
+		);
+
+		const evidence = JSON.parse(await readFile(outputPath, 'utf8')) as {
+			candidateSha256: string;
+			gates: Array<{ lane: string; outcome: string }>;
+			packages: CandidateManifest['packages'];
+			schemaVersion: number;
+			version: string;
+		};
+		expect(evidence).toMatchObject({
+			schemaVersion: 1,
+			version: '0.2.0',
+			candidateSha256,
+		});
+		expect(evidence.gates.map(({ lane, outcome }) => ({ lane, outcome }))).toEqual(
+			requiredLanes.map((lane) => ({ lane, outcome: 'pass' })),
+		);
+		expect(evidence.packages).toEqual(manifest.packages);
+	});
+
+	it.each([
+		['inconclusive live outcome', 'live-canary', { outcome: 'inconclusive' }],
+		['waived capacity lane', 'capacity', { waived: true }],
+	] as const)('rejects %s', async (_, lane, override) => {
+		const candidateBytes = await readFile(join(candidateRoot, 'release-candidate.json'));
+		const evidenceRoot = join(candidateRoot, `rejected-${lane}`);
+		await writeGateEvidence(evidenceRoot, sha256(candidateBytes), {
+			[lane]: override,
+		});
+
+		await expect(
+			execFileAsync(
+				process.execPath,
+				[
+					'scripts/release-candidate.mjs',
+					'finalize-evidence',
+					join(candidateRoot, 'release-candidate.json'),
+					evidenceRoot,
+					join(candidateRoot, `rejected-${lane}.json`),
+				],
+				{ cwd: repositoryRoot },
+			),
+		).rejects.toMatchObject({
+			stderr: expect.stringContaining(`${lane} must pass without a waiver`),
+		});
+	});
+
+	it('rejects gate evidence without candidate-matching identities', async () => {
+		const candidateBytes = await readFile(join(candidateRoot, 'release-candidate.json'));
+		const evidenceRoot = join(candidateRoot, 'rejected-identities');
+		await writeGateEvidence(evidenceRoot, sha256(candidateBytes), {
+			'acceptance-stack': { identities: {} },
+		});
+
+		await expect(
+			execFileAsync(
+				process.execPath,
+				[
+					'scripts/release-candidate.mjs',
+					'finalize-evidence',
+					join(candidateRoot, 'release-candidate.json'),
+					evidenceRoot,
+					join(candidateRoot, 'release-evidence-0.2.0.json'),
+				],
+				{ cwd: repositoryRoot },
+			),
+		).rejects.toMatchObject({
+			stderr: expect.stringContaining(
+				'acceptance-stack evidence package identities do not match the candidate',
+			),
+		});
+	});
+
+	it('rejects the wrong acceptance image and an unknown runner region', async () => {
+		const candidateBytes = await readFile(join(candidateRoot, 'release-candidate.json'));
+		const evidenceRoot = join(candidateRoot, 'rejected-lane-identities');
+		await writeGateEvidence(evidenceRoot, sha256(candidateBytes));
+		const acceptancePath = join(evidenceRoot, 'acceptance-stack.json');
+		const acceptance = JSON.parse(await readFile(acceptancePath, 'utf8')) as {
+			identities: { images: string[] };
+		};
+		acceptance.identities.images = imagesByLane['three-anchor']?.slice(0, 1) ?? [];
+		await writeFile(acceptancePath, `${JSON.stringify(acceptance)}\n`);
+
+		const finalize = async () =>
+			await execFileAsync(
+				process.execPath,
+				[
+					'scripts/release-candidate.mjs',
+					'finalize-evidence',
+					join(candidateRoot, 'release-candidate.json'),
+					evidenceRoot,
+					join(candidateRoot, 'release-evidence-0.2.0.json'),
+				],
+				{ cwd: repositoryRoot },
+			);
+		await expect(finalize()).rejects.toMatchObject({
+			stderr: expect.stringContaining(
+				'acceptance-stack evidence has the wrong official n8n image identity',
+			),
+		});
+
+		await writeGateEvidence(evidenceRoot, sha256(candidateBytes), {
+			'source-delivery': { region: 'unknown' },
+		});
+		await expect(finalize()).rejects.toMatchObject({
+			stderr: expect.stringContaining('source-delivery evidence has no valid time and region'),
+		});
+	});
+
+	it('blocks bootstrap continuation until token and secret retirement are proven', async () => {
+		const candidatePath = join(candidateRoot, 'release-candidate.json');
+		const candidateBytes = await readFile(candidatePath);
+		const retirementPath = join(candidateRoot, 'bootstrap-token-retirement.json');
+		const evidence = {
+			schemaVersion: 1,
+			candidateSha256: sha256(candidateBytes),
+			completedAt: '2026-07-29T08:00:00.000Z',
+			actor: 'release-operator',
+			tokenRevoked: true,
+			environmentSecretDeleted: true,
+			waived: false,
+		};
+		await writeFile(retirementPath, `${JSON.stringify(evidence)}\n`);
+		await expect(
+			execFileAsync(
+				process.execPath,
+				[
+					'scripts/release-candidate.mjs',
+					'verify-bootstrap-retirement',
+					candidatePath,
+					retirementPath,
+				],
+				{ cwd: repositoryRoot },
+			),
+		).resolves.toMatchObject({
+			stdout: expect.stringContaining('"outcome":"pass"'),
+		});
+
+		await writeFile(
+			retirementPath,
+			`${JSON.stringify({ ...evidence, environmentSecretDeleted: false })}\n`,
+		);
+		await expect(
+			execFileAsync(
+				process.execPath,
+				[
+					'scripts/release-candidate.mjs',
+					'verify-bootstrap-retirement',
+					candidatePath,
+					retirementPath,
+				],
+				{ cwd: repositoryRoot },
+			),
+		).rejects.toMatchObject({
+			stderr: expect.stringContaining('Bootstrap retirement must prove token revocation'),
+		});
+	});
+
+	it('rejects a candidate whose tarball bytes changed', async () => {
+		const tarballPath = join(candidateRoot, 'tarballs', manifest.packages[0].tarball);
+		const backupPath = `${tarballPath}.backup`;
+		await rename(tarballPath, backupPath);
+		try {
+			await writeFile(tarballPath, 'modified candidate bytes');
+			await expect(
+				execFileAsync(
+					process.execPath,
+					['scripts/release-candidate.mjs', 'verify', candidateRoot],
+					{ cwd: repositoryRoot },
+				),
+			).rejects.toMatchObject({
+				stderr: expect.stringContaining(`${manifest.packages[0].name} tarball digest mismatch`),
+			});
+		} finally {
+			await rm(tarballPath, { force: true });
+			await rename(backupPath, tarballPath);
+		}
+	});
+
+	it('matches registry metadata, provenance, and tarball bytes on read-back', async () => {
+		let attestationRequests = 0;
+		let provenanceCommit = manifest.commit;
+		const server = createServer((request, response) => {
+			const url = new URL(request.url ?? '/', 'http://registry');
+			const tarball = manifest.packages.find(
+				(packageEvidence) => url.pathname === `/tarballs/${packageEvidence.tarball}`,
+			);
+			if (tarball !== undefined) {
+				void readFile(join(candidateRoot, 'tarballs', tarball.tarball)).then((contents) => {
+					response.end(contents);
+				});
+				return;
+			}
+			if (url.pathname.startsWith('/attestations/')) {
+				attestationRequests += 1;
+				const name = decodeURIComponent(url.pathname.slice('/attestations/'.length));
+				const packageEvidence = manifest.packages.find(
+					(candidatePackage) => candidatePackage.name === name,
+				);
+				if (packageEvidence === undefined) {
+					response.statusCode = 404;
+					response.end();
+					return;
+				}
+				const statement = {
+					_type: 'https://in-toto.io/Statement/v1',
+					subject: [
+						{
+							name: packageEvidence.tarball,
+							digest: { sha256: packageEvidence.sha256 },
+						},
+					],
+					predicateType: 'https://slsa.dev/provenance/v1',
+					predicate: {
+						buildDefinition: {
+							buildType: 'https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1',
+							externalParameters: {
+								workflow: {
+									path: '.github/workflows/publish.yml',
+									repository: 'https://github.com/aliyusufergin/n8n-nodes-yt-dlp',
+								},
+							},
+							resolvedDependencies: [{ digest: { gitCommit: provenanceCommit } }],
+						},
+						runDetails: {
+							builder: {
+								id: 'https://github.com/actions/runner/github-hosted',
+							},
+						},
+					},
+				};
+				response.setHeader('content-type', 'application/json');
+				response.end(
+					JSON.stringify({
+						attestations: [
+							{
+								predicateType: statement.predicateType,
+								bundle: {
+									dsseEnvelope: {
+										payload: Buffer.from(JSON.stringify(statement)).toString('base64'),
+										payloadType: 'application/vnd.in-toto+json',
+										signatures: [{ sig: 'test-signature' }],
+									},
+								},
+							},
+						],
+					}),
+				);
+				return;
+			}
+			const [, encodedName, version] = url.pathname.split('/');
+			const name = decodeURIComponent(encodedName ?? '');
+			const expected = manifest.expectedRegistry.packages[name];
+			if (expected === undefined || version !== expected.version) {
+				response.statusCode = 404;
+				response.end();
+				return;
+			}
+			const address = server.address() as AddressInfo;
+			response.setHeader('content-type', 'application/json');
+			response.end(
+				JSON.stringify({
+					...expected,
+					name,
+					version,
+					dist: {
+						attestations: {
+							provenance: {
+								predicateType: 'https://slsa.dev/provenance/v1',
+							},
+							url: `http://127.0.0.1:${address.port}/attestations/${name}`,
+						},
+						integrity: expected.integrity,
+						tarball: `http://127.0.0.1:${address.port}/tarballs/${expected.tarball}`,
+					},
+				}),
+			);
+		});
+		await new Promise<void>((resolveListen) => server.listen(0, '127.0.0.1', resolveListen));
+		try {
+			const address = server.address() as AddressInfo;
+			const outputPath = join(candidateRoot, 'registry-readback.json');
+			const registry = `http://127.0.0.1:${address.port}`;
+			const verifyWithTestSignature = async () =>
+				await execFileAsync(
+					process.execPath,
+					[
+						'--input-type=module',
+						'--eval',
+						`
+							import { verifyRegistry } from './scripts/release-candidate.mjs';
+							const [candidateRoot, registry, outputPath] = process.argv.slice(1);
+							await verifyRegistry(candidateRoot, registry, outputPath, {
+								verifyBundle: async (bundle, identity) => {
+									if (
+										bundle?.dsseEnvelope?.signatures?.length !== 1 ||
+										identity?.certificateIssuer !==
+											'https://token.actions.githubusercontent.com' ||
+										!identity?.certificateIdentityURI?.endsWith(
+											'/.github/workflows/publish.yml@refs/heads/main',
+										)
+									) {
+										throw new Error('missing test signature');
+									}
+								},
+							});
+						`,
+						candidateRoot,
+						registry,
+						outputPath,
+					],
+					{
+						cwd: repositoryRoot,
+						env: { ...process.env, RUNNER_REGION: 'test-region' },
+					},
+				);
+			const verifyProvenanceWithTestSignature = async () =>
+				await execFileAsync(
+					process.execPath,
+					[
+						'--input-type=module',
+						'--eval',
+						`
+							import { readFile } from 'node:fs/promises';
+							import { verifyRegistryProvenance } from './scripts/release-candidate.mjs';
+							const [candidatePath, provenanceUrl] = process.argv.slice(1);
+							const candidate = JSON.parse(await readFile(candidatePath, 'utf8'));
+							await verifyRegistryProvenance(
+								provenanceUrl,
+								candidate.packages[0],
+								candidate,
+								async (bundle, identity) => {
+									if (
+										bundle?.dsseEnvelope?.signatures?.length !== 1 ||
+										identity?.certificateIssuer !==
+											'https://token.actions.githubusercontent.com'
+									) {
+										throw new Error('missing test signature');
+									}
+								},
+							);
+						`,
+						join(candidateRoot, 'release-candidate.json'),
+						`${registry}/attestations/${manifest.packages[0].name}`,
+					],
+					{ cwd: repositoryRoot },
+				);
+			await verifyWithTestSignature();
+			const readback = JSON.parse(await readFile(outputPath, 'utf8')) as {
+				packages: Array<{ name: string; provenance: string; sha256: string }>;
+			};
+			expect(readback.packages).toEqual(
+				manifest.packages.map(({ name, sha256: packageSha256 }) => ({
+					name,
+					provenance: 'https://slsa.dev/provenance/v1',
+					sha256: packageSha256,
+				})),
+			);
+			expect(attestationRequests).toBe(3);
+			provenanceCommit = '0'.repeat(40);
+			await expect(verifyProvenanceWithTestSignature()).rejects.toMatchObject({
+				stderr: expect.stringContaining('registry provenance is not candidate-bound'),
+			});
+			provenanceCommit = manifest.commit;
+			await expect(
+				execFileAsync(
+					process.execPath,
+					[
+						'--input-type=module',
+						'--eval',
+						`
+							import { verifySigstoreBundle } from './scripts/release-candidate.mjs';
+							await verifySigstoreBundle({
+								dsseEnvelope: {
+									payload: 'e30=',
+									payloadType: 'application/vnd.in-toto+json',
+									signatures: [{ sig: 'not-a-signature' }],
+								},
+							});
+						`,
+					],
+					{
+						cwd: repositoryRoot,
+					},
+				),
+			).rejects.toMatchObject({
+				stderr: expect.stringContaining('The Sigstore bundle is incomplete'),
+			});
+		} finally {
+			await new Promise<void>((resolveClose, rejectClose) => {
+				server.close((error) => (error === undefined ? resolveClose() : rejectClose(error)));
+			});
+		}
+	}, 60_000);
+});

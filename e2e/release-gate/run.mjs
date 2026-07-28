@@ -36,18 +36,35 @@ const releaseGate = {
 	],
 	frozenAt: '2026-07-17',
 };
+const releaseLanes = {
+	capacity: {
+		anchors: ['2.30.7'],
+		capacity: true,
+		scaleRecovery: true,
+	},
+	core: {
+		anchors: releaseGate.anchors.map(({ tag }) => tag),
+		capacity: false,
+		scaleRecovery: false,
+	},
+	multiworker: {
+		anchors: ['2.30.7'],
+		capacity: false,
+		scaleRecovery: true,
+	},
+};
 
-function runAnchor(anchor) {
+function runAnchor(anchor, lane) {
 	return new Promise((resolveRun) => {
 		const child = spawn(process.execPath, [lanePath, repositoryRoot], {
 			cwd: repositoryRoot,
 			env: {
 				...process.env,
-				E2E_CAPACITY: String(anchor.capacity),
+				E2E_CAPACITY: String(lane.capacity),
 				E2E_N8N_IMAGE: anchor.image,
 				E2E_N8N_INDEX_DIGEST: anchor.indexDigest,
 				E2E_N8N_ROLE: anchor.role,
-				E2E_SCALE_RECOVERY: String(anchor.scaleRecovery),
+				E2E_SCALE_RECOVERY: String(lane.scaleRecovery),
 				E2E_N8N_TAG: anchor.tag,
 			},
 			stdio: 'inherit',
@@ -72,19 +89,48 @@ function runAnchor(anchor) {
 const arguments_ = process.argv.slice(2);
 if (arguments_.length === 1 && arguments_[0] === '--list') {
 	process.stdout.write(`${JSON.stringify(releaseGate)}\n`);
+} else if (arguments_.length === 1 && arguments_[0] === '--list-lanes') {
+	process.stdout.write(`${JSON.stringify(releaseLanes)}\n`);
+} else if (arguments_.length === 2 && arguments_[0] === '--describe-lane') {
+	const lane = releaseLanes[arguments_[1]];
+	if (lane === undefined) throw new Error(`Unknown release-gate lane: ${arguments_[1]}`);
+	process.stdout.write(
+		`${JSON.stringify({
+			...lane,
+			anchors: releaseGate.anchors.filter(({ tag }) => lane.anchors.includes(tag)),
+			lane: arguments_[1],
+		})}\n`,
+	);
 } else {
-	let anchors = releaseGate.anchors;
-	if (arguments_.length === 2 && arguments_[0] === '--anchor') {
-		anchors = anchors.filter(({ tag }) => tag === arguments_[1]);
-		if (anchors.length === 0) throw new Error(`Unknown release-gate anchor: ${arguments_[1]}`);
-	} else if (arguments_.length !== 0) {
-		throw new Error('Usage: run.mjs [--list | --anchor <version>]');
+	let laneName = 'core';
+	let anchorTag;
+	for (let index = 0; index < arguments_.length; index += 2) {
+		const option = arguments_[index];
+		const value = arguments_[index + 1];
+		if (value === undefined || !['--anchor', '--lane'].includes(option)) {
+			throw new Error(
+				'Usage: run.mjs [--list | --list-lanes | --describe-lane <lane> | --lane <lane> [--anchor <version>]]',
+			);
+		}
+		if (option === '--anchor') anchorTag = value;
+		else laneName = value;
+	}
+	const lane = releaseLanes[laneName];
+	if (lane === undefined) throw new Error(`Unknown release-gate lane: ${laneName}`);
+	let anchors = releaseGate.anchors.filter(({ tag }) => lane.anchors.includes(tag));
+	if (anchorTag !== undefined) {
+		if (!lane.anchors.includes(anchorTag)) {
+			throw new Error(`Anchor ${anchorTag} is not part of the ${laneName} lane.`);
+		}
+		anchors = anchors.filter(({ tag }) => tag === anchorTag);
 	}
 
 	const failedAnchors = [];
 	for (const anchor of anchors) {
-		process.stdout.write(`${JSON.stringify({ anchor: anchor.tag, phase: 'start' })}\n`);
-		if (!(await runAnchor(anchor))) failedAnchors.push(anchor.tag);
+		process.stdout.write(
+			`${JSON.stringify({ anchor: anchor.tag, lane: laneName, phase: 'start' })}\n`,
+		);
+		if (!(await runAnchor(anchor, lane))) failedAnchors.push(anchor.tag);
 	}
 	if (failedAnchors.length > 0) {
 		throw new Error(`Release Gate Matrix failed: ${failedAnchors.join(', ')}`);
