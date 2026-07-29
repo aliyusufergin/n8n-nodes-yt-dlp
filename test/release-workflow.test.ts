@@ -34,6 +34,9 @@ describe('release workflow', () => {
 		expect(workflow).not.toContain('continue-on-error:');
 		expect(workflow).toContain('NODE_VERSION: 24.16.0');
 		expect(job(workflow, 'candidate')).toContain('actions/attest-build-provenance@v4');
+		for (const status of ['candidate', 'source-delivery', 'prepublication']) {
+			expect(job(workflow, status), `${status} LFS checkout`).toContain('lfs: true');
+		}
 		expect(job(workflow, 'three-anchor')).toContain('test:e2e:release-gate');
 		expect(job(workflow, 'multiworker')).toContain('test:e2e:multiworker');
 		expect(job(workflow, 'capacity')).toContain('test:e2e:capacity');
