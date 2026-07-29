@@ -7,12 +7,13 @@ digest, file digest/mode, package metadata, Toolchain Lock identity, Correspondi
 and rollback policy in `release-candidate.json`. GitHub build provenance and the checked
 `build-provenance.json` bind the same three package subjects.
 
-After public registry read-back, every disposable E2E job downloads that candidate artifact and
-sets both `E2E_RELEASE_CANDIDATE_ROOT` and `E2E_REQUIRE_PUBLISHED_NEXT`. Preparation fetches the
-exact version from public npm, requires all three `next` tags to identify it, compares the public
-tarball integrity and SHA-256 to the candidate, and only then mirrors those public bytes into the
-network-isolated Community Packages test stack. The checkout is never repacked for release
-evidence.
+The bootstrap run stops after public registry read-back and credential retirement. A later
+`verify-existing` run performs every disposable E2E job for the published-byte ticket. Each job
+downloads that candidate artifact and sets both `E2E_RELEASE_CANDIDATE_ROOT` and
+`E2E_REQUIRE_PUBLISHED_NEXT`. Preparation fetches the exact version from public npm, requires all
+three `next` tags to identify it, compares the public tarball integrity and SHA-256 to the candidate,
+and only then mirrors those public bytes into the network-isolated Community Packages test stack.
+The checkout is never repacked for release evidence.
 
 ## Blocking statuses
 
@@ -32,8 +33,9 @@ downloads and remote components, and must record actual packaged-Deno challenge 
 `inconclusive` is blocking, including network and rate-limit outcomes.
 
 `source-delivery` runs the release verifier before `publish-next`. It checks the direct versioned
-GitHub source assets and digests, clean isolated-rebuild evidence, manual license-review bindings,
-component inventory, notices, licenses, and the passed Linux runtime source gate.
+GitHub source assets, their exact `.sha256` sidecar contents, clean isolated-rebuild evidence,
+manual license-review bindings, component inventory, notices, licenses, and the passed Linux
+runtime source gate.
 
 The narrow real acceptance environment is approval-protected and uses a dedicated self-hosted
 runner. Its operator places already-completed, candidate-bound evidence in the protected
@@ -44,6 +46,40 @@ official acceptance image reference in `images`. The acceptance test identity is
 `n8n-2.27.4-acceptance-stack`, and the only accepted image is the ADR 0032 n8n 2.27.4 digest.
 
 ## Publish and continuation
+
+Before the one-time bootstrap, the operator must record this exact plan:
+
+- This token exception exists only because new package names cannot yet configure npm Trusted
+  Publisher or staged publishing. After bootstrap, those tokenless mechanisms replace it.
+- GitHub source assets:
+  `n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz` with SHA-256
+  `3dcd8963e229e3b34fb9d0d969377e59e25a01146fd128282ad599200034e882`, and
+  `n8n-nodes-yt-dlp-linux-runtime-source-0.2.0.tar.xz` with SHA-256
+  `9ffef7272744ddaa982cd960c95ae49a25bd4df689d3485f4b7e555759421ccc`.
+  Each asset and its `<asset>.sha256` sidecar uses the direct
+  `https://github.com/aliyusufergin/n8n-nodes-yt-dlp/releases/download/v0.2.0/`
+  prefix.
+- npm targets, in order: `n8n-nodes-yt-dlp-linux-x64@0.2.0`,
+  `n8n-nodes-yt-dlp-platform@0.2.0`, and `n8n-nodes-yt-dlp@0.2.0`.
+- In npm's Access Tokens UI, create a one-day granular token named
+  `n8n-nodes-yt-dlp-bootstrap-0.2.0`, with bypass-2FA, read/write access to all
+  packages, and no organization access. All-package access is the minimum available authority
+  because these package names do not exist yet. Do not put the token in chat, issues, commands,
+  shell history, or logs.
+- In GitHub, open Settings → Environments → `npm-bootstrap`, verify that a required reviewer
+  protects the environment, and add the token only as `NPM_BOOTSTRAP_TOKEN`. The reviewer approves
+  the protected `publish-next` job only after checking the exact commit and candidate digest. Then
+  dispatch:
+  `gh workflow run publish.yml --ref <exact-release-ref> -f publish_mode=bootstrap
+  -f promote_latest=false`.
+- The irreversible risk is a public partial or bad `0.2.0` chain. Do not unpublish. Remove or move
+  affected `next` tags, deprecate exact published names, and release a new lockstep patch. Any
+  permission or unexpected result stops the run without increasing token scope. The
+  `partial-publish-audit` artifact reports exact published, missing, and unexpected package names.
+- Temporary resources are the one-day token, two environment secrets, hosted-runner workspaces,
+  and retention-bounded workflow artifacts. Verification reads back both GitHub source sidecars,
+  every npm `next` tag, metadata, dependency graph, tarball integrity, and Sigstore provenance;
+  it also confirms that `latest` did not move.
 
 For the one-time v0.2.0 bootstrap, choose `bootstrap`. The protected `npm-bootstrap` environment
 supplies the short-lived granular token. The workflow publishes with provenance under `next` in
@@ -64,14 +100,27 @@ protected `npm-bootstrap-retirement` Environment as `BOOTSTRAP_RETIREMENT_EVIDEN
 	"candidateSha256": "<sha256 of release-candidate.json>",
 	"completedAt": "2026-07-29T12:00:00.000Z",
 	"actor": "<reviewed operator identity>",
-	"tokenRevoked": true,
+	"bypassTwoFactorAuthentication": true,
+	"environment": "npm-bootstrap",
 	"environmentSecretDeleted": true,
+	"organizationPermissions": "no-access",
+	"packageAccess": "all-packages",
+	"packagePermissions": "read-write",
+	"secretName": "NPM_BOOTSTRAP_TOKEN",
+	"tokenCreatedAt": "2026-07-29T11:00:00.000Z",
+	"tokenExpiresAt": "2026-07-30T11:00:00.000Z",
+	"tokenName": "n8n-nodes-yt-dlp-bootstrap-0.2.0",
+	"tokenRevoked": true,
+	"tokenType": "granular",
+	"verificationMethod": "operator-ui-read-back",
 	"waived": false
 }
 ```
 
-The workflow cannot continue to public-package tests until that protected proof passes. Promotion
-never receives or reuses the bootstrap token.
+The bootstrap workflow completes after that protected proof passes. Public-package tests run later
+under `verify-existing`; promotion never receives or reuses the bootstrap token. Delete
+`BOOTSTRAP_RETIREMENT_EVIDENCE_JSON` after the protected job passes. Hosted-runner workspaces are
+ephemeral, and workflow artifacts expire under their configured retention periods.
 
 For later Trusted Publisher releases, choose `stage`. The protected `npm-release` environment uses
 OIDC and `npm stage publish`; the workflow stops after staging so a maintainer can inspect and

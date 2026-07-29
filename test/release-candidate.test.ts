@@ -77,7 +77,7 @@ interface CandidateManifest {
 	};
 	schemaVersion: number;
 	source: {
-		bundles: Array<{ name: string; sha256: string; url: string }>;
+		bundles: Array<{ checksumUrl: string; name: string; sha256: string; url: string }>;
 	};
 	toolchain: {
 		buildTools: { node: string; npm: string };
@@ -223,10 +223,15 @@ describe('immutable Release Candidate Chain', () => {
 			lockSha256: expect.stringMatching(/^[0-9a-f]{64}$/u),
 		});
 		expect(manifest.source.bundles).toContainEqual({
+			checksumUrl:
+				'https://github.com/aliyusufergin/n8n-nodes-yt-dlp/releases/download/v0.2.0/n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz.sha256',
 			name: 'n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz',
 			sha256: '3dcd8963e229e3b34fb9d0d969377e59e25a01146fd128282ad599200034e882',
 			url: 'https://github.com/aliyusufergin/n8n-nodes-yt-dlp/releases/download/v0.2.0/n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz',
 		});
+		for (const bundle of manifest.source.bundles) {
+			expect(bundle.checksumUrl).toBe(`${bundle.url}.sha256`);
+		}
 
 		const attestation = JSON.parse(
 			await readFile(join(candidateRoot, 'build-provenance.json'), 'utf8'),
@@ -379,8 +384,19 @@ describe('immutable Release Candidate Chain', () => {
 			candidateSha256: sha256(candidateBytes),
 			completedAt: '2026-07-29T08:00:00.000Z',
 			actor: 'release-operator',
+			bypassTwoFactorAuthentication: true,
+			environment: 'npm-bootstrap',
 			tokenRevoked: true,
+			tokenCreatedAt: '2026-07-29T07:00:00.000Z',
+			tokenExpiresAt: '2026-07-30T07:00:00.000Z',
+			tokenName: 'n8n-nodes-yt-dlp-bootstrap-0.2.0',
+			tokenType: 'granular',
 			environmentSecretDeleted: true,
+			organizationPermissions: 'no-access',
+			packageAccess: 'all-packages',
+			packagePermissions: 'read-write',
+			secretName: 'NPM_BOOTSTRAP_TOKEN',
+			verificationMethod: 'operator-ui-read-back',
 			waived: false,
 		};
 		await writeFile(retirementPath, `${JSON.stringify(evidence)}\n`);
@@ -402,6 +418,25 @@ describe('immutable Release Candidate Chain', () => {
 		await writeFile(
 			retirementPath,
 			`${JSON.stringify({ ...evidence, environmentSecretDeleted: false })}\n`,
+		);
+		await expect(
+			execFileAsync(
+				process.execPath,
+				[
+					'scripts/release-candidate.mjs',
+					'verify-bootstrap-retirement',
+					candidatePath,
+					retirementPath,
+				],
+				{ cwd: repositoryRoot },
+			),
+		).rejects.toMatchObject({
+			stderr: expect.stringContaining('Bootstrap retirement must prove token revocation'),
+		});
+
+		await writeFile(
+			retirementPath,
+			`${JSON.stringify({ ...evidence, packagePermissions: 'read-only' })}\n`,
 		);
 		await expect(
 			execFileAsync(
@@ -442,6 +477,8 @@ describe('immutable Release Candidate Chain', () => {
 
 	it('matches registry metadata, provenance, and tarball bytes on read-back', async () => {
 		let attestationRequests = 0;
+		let latestVersion: string | undefined;
+		let nextVersion = manifest.version;
 		let provenanceCommit = manifest.commit;
 		const server = createServer((request, response) => {
 			const url = new URL(request.url ?? '/', 'http://registry');
@@ -514,7 +551,24 @@ describe('immutable Release Candidate Chain', () => {
 			const [, encodedName, version] = url.pathname.split('/');
 			const name = decodeURIComponent(encodedName ?? '');
 			const expected = manifest.expectedRegistry.packages[name];
-			if (expected === undefined || version !== expected.version) {
+			if (expected === undefined) {
+				response.statusCode = 404;
+				response.end();
+				return;
+			}
+			if (version === undefined) {
+				response.setHeader('content-type', 'application/json');
+				response.end(
+					JSON.stringify({
+						'dist-tags': {
+							...(latestVersion === undefined ? {} : { latest: latestVersion }),
+							next: nextVersion,
+						},
+					}),
+				);
+				return;
+			}
+			if (version !== expected.version) {
 				response.statusCode = 404;
 				response.end();
 				return;
@@ -620,6 +674,16 @@ describe('immutable Release Candidate Chain', () => {
 				})),
 			);
 			expect(attestationRequests).toBe(3);
+			nextVersion = '0.2.1';
+			await expect(verifyWithTestSignature()).rejects.toMatchObject({
+				stderr: expect.stringContaining('next does not identify 0.2.0'),
+			});
+			nextVersion = manifest.version;
+			latestVersion = manifest.version;
+			await expect(verifyWithTestSignature()).rejects.toMatchObject({
+				stderr: expect.stringContaining('latest unexpectedly identifies 0.2.0'),
+			});
+			latestVersion = undefined;
 			provenanceCommit = '0'.repeat(40);
 			await expect(verifyProvenanceWithTestSignature()).rejects.toMatchObject({
 				stderr: expect.stringContaining('registry provenance is not candidate-bound'),
@@ -655,4 +719,46 @@ describe('immutable Release Candidate Chain', () => {
 			});
 		}
 	}, 60_000);
+
+	it('reports exact package names after a partial publication', async () => {
+		const publishedName = manifest.packages[0].name;
+		const server = createServer((request, response) => {
+			const url = new URL(request.url ?? '/', 'http://registry');
+			const [, encodedName, version] = url.pathname.split('/');
+			const name = decodeURIComponent(encodedName ?? '');
+			response.statusCode =
+				name === publishedName && version === manifest.version ? 200 : 404;
+			response.end();
+		});
+		await new Promise<void>((resolveListen) => server.listen(0, '127.0.0.1', resolveListen));
+		try {
+			const address = server.address() as AddressInfo;
+			const outputPath = join(candidateRoot, 'partial-publish-audit.json');
+			await execFileAsync(
+				process.execPath,
+				[
+					'scripts/release-candidate.mjs',
+					'audit-registry',
+					join(candidateRoot, 'release-candidate.json'),
+					`http://127.0.0.1:${address.port}`,
+					outputPath,
+				],
+				{ cwd: repositoryRoot },
+			);
+			const audit = JSON.parse(await readFile(outputPath, 'utf8')) as {
+				missing: string[];
+				published: string[];
+				unexpected: Array<{ name: string; status: number }>;
+			};
+			expect(audit).toMatchObject({
+				published: [publishedName],
+				missing: manifest.packages.slice(1).map(({ name }) => name),
+				unexpected: [],
+			});
+		} finally {
+			await new Promise<void>((resolveClose, rejectClose) => {
+				server.close((error) => (error === undefined ? resolveClose() : rejectClose(error)));
+			});
+		}
+	});
 });

@@ -123,6 +123,18 @@ function jsonEqual(left, right) {
 	return JSON.stringify(canonicalJson(left)) === JSON.stringify(canonicalJson(right));
 }
 
+function normalizeRegistry(registryArgument, operation) {
+	const registry = registryArgument.replace(/\/+$/u, '');
+	const registryUrl = new URL(registry);
+	if (
+		registryUrl.protocol !== 'https:' &&
+		!(registryUrl.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(registryUrl.hostname))
+	) {
+		fail(`${operation} requires HTTPS except for a local test registry.`);
+	}
+	return registry;
+}
+
 async function digestFile(path, algorithm = 'sha256', encoding = 'hex') {
 	return digest(algorithm, await readFile(path), encoding);
 }
@@ -347,7 +359,12 @@ async function buildCandidate(outputDirectory) {
 	const sourceBundles = toolchainLock.components.flatMap((component) =>
 		[component.sourceBundle, component.sourceGate?.bundle]
 			.filter((bundle) => bundle?.url !== undefined)
-			.map(({ name, sha256, url }) => ({ name, sha256, url })),
+			.map(({ name, sha256, url }) => ({
+				checksumUrl: `${url}.sha256`,
+				name,
+				sha256,
+				url,
+			})),
 	);
 	for (const bundle of sourceBundles) {
 		if (
@@ -664,19 +681,28 @@ export async function verifyRegistry(
 	const candidateRoot = resolve(candidateDirectory);
 	const candidate = await verifyCandidate(candidateRoot);
 	const candidateBytes = await readFile(join(candidateRoot, 'release-candidate.json'));
-	const registry = registryArgument.replace(/\/+$/u, '');
-	const registryUrl = new URL(registry);
-	if (
-		registryUrl.protocol !== 'https:' &&
-		!(registryUrl.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(registryUrl.hostname))
-	) {
-		fail('Registry read-back requires HTTPS except for a local test registry.');
-	}
+	const registry = normalizeRegistry(registryArgument, 'Registry read-back');
 	const packages = [];
 	for (const packageEvidence of candidate.packages) {
 		const expected = candidate.expectedRegistry.packages[packageEvidence.name];
+		const packageUrl = `${registry}/${encodeURIComponent(packageEvidence.name)}`;
+		const packumentResponse = await fetch(packageUrl, {
+			signal: AbortSignal.timeout(30_000),
+		});
+		if (!packumentResponse.ok) {
+			fail(
+				`${packageEvidence.name} next tag read-back returned HTTP ${packumentResponse.status}.`,
+			);
+		}
+		const packument = await packumentResponse.json();
+		if (packument['dist-tags']?.next !== candidate.version) {
+			fail(`${packageEvidence.name} next does not identify ${candidate.version}.`);
+		}
+		if (packument['dist-tags']?.latest === candidate.version) {
+			fail(`${packageEvidence.name} latest unexpectedly identifies ${candidate.version}.`);
+		}
 		const metadataResponse = await fetch(
-			`${registry}/${encodeURIComponent(packageEvidence.name)}/${packageEvidence.version}`,
+			`${packageUrl}/${packageEvidence.version}`,
 			{ signal: AbortSignal.timeout(30_000) },
 		);
 		if (!metadataResponse.ok) {
@@ -748,6 +774,52 @@ export async function verifyRegistry(
 	};
 	await writeFile(resolve(outputPath), `${JSON.stringify(readback, null, 2)}\n`);
 	process.stdout.write(`${JSON.stringify({ packages: packages.length, registry })}\n`);
+}
+
+async function auditRegistry(candidatePath, registryArgument, outputPath) {
+	const candidateBytes = await readFile(resolve(candidatePath));
+	const candidate = JSON.parse(candidateBytes);
+	if (
+		candidate.schemaVersion !== 1 ||
+		typeof candidate.version !== 'string' ||
+		!Array.isArray(candidate.packages) ||
+		JSON.stringify(candidate.packages.map(({ name }) => name)) !== JSON.stringify(packageNames)
+	) {
+		fail('Release Candidate Chain manifest is invalid.');
+	}
+	const registry = normalizeRegistry(registryArgument, 'Registry audit');
+	const published = [];
+	const missing = [];
+	const unexpected = [];
+	for (const packageEvidence of candidate.packages) {
+		try {
+			const response = await fetch(
+				`${registry}/${encodeURIComponent(packageEvidence.name)}/${candidate.version}`,
+				{ signal: AbortSignal.timeout(30_000) },
+			);
+			if (response.ok) {
+				published.push(packageEvidence.name);
+			} else if (response.status === 404) {
+				missing.push(packageEvidence.name);
+			} else {
+				unexpected.push({ name: packageEvidence.name, status: response.status });
+			}
+		} catch {
+			unexpected.push({ name: packageEvidence.name, status: 'network-error' });
+		}
+	}
+	const audit = {
+		schemaVersion: 1,
+		candidateSha256: digest('sha256', candidateBytes),
+		completedAt: new Date().toISOString(),
+		missing,
+		published,
+		registry,
+		unexpected,
+		version: candidate.version,
+	};
+	await writeFile(resolve(outputPath), `${JSON.stringify(audit, null, 2)}\n`);
+	process.stdout.write(`${JSON.stringify(audit)}\n`);
 }
 
 async function recordGate(candidatePath, lane, outputPath, identitiesPath) {
@@ -910,15 +982,33 @@ async function finalizeEvidence(candidatePath, evidenceDirectory, outputPath) {
 async function verifyBootstrapRetirement(candidatePath, evidencePath) {
 	const candidateBytes = await readFile(resolve(candidatePath));
 	const evidence = await readJson(resolve(evidencePath));
+	const tokenCreatedAt = Date.parse(evidence.tokenCreatedAt);
+	const tokenExpiresAt = Date.parse(evidence.tokenExpiresAt);
+	const completedAt = Date.parse(evidence.completedAt);
 	if (
 		evidence.schemaVersion !== 1 ||
 		evidence.candidateSha256 !== digest('sha256', candidateBytes) ||
 		evidence.tokenRevoked !== true ||
 		evidence.environmentSecretDeleted !== true ||
+		evidence.tokenName !== 'n8n-nodes-yt-dlp-bootstrap-0.2.0' ||
+		evidence.tokenType !== 'granular' ||
+		evidence.packageAccess !== 'all-packages' ||
+		evidence.packagePermissions !== 'read-write' ||
+		evidence.organizationPermissions !== 'no-access' ||
+		evidence.bypassTwoFactorAuthentication !== true ||
+		evidence.environment !== 'npm-bootstrap' ||
+		evidence.secretName !== 'NPM_BOOTSTRAP_TOKEN' ||
+		evidence.verificationMethod !== 'operator-ui-read-back' ||
 		evidence.waived !== false ||
 		typeof evidence.actor !== 'string' ||
 		evidence.actor.length === 0 ||
-		Number.isNaN(Date.parse(evidence.completedAt))
+		Number.isNaN(tokenCreatedAt) ||
+		Number.isNaN(tokenExpiresAt) ||
+		Number.isNaN(completedAt) ||
+		tokenExpiresAt <= tokenCreatedAt ||
+		tokenExpiresAt - tokenCreatedAt > 24 * 60 * 60 * 1_000 ||
+		completedAt < tokenCreatedAt ||
+		completedAt > tokenExpiresAt
 	) {
 		fail('Bootstrap retirement must prove token revocation and environment-secret deletion.');
 	}
@@ -929,7 +1019,7 @@ async function verifyPromotion(candidateDirectory, registryArgument, outputPath)
 	const candidateRoot = resolve(candidateDirectory);
 	const candidate = await verifyCandidate(candidateRoot);
 	const candidateBytes = await readFile(join(candidateRoot, 'release-candidate.json'));
-	const registry = registryArgument.replace(/\/+$/u, '');
+	const registry = normalizeRegistry(registryArgument, 'Promotion read-back');
 	for (const packageEvidence of candidate.packages) {
 		const response = await fetch(`${registry}/${encodeURIComponent(packageEvidence.name)}`, {
 			signal: AbortSignal.timeout(30_000),
@@ -973,6 +1063,12 @@ async function main() {
 			}
 			await verifyRegistry(arguments_[0], arguments_[1], arguments_[2]);
 			break;
+		case 'audit-registry':
+			if (arguments_.length !== 3) {
+				fail('Usage: audit-registry <candidate.json> <registry-url> <output.json>');
+			}
+			await auditRegistry(arguments_[0], arguments_[1], arguments_[2]);
+			break;
 		case 'record-gate':
 			if (arguments_.length < 3 || arguments_.length > 4) {
 				fail('Usage: record-gate <candidate.json> <lane> <output.json> [identities.json]');
@@ -1005,7 +1101,7 @@ async function main() {
 			break;
 		default:
 			fail(
-				'Usage: release-candidate.mjs <build|verify|verify-registry|record-gate|verify-gate|verify-bootstrap-retirement|verify-promotion|finalize-evidence> ...',
+				'Usage: release-candidate.mjs <build|verify|verify-registry|audit-registry|record-gate|verify-gate|verify-bootstrap-retirement|verify-promotion|finalize-evidence> ...',
 			);
 	}
 }

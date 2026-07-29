@@ -23,6 +23,7 @@ describe('release workflow', () => {
 			'live-canary',
 			'publish-next',
 			'registry-readback',
+			'partial-publish-audit',
 			'bootstrap-token-retirement',
 			'acceptance-stack',
 			'release-evidence',
@@ -74,11 +75,36 @@ describe('release workflow', () => {
 		expect(job(workflow, 'bootstrap-token-retirement')).toContain(
 			'BOOTSTRAP_RETIREMENT_EVIDENCE_JSON',
 		);
+		expect(job(workflow, 'partial-publish-audit')).toContain('audit-registry');
+		expect(job(workflow, 'partial-publish-audit')).toContain(
+			"needs.publish-next.result != 'skipped'",
+		);
+		expect(job(workflow, 'bootstrap-token-retirement')).toContain('always()');
+		expect(job(workflow, 'bootstrap-token-retirement')).toContain('partial-publish-audit');
 		const promote = job(workflow, 'promote-latest');
 		expect(promote).toContain('verify-promotion');
 		expect(promote).not.toContain('NPM_BOOTSTRAP_TOKEN');
 		expect(promote).not.toContain('npm dist-tag add');
 		expect(workflow).not.toMatch(/\bnpm unpublish\b/u);
+	});
+
+	it('stops bootstrap after registry read-back and credential retirement', async () => {
+		const workflow = await readFile('.github/workflows/publish.yml', 'utf8');
+		for (const status of [
+			'hermetic',
+			'three-anchor',
+			'multiworker',
+			'capacity',
+			'official-ejs',
+			'live-canary',
+			'acceptance-stack',
+			'release-evidence',
+			'promote-latest',
+		]) {
+			expect(job(workflow, status), status).toContain(
+				"inputs.publish_mode == 'verify-existing'",
+			);
+		}
 	});
 
 	it('documents staged continuation, evidence, and non-unpublish rollback', async () => {

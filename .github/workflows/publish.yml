@@ -110,12 +110,10 @@ jobs:
     name: three-anchor
     if: >-
       always() &&
-      inputs.publish_mode != 'stage' &&
-      needs.registry-readback.result == 'success' &&
-      (inputs.publish_mode != 'bootstrap' || needs.bootstrap-token-retirement.result == 'success')
+      inputs.publish_mode == 'verify-existing' &&
+      needs.registry-readback.result == 'success'
     needs:
       - registry-readback
-      - bootstrap-token-retirement
     runs-on: [self-hosted, linux, x64, release-e2e]
     steps:
       - uses: actions/checkout@v7
@@ -149,12 +147,10 @@ jobs:
     name: multiworker
     if: >-
       always() &&
-      inputs.publish_mode != 'stage' &&
-      needs.registry-readback.result == 'success' &&
-      (inputs.publish_mode != 'bootstrap' || needs.bootstrap-token-retirement.result == 'success')
+      inputs.publish_mode == 'verify-existing' &&
+      needs.registry-readback.result == 'success'
     needs:
       - registry-readback
-      - bootstrap-token-retirement
     runs-on: [self-hosted, linux, x64, release-e2e]
     steps:
       - uses: actions/checkout@v7
@@ -188,12 +184,10 @@ jobs:
     name: capacity
     if: >-
       always() &&
-      inputs.publish_mode != 'stage' &&
-      needs.registry-readback.result == 'success' &&
-      (inputs.publish_mode != 'bootstrap' || needs.bootstrap-token-retirement.result == 'success')
+      inputs.publish_mode == 'verify-existing' &&
+      needs.registry-readback.result == 'success'
     needs:
       - registry-readback
-      - bootstrap-token-retirement
     runs-on: [self-hosted, linux, x64, release-capacity]
     steps:
       - uses: actions/checkout@v7
@@ -227,12 +221,10 @@ jobs:
     name: official-ejs
     if: >-
       always() &&
-      inputs.publish_mode != 'stage' &&
-      needs.registry-readback.result == 'success' &&
-      (inputs.publish_mode != 'bootstrap' || needs.bootstrap-token-retirement.result == 'success')
+      inputs.publish_mode == 'verify-existing' &&
+      needs.registry-readback.result == 'success'
     needs:
       - registry-readback
-      - bootstrap-token-retirement
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -265,12 +257,10 @@ jobs:
     name: live-canary
     if: >-
       always() &&
-      inputs.publish_mode != 'stage' &&
-      needs.registry-readback.result == 'success' &&
-      (inputs.publish_mode != 'bootstrap' || needs.bootstrap-token-retirement.result == 'success')
+      inputs.publish_mode == 'verify-existing' &&
+      needs.registry-readback.result == 'success'
     needs:
       - registry-readback
-      - bootstrap-token-retirement
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -360,13 +350,42 @@ jobs:
           path: registry-readback.json
           if-no-files-found: error
 
+  partial-publish-audit:
+    name: partial-publish-audit
+    if: >-
+      always() &&
+      inputs.publish_mode == 'bootstrap' &&
+      needs.publish-next.result != 'success' &&
+      needs.publish-next.result != 'skipped'
+    needs: publish-next
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: .release-candidate
+      - name: report exact package names after partial publication
+        run: |
+          node scripts/release-candidate.mjs audit-registry \
+            .release-candidate/release-candidate.json \
+            https://registry.npmjs.org \
+            partial-publish-audit.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: partial-publish-audit
+          path: partial-publish-audit.json
+          if-no-files-found: error
+
   bootstrap-token-retirement:
     name: bootstrap-token-retirement
     if: >-
       always() &&
-      inputs.publish_mode == 'bootstrap' &&
-      needs.registry-readback.result == 'success'
-    needs: registry-readback
+      inputs.publish_mode == 'bootstrap'
+    needs:
+      - publish-next
+      - registry-readback
+      - partial-publish-audit
     runs-on: ubuntu-24.04
     environment: npm-bootstrap-retirement
     steps:
@@ -394,12 +413,10 @@ jobs:
     name: hermetic
     if: >-
       always() &&
-      inputs.publish_mode != 'stage' &&
-      needs.registry-readback.result == 'success' &&
-      (inputs.publish_mode != 'bootstrap' || needs.bootstrap-token-retirement.result == 'success')
+      inputs.publish_mode == 'verify-existing' &&
+      needs.registry-readback.result == 'success'
     needs:
       - registry-readback
-      - bootstrap-token-retirement
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -449,12 +466,10 @@ jobs:
     name: acceptance-stack
     if: >-
       always() &&
-      inputs.publish_mode != 'stage' &&
-      needs.registry-readback.result == 'success' &&
-      (inputs.publish_mode != 'bootstrap' || needs.bootstrap-token-retirement.result == 'success')
+      inputs.publish_mode == 'verify-existing' &&
+      needs.registry-readback.result == 'success'
     needs:
       - registry-readback
-      - bootstrap-token-retirement
     runs-on: [self-hosted, linux, x64, acceptance-stack]
     environment: acceptance-stack
     steps:
@@ -484,7 +499,7 @@ jobs:
 
   release-evidence:
     name: release-evidence
-    if: always() && inputs.publish_mode != 'stage' && needs.acceptance-stack.result == 'success'
+    if: always() && inputs.publish_mode == 'verify-existing' && needs.acceptance-stack.result == 'success'
     needs:
       - source-delivery
       - hermetic
@@ -529,7 +544,7 @@ jobs:
 
   promote-latest:
     name: promote-latest
-    if: inputs.publish_mode != 'stage' && inputs.promote_latest
+    if: inputs.publish_mode == 'verify-existing' && inputs.promote_latest
     needs: release-evidence
     runs-on: ubuntu-24.04
     environment: npm-promotion

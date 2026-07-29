@@ -396,12 +396,26 @@ async function verifyPublishedAsset(bundle, description) {
 		fail(`The versioned source release is not published (GitHub HTTP ${response.status}).`);
 	const release = await response.json();
 	const asset = release.assets?.find(({ name }) => name === bundle.name);
+	const checksumName = `${bundle.name}.sha256`;
+	const checksumAsset = release.assets?.find(({ name }) => name === checksumName);
 	if (
 		asset?.state !== 'uploaded' ||
 		asset.digest !== `sha256:${bundle.sha256}` ||
-		asset.browser_download_url !== bundle.url
+		asset.browser_download_url !== bundle.url ||
+		checksumAsset?.state !== 'uploaded' ||
+		checksumAsset.browser_download_url !== `${bundle.url}.sha256`
 	) {
 		fail(`The published ${description} identity or GitHub digest does not match Toolchain Lock.`);
+	}
+	const checksumResponse = await fetch(checksumAsset.browser_download_url, {
+		headers: { 'User-Agent': 'n8n-nodes-yt-dlp-gate' },
+		signal: AbortSignal.timeout(30_000),
+	});
+	if (
+		!checksumResponse.ok ||
+		(await checksumResponse.text()) !== `${bundle.sha256}  ${bundle.name}\n`
+	) {
+		fail(`The published ${description} SHA-256 sidecar does not match Toolchain Lock.`);
 	}
 }
 
