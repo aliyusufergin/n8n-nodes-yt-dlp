@@ -440,9 +440,20 @@ describe('published Platform Gate packages', () => {
 						'docker.n8n.io/n8nio/n8n@sha256:6dd442962208ff080af3e0a8ab5254eb4c6138f2d188d4a7e3cf84eed3b7eae1',
 				}),
 				sourceGate: {
-					status: 'pending',
-					blockingReason:
-						'Platform publication requires a combined immutable runtime Corresponding Source Bundle, a clean isolated rebuild, and maintainer license-review evidence.',
+					status: 'passed',
+					bundle: {
+						name: 'n8n-nodes-yt-dlp-linux-runtime-source-0.2.0.tar.xz',
+						sha256: '9ffef7272744ddaa982cd960c95ae49a25bd4df689d3485f4b7e555759421ccc',
+						url: 'https://github.com/aliyusufergin/n8n-nodes-yt-dlp/releases/download/v0.2.0/n8n-nodes-yt-dlp-linux-runtime-source-0.2.0.tar.xz',
+					},
+					rebuildEvidence: {
+						path: 'toolchain/linux-x64/REBUILD-EVIDENCE.json',
+						sha256: 'dcb1ea5e705e6a12b63d0313bc890594ab49070d4ec84e2d20bef7895fee139b',
+					},
+					manualReview: {
+						path: 'toolchain/linux-x64/LICENSE-REVIEW.json',
+						sha256: 'a4686fc7dd5866825d5ea7280009f61b8a55920fb46637559a4470276545b619',
+					},
 				},
 			}),
 			expect.objectContaining({
@@ -472,9 +483,37 @@ describe('published Platform Gate packages', () => {
 	});
 
 	it('blocks platform publication while the Linux runtime source gate is pending', async () => {
+		const pendingRoot = join(fixtureDirectory, 'pending-runtime-gate');
+		await Promise.all([
+			mkdir(join(pendingRoot, 'scripts'), { recursive: true }),
+			mkdir(join(pendingRoot, 'packages', 'linux-x64'), { recursive: true }),
+		]);
+		const lock = JSON.parse(
+			await readFile(join(repositoryRoot, 'packages', 'linux-x64', 'TOOLCHAIN.lock.json'), 'utf8'),
+		) as { components: Array<{ name: string; sourceGate?: unknown }> };
+		const runtime = lock.components.find(({ name }) => name === 'linux-runtime');
+		if (runtime === undefined) throw new Error('The Linux runtime lock entry is missing.');
+		runtime.sourceGate = {
+			status: 'pending',
+			blockingReason: 'fixture',
+		};
+		await Promise.all([
+			cp(
+				join(repositoryRoot, 'scripts', 'ffmpeg-source-bundle.mjs'),
+				join(pendingRoot, 'scripts', 'ffmpeg-source-bundle.mjs'),
+			),
+			cp(
+				join(repositoryRoot, 'packages', 'linux-x64', 'execution-manifest.json'),
+				join(pendingRoot, 'packages', 'linux-x64', 'execution-manifest.json'),
+			),
+			writeFile(
+				join(pendingRoot, 'packages', 'linux-x64', 'TOOLCHAIN.lock.json'),
+				`${JSON.stringify(lock, null, '\t')}\n`,
+			),
+		]);
 		try {
 			await execFileAsync(process.execPath, [
-				join(repositoryRoot, 'scripts', 'ffmpeg-source-bundle.mjs'),
+				join(pendingRoot, 'scripts', 'ffmpeg-source-bundle.mjs'),
 				'verify-release',
 			]);
 			throw new Error('The release verification unexpectedly passed.');

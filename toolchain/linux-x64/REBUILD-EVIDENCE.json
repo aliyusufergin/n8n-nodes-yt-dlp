@@ -1,0 +1,82 @@
+{
+	"schemaVersion": 1,
+	"status": "passed",
+	"completedAt": "2026-07-29T09:37:40Z",
+	"networkMode": "none",
+	"bindings": {
+		"buildImage": "gcc@sha256:3e239a5ea77200b9163c825a0a5ebc17ca99f3bbb4d08241ee0fb9c174325880",
+		"buildScript": {
+			"path": "toolchain/linux-x64/build-runtime.sh",
+			"sha256": "48f9a44eebfd75adff894876ee5143cd9559b432f44158937247cb91f85935fa"
+		},
+		"launcherSource": {
+			"path": "toolchain/linux-x64/runtime-launcher.c",
+			"sha256": "bc6dd8ea6b0c92efe76c06b3e6ae87ff35e184517bb4e0901cdaaf41583712bf"
+		},
+		"muslRuntimeImage": "docker.n8n.io/n8nio/n8n@sha256:6dd442962208ff080af3e0a8ab5254eb4c6138f2d188d4a7e3cf84eed3b7eae1",
+		"runtimeImage": "ubuntu@sha256:0e0a0fc6d18feda9db1590da249ac93e8d5abfea8f4c3c0c849ce512b5ef8982",
+		"sourceBundleSha256": "9ffef7272744ddaa982cd960c95ae49a25bd4df689d3485f4b7e555759421ccc",
+		"sourceInputs": [
+			{
+				"name": "glibc_2.35.orig.tar.xz",
+				"sha256": "5123732f6b67ccd319305efd399971d58592122bcc2a6518a1bd2510dd0cf52e"
+			},
+			{
+				"name": "glibc_2.35-0ubuntu3.13.debian.tar.xz",
+				"sha256": "28173285cf885df068374baf9b513ede397988ea3f93a1377f0268fe257a62f4"
+			},
+			{
+				"name": "glibc_2.36.orig.tar.xz",
+				"sha256": "a543c02070d46ccaf866957efd13f10c924daa74c86a90a0254db09a92a708ee"
+			},
+			{
+				"name": "glibc_2.36-9+deb12u14.debian.tar.xz",
+				"sha256": "cf4ac9cd98185452cae3ef34e2e4ee12753e3d93fd0c62c61396d4a47eec902f"
+			},
+			{
+				"name": "gcc-12_12.3.0.orig.tar.gz",
+				"sha256": "62b0fc89b6d41f9df2470d0fb4995f6ff5885f910518a2c6a44a6888ea5a9ea1"
+			},
+			{
+				"name": "gcc-12_12.3.0-1ubuntu1~22.04.3.debian.tar.xz",
+				"sha256": "44074c3d5e7d97365f1f7b45291ade2ee40ed6300176530d912e7cc0ceba77ab"
+			},
+			{
+				"name": "zlib_1.2.11.dfsg.orig.tar.gz",
+				"sha256": "80c481411a4fe8463aeb8270149a0e80bb9eaf7da44132b6e16f2b5af01bc899"
+			},
+			{
+				"name": "zlib_1.2.11.dfsg-2ubuntu9.2.debian.tar.xz",
+				"sha256": "5678d0b3d1e609297e5a3dedfcb3474bab1cafe82c0c29aec2cef01e49a88d39"
+			},
+			{
+				"name": "musl-1.2.5.tar.gz",
+				"sha256": "a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4"
+			},
+			{
+				"name": "zlib-1.3.2.tar.gz",
+				"sha256": "bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16"
+			}
+		]
+	},
+	"outputs": {
+		"bin/yt-dlp": "3c8d72c82d8e6caad2a171c34ef82895a3a2d6d6a4925fe02ce1e3347879088b",
+		"bin/ffmpeg": "3c8d72c82d8e6caad2a171c34ef82895a3a2d6d6a4925fe02ce1e3347879088b",
+		"bin/ffprobe": "3c8d72c82d8e6caad2a171c34ef82895a3a2d6d6a4925fe02ce1e3347879088b",
+		"bin/deno": "3c8d72c82d8e6caad2a171c34ef82895a3a2d6d6a4925fe02ce1e3347879088b",
+		"runtime/musl/ld-musl-x86_64.so.1": "1cc5c3f502179e2a4befae29658fb109102effefc75742893aa4a449fd3fbb03",
+		"runtime/musl/libz.so.1": "773b12b255243da0012fb837432632fbc94621cb50c7ff521f4e24ae27dbe341",
+		"runtime/glibc/ld-linux-x86-64.so.2": "9eb34cb2da3ae2a9398cc09b3cd2d069563ec40d9858cb711af15cd23fa80abf",
+		"runtime/glibc/libc.so.6": "c53819710b163d3f1d2541778590d58d3ef31cb0ed75adcbe059faac68c1e72d",
+		"runtime/glibc/libdl.so.2": "bf1783273aa79484bf5f70eddc013bc3982785d8aadef224aa09beb08fa95b42",
+		"runtime/glibc/libgcc_s.so.1": "fc9d43b2f6c20e53b009238f767c5b949d202389e20de9e202ea684b4ba3729a",
+		"runtime/glibc/libm.so.6": "00830df310aac5023e10bd7b715149ab8ddc682277fd8ae3539a7a44fcdd6c38",
+		"runtime/glibc/libmvec.so.1": "6f206561fc33eacfdd2d4df81949d372c0b233a68fac8f08808f4c6c52c6e737",
+		"runtime/glibc/libnss_dns.so.2": "b5d11c935472be35b59c0c9d15bf01f5c94e02dfd200883e9e993da09c7b73ea",
+		"runtime/glibc/libnss_files.so.2": "423f14091ddbd452eac7d1944cb0efd2969d5ec8707a975b2055658070d5c51a",
+		"runtime/glibc/libpthread.so.0": "16e807d47ff2441f0203fb2b8805d471e555d932d3d8d262ec6a58ea1d640fd8",
+		"runtime/glibc/libresolv.so.2": "0f40debbe0184c3a2b2f90ecb5aa7d499cae96e9d84e2859f866e5ed6e3018f8",
+		"runtime/glibc/librt.so.1": "c8124d69d67c4f94c162c36550c9244d60e2e368ecae98857754e3ba11824677",
+		"runtime/glibc/libz.so.1": "64c206f0146cc58bbddc4f22054436f4ff278f5a554aa3ce6921ddf7e9133370"
+	}
+}

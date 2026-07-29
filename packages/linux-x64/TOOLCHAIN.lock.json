@@ -107,8 +107,20 @@
 			],
 			"license": "LGPL-2.1-or-later AND GPL-3.0-or-later WITH GCC-exception-3.1 AND Zlib AND MIT",
 			"sourceGate": {
-				"status": "pending",
-				"blockingReason": "Platform publication requires a combined immutable runtime Corresponding Source Bundle, a clean isolated rebuild, and maintainer license-review evidence."
+				"status": "passed",
+				"bundle": {
+					"name": "n8n-nodes-yt-dlp-linux-runtime-source-0.2.0.tar.xz",
+					"sha256": "9ffef7272744ddaa982cd960c95ae49a25bd4df689d3485f4b7e555759421ccc",
+					"url": "https://github.com/aliyusufergin/n8n-nodes-yt-dlp/releases/download/v0.2.0/n8n-nodes-yt-dlp-linux-runtime-source-0.2.0.tar.xz"
+				},
+				"rebuildEvidence": {
+					"path": "toolchain/linux-x64/REBUILD-EVIDENCE.json",
+					"sha256": "dcb1ea5e705e6a12b63d0313bc890594ab49070d4ec84e2d20bef7895fee139b"
+				},
+				"manualReview": {
+					"path": "toolchain/linux-x64/LICENSE-REVIEW.json",
+					"sha256": "a4686fc7dd5866825d5ea7280009f61b8a55920fb46637559a4470276545b619"
+				}
 			},
 			"sourceBundles": [
 				{
