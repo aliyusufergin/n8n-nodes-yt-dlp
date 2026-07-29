@@ -183,6 +183,7 @@ async function validateArtifactSet(
 					descriptorStat.nlink !== 1 ||
 					descriptorStat.dev !== pathStat.dev ||
 					descriptorStat.ino !== pathStat.ino ||
+					descriptorStat.size !== pathStat.size ||
 					(await realpath(dirname(artifactPath))) !== directory.realPath
 				) {
 					throw invalidArtifactSet();

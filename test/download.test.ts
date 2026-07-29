@@ -884,7 +884,7 @@ describe('download request', () => {
 		await expectInvalidArtifactFixture(fixtureSource);
 	});
 
-	it.each(['regular-file replacement', 'symlink replacement'])(
+	it.each(['regular-file mutation', 'symlink replacement'])(
 		'rejects a %s between lstat and descriptor validation',
 		async (replacementKind) => {
 			const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-race-test-'));
@@ -898,8 +898,8 @@ describe('download request', () => {
 			artifactRaceControl.afterLstat = async (artifactPath) => {
 				if (!artifactPath.endsWith('000001-race.mp4')) return;
 				artifactRaceControl.afterLstat = undefined;
-				await unlink(artifactPath);
 				if (replacementKind === 'symlink replacement') {
+					await unlink(artifactPath);
 					await symlink(replacementPath, artifactPath);
 				} else {
 					await writeFile(artifactPath, 'replacement');
