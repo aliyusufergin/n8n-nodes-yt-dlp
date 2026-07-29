@@ -32,9 +32,8 @@ downloads and remote components, and must record actual packaged-Deno challenge 
 `inconclusive` is blocking, including network and rate-limit outcomes.
 
 `source-delivery` runs the release verifier before `publish-next`. It checks the direct versioned
-GitHub source asset and digest, clean isolated-rebuild evidence, manual license-review bindings,
-component inventory, notices, licenses, and the Linux runtime source gate. While the Toolchain Lock
-records that runtime gate as pending, publication remains intentionally blocked.
+GitHub source assets and digests, clean isolated-rebuild evidence, manual license-review bindings,
+component inventory, notices, licenses, and the passed Linux runtime source gate.
 
 The narrow real acceptance environment is approval-protected and uses a dedicated self-hosted
 runner. Its operator places already-completed, candidate-bound evidence in the protected

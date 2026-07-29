@@ -9,6 +9,7 @@ package are listed below. Their SHA-256 values are also recorded in `TOOLCHAIN.l
 | Deno `v2.9.3`                                                      | <https://github.com/denoland/deno/releases/download/v2.9.3/deno_src.tar.gz>                                              | `58da10e48968a80a6c205b31584d1f1f4583226e59ebb08cb3783b12e7f22d4d` |
 | yt-dlp-ejs `0.8.0`                                                 | <https://github.com/yt-dlp/ejs/releases/download/0.8.0/yt_dlp_ejs-0.8.0.tar.gz>                                          | `d5fa1639f63b5c4af8d932495f60689d5370f1a095782c944f7f62a303eb104e` |
 | FFmpeg `N-125551-ga09be9b91e-20260712` and all static dependencies | <https://github.com/aliyusufergin/n8n-nodes-yt-dlp/releases/download/v0.2.0/n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz> | `3dcd8963e229e3b34fb9d0d969377e59e25a01146fd128282ad599200034e882` |
+| Combined Linux compatibility runtime                               | <https://github.com/aliyusufergin/n8n-nodes-yt-dlp/releases/download/v0.2.0/n8n-nodes-yt-dlp-linux-runtime-source-0.2.0.tar.xz> | `9ffef7272744ddaa982cd960c95ae49a25bd4df689d3485f4b7e555759421ccc` |
 | Runtime glibc `2.35-0ubuntu3.13` upstream                           | <https://launchpad.net/ubuntu/+archive/primary/+sourcefiles/glibc/2.35-0ubuntu3.13/glibc_2.35.orig.tar.xz>                | `5123732f6b67ccd319305efd399971d58592122bcc2a6518a1bd2510dd0cf52e` |
 | Runtime glibc `2.35-0ubuntu3.13` packaging                          | <https://launchpad.net/ubuntu/+archive/primary/+sourcefiles/glibc/2.35-0ubuntu3.13/glibc_2.35-0ubuntu3.13.debian.tar.xz> | `28173285cf885df068374baf9b513ede397988ea3f93a1377f0268fe257a62f4` |
 | Launcher glibc `2.36-9+deb12u14` upstream                           | <https://snapshot.debian.org/archive/debian/20260503T204801Z/pool/main/g/glibc/glibc_2.36.orig.tar.xz>                   | `a543c02070d46ccaf866957efd13f10c924daa74c86a90a0254db09a92a708ee` |
@@ -33,13 +34,11 @@ only the enumerated runtime libraries from the pinned Ubuntu and n8n images. The
 source/script digests, binary package versions, and identified source archive digests are frozen in
 `TOOLCHAIN.lock.json`.
 
-The listed runtime source inputs do not yet constitute ADR 0024's complete Source Delivery Gate.
-Platform publication is intentionally blocked until one immutable, versioned runtime Corresponding
-Source Bundle includes the exact distribution source trees and patches, generated/configure inputs,
-and build/install scripts, and until clean isolated-rebuild evidence and maintainer license-review
-approval are bound to that bundle. `TOOLCHAIN.lock.json` records this gate as `pending`; the release
-verification command fails closed while it remains pending. The local n8n 2.27.4 acceptance lane
-does not claim public-registry or release readiness.
+The immutable, versioned Linux runtime bundle contains the listed distribution sources and patches,
+the exact launcher source, build script, frozen package/toolchain identities, and rebuild
+instructions. `TOOLCHAIN.lock.json` binds its GitHub Release URL and SHA-256 to successful clean
+isolated-rebuild evidence and the maintainer's approved license review. The release verifier reads
+the published asset digest back before allowing Platform Package publication.
 
 The versioned source bundle must be uploaded and its SHA-256 verified before this platform package
 is published. Upstream repositories, mutable branches, downloader scripts, or source-on-request are

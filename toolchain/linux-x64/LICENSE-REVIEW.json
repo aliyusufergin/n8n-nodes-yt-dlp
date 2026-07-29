@@ -1,0 +1,52 @@
+{
+	"schemaVersion": 1,
+	"status": "approved",
+	"reviewer": "aliyusufergin",
+	"reviewedAt": "2026-07-29T09:42:52Z",
+	"bindings": {
+		"license": "LGPL-2.1-or-later AND GPL-3.0-or-later WITH GCC-exception-3.1 AND Zlib AND MIT",
+		"sourceBundleSha256": "9ffef7272744ddaa982cd960c95ae49a25bd4df689d3485f4b7e555759421ccc",
+		"sourceInputs": [
+			{
+				"name": "glibc_2.35.orig.tar.xz",
+				"sha256": "5123732f6b67ccd319305efd399971d58592122bcc2a6518a1bd2510dd0cf52e"
+			},
+			{
+				"name": "glibc_2.35-0ubuntu3.13.debian.tar.xz",
+				"sha256": "28173285cf885df068374baf9b513ede397988ea3f93a1377f0268fe257a62f4"
+			},
+			{
+				"name": "glibc_2.36.orig.tar.xz",
+				"sha256": "a543c02070d46ccaf866957efd13f10c924daa74c86a90a0254db09a92a708ee"
+			},
+			{
+				"name": "glibc_2.36-9+deb12u14.debian.tar.xz",
+				"sha256": "cf4ac9cd98185452cae3ef34e2e4ee12753e3d93fd0c62c61396d4a47eec902f"
+			},
+			{
+				"name": "gcc-12_12.3.0.orig.tar.gz",
+				"sha256": "62b0fc89b6d41f9df2470d0fb4995f6ff5885f910518a2c6a44a6888ea5a9ea1"
+			},
+			{
+				"name": "gcc-12_12.3.0-1ubuntu1~22.04.3.debian.tar.xz",
+				"sha256": "44074c3d5e7d97365f1f7b45291ade2ee40ed6300176530d912e7cc0ceba77ab"
+			},
+			{
+				"name": "zlib_1.2.11.dfsg.orig.tar.gz",
+				"sha256": "80c481411a4fe8463aeb8270149a0e80bb9eaf7da44132b6e16f2b5af01bc899"
+			},
+			{
+				"name": "zlib_1.2.11.dfsg-2ubuntu9.2.debian.tar.xz",
+				"sha256": "5678d0b3d1e609297e5a3dedfcb3474bab1cafe82c0c29aec2cef01e49a88d39"
+			},
+			{
+				"name": "musl-1.2.5.tar.gz",
+				"sha256": "a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4"
+			},
+			{
+				"name": "zlib-1.3.2.tar.gz",
+				"sha256": "bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16"
+			}
+		]
+	}
+}
