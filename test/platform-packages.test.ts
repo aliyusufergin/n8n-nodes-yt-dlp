@@ -68,6 +68,10 @@ interface PackageMetadata {
 	name: string;
 	optionalDependencies?: Record<string, string>;
 	os?: string[];
+	repository?: {
+		type: string;
+		url: string;
+	};
 	scripts?: Record<string, string>;
 	version: string;
 }
@@ -670,6 +674,10 @@ describe('published Platform Gate packages', () => {
 			},
 		});
 		for (const metadata of [main, selector, platform]) {
+			expect(metadata?.repository).toEqual({
+				type: 'git',
+				url: 'https://github.com/aliyusufergin/n8n-nodes-yt-dlp.git',
+			});
 			expect(metadata).not.toHaveProperty('libc');
 			expect(metadata).not.toHaveProperty('bin');
 			for (const lifecycle of ['preinstall', 'install', 'postinstall']) {

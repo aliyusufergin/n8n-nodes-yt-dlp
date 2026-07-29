@@ -3,6 +3,10 @@
 	"version": "0.2.0",
 	"description": "Pinned Linux x64 toolchain for n8n-nodes-yt-dlp",
 	"license": "SEE LICENSE IN LICENSES.md",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/aliyusufergin/n8n-nodes-yt-dlp.git"
+	},
 	"os": [
 		"linux"
 	],

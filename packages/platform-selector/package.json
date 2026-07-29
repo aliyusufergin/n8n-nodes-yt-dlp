@@ -3,6 +3,10 @@
 	"version": "0.2.0",
 	"description": "Platform selector for n8n-nodes-yt-dlp",
 	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/aliyusufergin/n8n-nodes-yt-dlp.git"
+	},
 	"os": [
 		"linux"
 	],

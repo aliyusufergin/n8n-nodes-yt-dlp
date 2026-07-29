@@ -23,7 +23,6 @@ import { createGunzip } from 'node:zlib';
 
 const execFileAsync = promisify(execFile);
 const require = createRequire(import.meta.url);
-const { path7za } = require('7zip-bin');
 const repositoryRoot = resolve(import.meta.dirname, '..');
 const packageDirectories = ['packages/linux-x64', 'packages/platform-selector', '.'];
 const packageNames = [
@@ -139,6 +138,7 @@ function canonicalJson(value) {
 }
 
 export async function recompressPlatformTarball(tarballPath, temporaryRoot) {
+	const { path7za } = require('7zip-bin');
 	const tarPath = join(temporaryRoot, 'n8n-nodes-yt-dlp-linux-x64.tar');
 	const optimizedPath = `${tarballPath}.optimized`;
 	await pipeline(createReadStream(tarballPath), createGunzip(), createWriteStream(tarPath));
