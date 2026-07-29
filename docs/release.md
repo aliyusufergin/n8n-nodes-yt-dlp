@@ -1,6 +1,6 @@
 # Release Candidate Chain
 
-`.github/workflows/publish.yml` is the only publication path for v0.2.0. Run it from the exact
+`.github/workflows/publish.yml` is the normal publication path for v0.2.0. Run it from the exact
 release commit. The `candidate` job performs a clean npm install and build, packs the Platform
 Package, Platform Selector, and main package once in dependency order, then records every tarball
 digest, file digest/mode, package metadata, Toolchain Lock identity, Corresponding Source identity,
@@ -124,6 +124,32 @@ The bootstrap workflow completes after that protected proof passes. Public-packa
 under `verify-existing`; promotion never receives or reuses the bootstrap token. Delete
 `BOOTSTRAP_RETIREMENT_EVIDENCE_JSON` after the protected job passes. Hosted-runner workspaces are
 ephemeral, and workflow artifacts expire under their configured retention periods.
+
+### Partial bootstrap recovery
+
+Use `.github/workflows/recover-bootstrap.yml` only for the recorded partial publication from
+run `30467323585`: the exact `0.2.0` Platform Package and Platform Selector are public, while the
+main package is missing. The recovery pins candidate manifest SHA-256
+`23b019830d524fe9a0cce7a50e78c5e505355a8df1f41c53167ce7884e3012db` and Rekor log index
+`2281202262`. It re-runs the GitHub source-asset and checksum read-back, verifies both dependency
+packages against the candidate, reconstructs and verifies the original main-package Sigstore bundle,
+and uses the existing `NPM_BOOTSTRAP_TOKEN` only inside the protected `npm-bootstrap` Environment.
+Do not create another token.
+
+Dispatch
+`gh workflow run recover-bootstrap.yml --ref bootstrap-recovery-0.2.0`, then approve the protected
+publication job after its preparation succeeds. Before approval, verify that the exact recovery tag
+still identifies the reviewed recovery commit; do not substitute a mutable branch. The job publishes
+only the main tarball when it is missing; an exact already-published main package skips publication
+so interrupted tag cleanup can be retried.
+npm may create `latest` automatically for a first package version, so recovery removes `latest` only
+when it identifies exact `0.2.0`, then performs full candidate-bound registry read-back. Any publish,
+permission, or cleanup failure stops without broadening token scope and uploads
+`partial-publish-audit` with exact package names. Never unpublish a recovered package.
+
+After successful read-back, revoke that same granular token, delete `NPM_BOOTSTRAP_TOKEN`, record the
+existing retirement evidence, and approve `bootstrap-token-retirement`. No retirement is requested
+after a failed recovery, so the same short-lived token can be used for a corrected retry.
 
 For later Trusted Publisher releases, choose `stage`. The protected `npm-release` environment uses
 OIDC and `npm stage publish`; the workflow stops after staging so a maintainer can inspect and

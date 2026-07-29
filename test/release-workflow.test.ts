@@ -111,6 +111,28 @@ describe('release workflow', () => {
 		}
 	});
 
+	it('recovers only the missing main package from the original signed candidate', async () => {
+		const workflow = await readFile('.github/workflows/recover-bootstrap.yml', 'utf8');
+		expect(workflow).toContain('environment: npm-bootstrap');
+		expect(workflow).toContain('run-id: ${{ env.ORIGINAL_RUN_ID }}');
+		expect(workflow).toContain('github-token: ${{ github.token }}');
+		expect(workflow).toContain('bootstrap-recovery.mjs prepare');
+		expect(workflow).toContain('npm run verify:ffmpeg-release');
+		expect(workflow).toContain('bootstrap-recovery-state.json');
+		expect(workflow).toContain('n8n-nodes-yt-dlp-${VERSION}.tgz');
+		expect(workflow).toContain('--provenance-file');
+		expect(workflow).toContain('verify-registry');
+		expect(workflow).toContain('partial-publish-audit');
+		expect(workflow).toContain('audit-registry');
+		expect(workflow).toContain('BOOTSTRAP_RETIREMENT_EVIDENCE_JSON');
+		expect(workflow).toContain('environment: npm-bootstrap-retirement');
+		expect(workflow).not.toContain('n8n-nodes-yt-dlp-linux-x64-${VERSION}.tgz');
+		expect(workflow).not.toContain('n8n-nodes-yt-dlp-platform-${VERSION}.tgz');
+		expect(workflow).toContain('npm dist-tag rm "$package" latest');
+		expect(workflow.match(/remove_latest n8n-nodes-yt-dlp/gu)).toHaveLength(3);
+		expect(workflow).not.toMatch(/\bnpm unpublish\b/u);
+	});
+
 	it('documents staged continuation, evidence, and non-unpublish rollback', async () => {
 		const documentation = await readFile('docs/release.md', 'utf8');
 		for (const required of [
@@ -123,6 +145,9 @@ describe('release workflow', () => {
 			'deprecate',
 			'new patch',
 			'Never use `npm unpublish`',
+			'recover-bootstrap.yml',
+			'gh workflow run recover-bootstrap.yml --ref bootstrap-recovery-0.2.0',
+			'exact recovery tag',
 		]) {
 			expect(documentation).toContain(required);
 		}

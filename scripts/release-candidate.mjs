@@ -534,7 +534,7 @@ async function buildCandidate(outputDirectory) {
 	process.stdout.write(`${JSON.stringify({ commit, outputRoot, version })}\n`);
 }
 
-async function verifyCandidate(candidateDirectory) {
+export async function verifyCandidate(candidateDirectory) {
 	const candidateRoot = resolve(candidateDirectory);
 	const candidate = await readJson(join(candidateRoot, 'release-candidate.json'));
 	if (

@@ -1,0 +1,199 @@
+name: v0.2.0 Bootstrap Publication Recovery
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: release-0.2.0
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: read
+
+env:
+  NODE_VERSION: 24.16.0
+  NPM_VERSION: 11.16.0
+  ORIGINAL_RUN_ID: 30467323585
+  VERSION: 0.2.0
+
+jobs:
+  prepare:
+    name: prepare signed recovery
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          lfs: true
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm ci
+      - run: npm run verify:ffmpeg-release
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: .release-candidate
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.ORIGINAL_RUN_ID }}
+      - run: |
+          node scripts/bootstrap-recovery.mjs prepare \
+            .release-candidate \
+            https://registry.npmjs.org \
+            bootstrap-recovery.sigstore \
+            bootstrap-recovery-state.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: bootstrap-recovery-provenance
+          path: |
+            bootstrap-recovery.sigstore
+            bootstrap-recovery-state.json
+          if-no-files-found: error
+
+  publish-main:
+    name: publish missing main package
+    needs: prepare
+    runs-on: ubuntu-24.04
+    environment: npm-bootstrap
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: .release-candidate
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.ORIGINAL_RUN_ID }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: bootstrap-recovery-provenance
+          path: .bootstrap-recovery
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: https://registry.npmjs.org
+      - run: npm install --global "npm@$NPM_VERSION"
+      - name: publish only the missing main package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_BOOTSTRAP_TOKEN }}
+        run: |
+          remove_latest() {
+            package="$1"
+            latest="$(npm view "$package" dist-tags.latest --json)"
+            if [ -z "$latest" ] || [ "$latest" = null ]; then
+              return
+            fi
+            if [ "$latest" != "\"$VERSION\"" ]; then
+              echo "::error::$package latest unexpectedly identifies $latest"
+              return 1
+            fi
+            npm dist-tag rm "$package" latest
+          }
+          publication_required="$(
+            node --print \
+              "require('./.bootstrap-recovery/bootstrap-recovery-state.json').publicationRequired"
+          )"
+          if [ "$publication_required" = true ]; then
+            npm publish \
+              ".release-candidate/tarballs/n8n-nodes-yt-dlp-${VERSION}.tgz" \
+              --provenance-file .bootstrap-recovery/bootstrap-recovery.sigstore \
+              --tag next \
+              --access public
+          elif [ "$publication_required" != false ]; then
+            echo "::error::Invalid bootstrap recovery publication state"
+            exit 1
+          fi
+          remove_latest n8n-nodes-yt-dlp-linux-x64
+          remove_latest n8n-nodes-yt-dlp-platform
+          remove_latest n8n-nodes-yt-dlp
+
+  registry-readback:
+    name: registry read-back
+    needs: publish-main
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm ci
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: .release-candidate
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.ORIGINAL_RUN_ID }}
+      - run: |
+          node scripts/release-candidate.mjs verify-registry \
+            .release-candidate \
+            https://registry.npmjs.org \
+            bootstrap-recovery-readback.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: bootstrap-recovery-readback
+          path: bootstrap-recovery-readback.json
+          if-no-files-found: error
+
+  partial-publish-audit:
+    name: partial-publish-audit
+    if: >-
+      always() &&
+      needs.publish-main.result != 'success' &&
+      needs.publish-main.result != 'skipped'
+    needs: publish-main
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: .release-candidate
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.ORIGINAL_RUN_ID }}
+      - run: |
+          node scripts/release-candidate.mjs audit-registry \
+            .release-candidate/release-candidate.json \
+            https://registry.npmjs.org \
+            partial-publish-audit.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: partial-publish-audit
+          path: partial-publish-audit.json
+          if-no-files-found: error
+
+  bootstrap-token-retirement:
+    name: bootstrap-token-retirement
+    if: always() && needs.registry-readback.result == 'success'
+    needs:
+      - publish-main
+      - registry-readback
+      - partial-publish-audit
+    runs-on: ubuntu-24.04
+    environment: npm-bootstrap-retirement
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: .release-candidate
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.ORIGINAL_RUN_ID }}
+      - name: verify bootstrap token revocation and environment-secret deletion
+        env:
+          BOOTSTRAP_RETIREMENT_EVIDENCE_JSON: ${{ secrets.BOOTSTRAP_RETIREMENT_EVIDENCE_JSON }}
+        run: |
+          test -n "$BOOTSTRAP_RETIREMENT_EVIDENCE_JSON"
+          printf '%s\n' "$BOOTSTRAP_RETIREMENT_EVIDENCE_JSON" > bootstrap-token-retirement.json
+          node scripts/release-candidate.mjs verify-bootstrap-retirement \
+            .release-candidate/release-candidate.json \
+            bootstrap-token-retirement.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gate-bootstrap-token-retirement
+          path: bootstrap-token-retirement.json
+          if-no-files-found: error
