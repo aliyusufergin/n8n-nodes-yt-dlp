@@ -9,6 +9,8 @@ import { promisify } from 'node:util';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { npmPublishEnvelopeBytes } from '../scripts/release-candidate.mjs';
+
 const execFileAsync = promisify(execFile);
 const repositoryRoot = resolve('.');
 const requiredLanes = [
@@ -22,6 +24,7 @@ const requiredLanes = [
 	'registry-readback',
 	'acceptance-stack',
 ] as const;
+const npmPublishEnvelopeLimitBytes = 250 * 1024 * 1024;
 const imagesByLane: Partial<Record<(typeof requiredLanes)[number], string[]>> = {
 	'acceptance-stack': [
 		'docker.n8n.io/n8nio/n8n@sha256:6dd442962208ff080af3e0a8ab5254eb4c6138f2d188d4a7e3cf84eed3b7eae1',
@@ -80,7 +83,7 @@ interface CandidateManifest {
 		bundles: Array<{ checksumUrl: string; name: string; sha256: string; url: string }>;
 	};
 	toolchain: {
-		buildTools: { node: string; npm: string };
+		buildTools: { node: string; npm: string; sevenZip: string };
 		components: string[];
 		executionManifestSha256: string;
 		lockSha256: string;
@@ -163,6 +166,17 @@ afterAll(async () => {
 });
 
 describe('immutable Release Candidate Chain', () => {
+	it('fits the platform tarball inside the bounded npm publish request envelope', () => {
+		const platform = manifest.packages.find(
+			({ name }) => name === 'n8n-nodes-yt-dlp-linux-x64',
+		);
+		expect(platform).toBeDefined();
+
+		expect(npmPublishEnvelopeBytes(platform!.sizeBytes)).toBeLessThanOrEqual(
+			npmPublishEnvelopeLimitBytes,
+		);
+	});
+
 	it('builds and attests the exact three-package chain for registry read-back', async () => {
 		expect(manifest).toMatchObject({
 			schemaVersion: 1,
@@ -217,6 +231,7 @@ describe('immutable Release Candidate Chain', () => {
 			buildTools: {
 				node: expect.stringMatching(/^v\d+\./u),
 				npm: expect.stringMatching(/^\d+\.\d+\.\d+$/u),
+				sevenZip: '5.2.0',
 			},
 			components: ['yt-dlp', 'ffmpeg', 'deno', 'linux-runtime', 'yt-dlp-ejs'],
 			executionManifestSha256: expect.stringMatching(/^[0-9a-f]{64}$/u),

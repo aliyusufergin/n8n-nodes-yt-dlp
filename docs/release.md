@@ -61,6 +61,9 @@ Before the one-time bootstrap, the operator must record this exact plan:
   prefix.
 - npm targets, in order: `n8n-nodes-yt-dlp-linux-x64@0.2.0`,
   `n8n-nodes-yt-dlp-platform@0.2.0`, and `n8n-nodes-yt-dlp@0.2.0`.
+- Candidate construction recompresses the unchanged Platform Package tar members with exact
+  `7zip-bin@5.2.0` gzip settings and fails closed unless the Base64 tarball plus a 1 MiB metadata
+  budget fits within a 250 MiB publish-request envelope.
 - In npm's Access Tokens UI, create a one-day granular token named
   `n8n-nodes-yt-dlp-bootstrap-0.2.0`, with bypass-2FA, read/write access to all
   packages, and no organization access. All-package access is the minimum available authority

@@ -1,12 +1,29 @@
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { lstat, mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
+import { createReadStream, createWriteStream } from 'node:fs';
+import {
+	chmod,
+	lstat,
+	mkdir,
+	mkdtemp,
+	readFile,
+	readdir,
+	rename,
+	rm,
+	utimes,
+	writeFile,
+} from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
+import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import { createGunzip } from 'node:zlib';
 
 const execFileAsync = promisify(execFile);
+const require = createRequire(import.meta.url);
+const { path7za } = require('7zip-bin');
 const repositoryRoot = resolve(import.meta.dirname, '..');
 const packageDirectories = ['packages/linux-x64', 'packages/platform-selector', '.'];
 const packageNames = [
@@ -30,6 +47,8 @@ const provenancePredicateType = 'https://slsa.dev/provenance/v1';
 const releaseRepository = 'https://github.com/aliyusufergin/n8n-nodes-yt-dlp';
 const releaseWorkflowPath = '.github/workflows/publish.yml';
 const githubActionsIssuer = 'https://token.actions.githubusercontent.com';
+const npmPublishEnvelopeLimitBytes = 250 * 1024 * 1024;
+const npmPublishMetadataBudgetBytes = 1024 * 1024;
 const hermeticImage =
 	'node@sha256:8d3442d5f074940723be6eece34e992eb147ba1f59c73888e8f257918dea2e78';
 const imageIdentitiesByLane = {
@@ -117,6 +136,34 @@ function canonicalJson(value) {
 		);
 	}
 	return value;
+}
+
+export async function recompressPlatformTarball(tarballPath, temporaryRoot) {
+	const tarPath = join(temporaryRoot, 'n8n-nodes-yt-dlp-linux-x64.tar');
+	const optimizedPath = `${tarballPath}.optimized`;
+	await pipeline(createReadStream(tarballPath), createGunzip(), createWriteStream(tarPath));
+	await utimes(tarPath, 0, 0);
+	await chmod(path7za, 0o755);
+	await run(path7za, [
+		'a',
+		'-tgzip',
+		'-mx=9',
+		'-mfb=128',
+		'-mpass=1',
+		optimizedPath,
+		tarPath,
+	]);
+	await rename(optimizedPath, tarballPath);
+}
+
+export function npmPublishEnvelopeBytes(tarballSizeBytes) {
+	return Math.ceil(tarballSizeBytes / 3) * 4 + npmPublishMetadataBudgetBytes;
+}
+
+function assertPublishEnvelope(packageName, tarballSizeBytes) {
+	if (npmPublishEnvelopeBytes(tarballSizeBytes) > npmPublishEnvelopeLimitBytes) {
+		fail(`${packageName} exceeds the bounded npm publish request envelope.`);
+	}
 }
 
 function jsonEqual(left, right) {
@@ -306,6 +353,9 @@ async function buildCandidate(outputDirectory) {
 			const packed = Array.isArray(result) ? result[0] : Object.values(result)[0];
 			if (!packed?.filename) fail(`npm pack returned no tarball for ${packageDirectory}.`);
 			const tarballPath = join(tarballRoot, packed.filename);
+			if (packageDirectory === 'packages/linux-x64') {
+				await recompressPlatformTarball(tarballPath, temporaryRoot);
+			}
 			const members = (await run('tar', ['-tzf', tarballPath])).stdout.split('\n').filter(Boolean);
 			for (const member of members) assertSafeArchivePath(member.replace(/\/$/u, ''));
 			const extractionRoot = join(temporaryRoot, String(packages.length));
@@ -315,6 +365,7 @@ async function buildCandidate(outputDirectory) {
 			const metadata = await readJson(join(packageRoot, 'package.json'));
 			metadataByName.set(metadata.name, metadata);
 			const tarballBytes = await readFile(tarballPath);
+			assertPublishEnvelope(metadata.name, tarballBytes.byteLength);
 			const contents = await packageContents(packageRoot);
 			if (contents.some(({ path }) => path.includes('/node_modules/'))) {
 				fail(`${metadata.name} contains node_modules.`);
@@ -443,6 +494,7 @@ async function buildCandidate(outputDirectory) {
 			buildTools: {
 				node: process.version,
 				npm: (await run('npm', ['--version'])).stdout.trim(),
+				sevenZip: (await readJson(require.resolve('7zip-bin/package.json'))).version,
 			},
 			components: toolchainLock.components.map(({ name }) => name),
 			executionManifestSha256: await digestFile(join(platformRoot, 'execution-manifest.json')),
