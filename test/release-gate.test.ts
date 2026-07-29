@@ -75,7 +75,7 @@ describe('n8n 2.x Release Gate Matrix', () => {
 			expect((await readFile(invocationLog, 'utf8')).trim().split('\n')).toEqual([
 				'false:false',
 				'false:false',
-				'true:true',
+				'false:false',
 			]);
 			expect(failure.code).toBe(1);
 			expect(
@@ -87,6 +87,72 @@ describe('n8n 2.x Release Gate Matrix', () => {
 					.map(({ anchor }) => anchor),
 			).toEqual(['2.0.0', '2.27.4', '2.30.7']);
 			expect(failure.stderr).toContain('Release Gate Matrix failed: 2.0.0, 2.27.4, 2.30.7');
+		} finally {
+			await rm(executableDirectory, { force: true, recursive: true });
+		}
+	});
+
+	it('exposes multiworker and capacity as independent frozen-head lanes', async () => {
+		const { stdout } = await execFileAsync(process.execPath, [
+			'e2e/release-gate/run.mjs',
+			'--list-lanes',
+		]);
+		expect(JSON.parse(stdout)).toEqual({
+			capacity: {
+				anchors: ['2.30.7'],
+				capacity: true,
+				scaleRecovery: true,
+			},
+			core: {
+				anchors: ['2.0.0', '2.27.4', '2.30.7'],
+				capacity: false,
+				scaleRecovery: false,
+			},
+			multiworker: {
+				anchors: ['2.30.7'],
+				capacity: false,
+				scaleRecovery: true,
+			},
+		});
+		const { stdout: capacityDescription } = await execFileAsync(process.execPath, [
+			'e2e/release-gate/run.mjs',
+			'--describe-lane',
+			'capacity',
+		]);
+		expect(JSON.parse(capacityDescription)).toMatchObject({
+			lane: 'capacity',
+			anchors: [
+				{
+					tag: '2.30.7',
+					image:
+						'docker.n8n.io/n8nio/n8n@sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060',
+				},
+			],
+		});
+
+		const executableDirectory = await mkdtemp(join(tmpdir(), 'n8n-release-lanes-path-'));
+		try {
+			const invocationLog = join(executableDirectory, 'invocations');
+			await writeFile(
+				join(executableDirectory, 'node'),
+				'#!/bin/sh\nprintf "%s:%s\\n" "$E2E_SCALE_RECOVERY" "$E2E_CAPACITY" >> "$E2E_FAKE_NODE_LOG"\nexit 19\n',
+				{ mode: 0o700 },
+			);
+			for (const lane of ['multiworker', 'capacity']) {
+				await expect(
+					execFileAsync(process.execPath, ['e2e/release-gate/run.mjs', '--lane', lane], {
+						env: {
+							...process.env,
+							E2E_FAKE_NODE_LOG: invocationLog,
+							PATH: executableDirectory,
+						},
+					}),
+				).rejects.toMatchObject({ code: 1 });
+			}
+			expect((await readFile(invocationLog, 'utf8')).trim().split('\n')).toEqual([
+				'true:false',
+				'true:true',
+			]);
 		} finally {
 			await rm(executableDirectory, { force: true, recursive: true });
 		}

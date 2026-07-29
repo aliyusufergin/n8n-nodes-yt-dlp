@@ -1,0 +1,100 @@
+import { readFile } from 'node:fs/promises';
+
+import { describe, expect, it } from 'vitest';
+
+function job(workflow: string, name: string): string {
+	const start = workflow.indexOf(`\n  ${name}:\n`);
+	if (start === -1) return '';
+	const next = workflow.slice(start + 1).search(/\n {2}[a-z][a-z0-9-]+:\n/u);
+	return next === -1 ? workflow.slice(start) : workflow.slice(start, start + 1 + next);
+}
+
+describe('release workflow', () => {
+	it('models every independent blocking status without waivers', async () => {
+		const workflow = await readFile('.github/workflows/publish.yml', 'utf8');
+		for (const status of [
+			'candidate',
+			'source-delivery',
+			'hermetic',
+			'three-anchor',
+			'multiworker',
+			'capacity',
+			'official-ejs',
+			'live-canary',
+			'publish-next',
+			'registry-readback',
+			'bootstrap-token-retirement',
+			'acceptance-stack',
+			'release-evidence',
+			'promote-latest',
+		]) {
+			expect(job(workflow, status), `missing ${status} status`).not.toBe('');
+		}
+		expect(workflow).not.toContain('continue-on-error:');
+		expect(job(workflow, 'candidate')).toContain('actions/attest-build-provenance@v4');
+		expect(job(workflow, 'three-anchor')).toContain('test:e2e:release-gate');
+		expect(job(workflow, 'multiworker')).toContain('test:e2e:multiworker');
+		expect(job(workflow, 'capacity')).toContain('test:e2e:capacity');
+		expect(job(workflow, 'official-ejs')).toContain('solves official frozen EJS');
+		expect(job(workflow, 'live-canary')).toContain('release:live-canary');
+		expect(job(workflow, 'acceptance-stack')).toContain('environment: acceptance-stack');
+		for (const status of [
+			'hermetic',
+			'three-anchor',
+			'multiworker',
+			'capacity',
+			'official-ejs',
+			'live-canary',
+		]) {
+			expect(job(workflow, status)).toContain('registry-readback');
+		}
+		expect(job(workflow, 'hermetic')).toContain(
+			'node scripts/release-candidate.mjs verify .release-candidate',
+		);
+		expect(job(workflow, 'hermetic')).toContain('E2E_RELEASE_CANDIDATE_ROOT');
+		expect(job(workflow, 'hermetic')).toContain('--network none');
+		expect(job(workflow, 'hermetic')).toContain('hermetic-identities.json');
+		for (const status of ['three-anchor', 'multiworker', 'capacity']) {
+			expect(job(workflow, status)).toContain('E2E_REQUIRE_PUBLISHED_NEXT:');
+		}
+		expect(job(workflow, 'official-ejs')).toContain('E2E_RELEASE_CANDIDATE_ROOT');
+	});
+
+	it('cannot publish the platform package before source review and publishes in dependency order', async () => {
+		const workflow = await readFile('.github/workflows/publish.yml', 'utf8');
+		const publish = job(workflow, 'publish-next');
+		expect(publish).toContain('source-delivery');
+		const platform = publish.indexOf('n8n-nodes-yt-dlp-linux-x64-');
+		const selector = publish.indexOf('n8n-nodes-yt-dlp-platform-');
+		const main = publish.indexOf('n8n-nodes-yt-dlp-${VERSION}.tgz');
+		expect(platform).toBeGreaterThan(-1);
+		expect(selector).toBeGreaterThan(platform);
+		expect(main).toBeGreaterThan(selector);
+
+		expect(job(workflow, 'bootstrap-token-retirement')).toContain(
+			'BOOTSTRAP_RETIREMENT_EVIDENCE_JSON',
+		);
+		const promote = job(workflow, 'promote-latest');
+		expect(promote).toContain('verify-promotion');
+		expect(promote).not.toContain('NPM_BOOTSTRAP_TOKEN');
+		expect(promote).not.toContain('npm dist-tag add');
+		expect(workflow).not.toMatch(/\bnpm unpublish\b/u);
+	});
+
+	it('documents staged continuation, evidence, and non-unpublish rollback', async () => {
+		const documentation = await readFile('docs/release.md', 'utf8');
+		for (const required of [
+			'Release Candidate Chain',
+			'verify-existing',
+			'`inconclusive` is blocking',
+			'ACCEPTANCE_STACK_EVIDENCE_JSON',
+			'release-evidence-0.2.0.json',
+			'main package first',
+			'deprecate',
+			'new patch',
+			'Never use `npm unpublish`',
+		]) {
+			expect(documentation).toContain(required);
+		}
+	});
+});

@@ -49,9 +49,7 @@ async function runDenoStdin(executablePath: string, source: string): Promise<str
 		child.once('close', (code, signal) => {
 			if (code !== 0 || signal !== null) {
 				rejectRun(
-					new Error(
-						`Deno challenge process failed: ${Buffer.concat(stderr).toString('utf8')}`,
-					),
+					new Error(`Deno challenge process failed: ${Buffer.concat(stderr).toString('utf8')}`),
 				);
 				return;
 			}
@@ -128,17 +126,45 @@ async function packPackage(directory: string, destination: string): Promise<Pack
 	return { extractedDirectory, metadata, tarballPath };
 }
 
+async function extractCandidatePackages(
+	candidateRoot: string,
+	destination: string,
+): Promise<PackedPackage[]> {
+	const manifest = JSON.parse(
+		await readFile(join(candidateRoot, 'release-candidate.json'), 'utf8'),
+	) as {
+		packages: Array<{ name: string; tarball: string }>;
+	};
+	return await Promise.all(
+		manifest.packages.map(async ({ tarball }) => {
+			const tarballPath = join(candidateRoot, 'tarballs', tarball);
+			const extractedDirectory = await mkdtemp(join(destination, 'extracted-'));
+			await execFileAsync('tar', ['-xzf', tarballPath, '-C', extractedDirectory]);
+			const metadata = JSON.parse(
+				await readFile(join(extractedDirectory, 'package', 'package.json'), 'utf8'),
+			) as PackageMetadata;
+			return { extractedDirectory, metadata, tarballPath };
+		}),
+	);
+}
+
 beforeAll(async () => {
 	fixtureDirectory = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-platform-packages-'));
 	const tarballDirectory = join(fixtureDirectory, 'tarballs');
 	await mkdir(tarballDirectory);
-	packages = await Promise.all(
-		[
-			repositoryRoot,
-			join(repositoryRoot, 'packages', 'platform-selector'),
-			join(repositoryRoot, 'packages', 'linux-x64'),
-		].map(async (directory) => await packPackage(directory, tarballDirectory)),
-	);
+	packages =
+		process.env.E2E_RELEASE_CANDIDATE_ROOT === undefined
+			? await Promise.all(
+					[
+						repositoryRoot,
+						join(repositoryRoot, 'packages', 'platform-selector'),
+						join(repositoryRoot, 'packages', 'linux-x64'),
+					].map(async (directory) => await packPackage(directory, tarballDirectory)),
+				)
+			: await extractCandidatePackages(
+					resolve(process.env.E2E_RELEASE_CANDIDATE_ROOT),
+					tarballDirectory,
+				);
 }, 180_000);
 
 afterAll(async () => {
@@ -218,17 +244,20 @@ describe('published Platform Gate packages', () => {
 		await expect(
 			readFile(join(packageRoot, 'LICENSES', 'FFmpeg-Builds-MIT.txt'), 'utf8'),
 		).resolves.toContain('Permission is hereby granted');
-		expect(
-			await readdir(join(packageRoot, 'LICENSES', 'ffmpeg-static')),
-		).not.toHaveLength(0);
+		expect(await readdir(join(packageRoot, 'LICENSES', 'ffmpeg-static'))).not.toHaveLength(0);
 	});
 
 	it('solves official frozen EJS N/SIG vectors and cached players with packaged Deno', async () => {
+		const platformPackage = packages.find(
+			({ metadata }) => metadata.name === 'n8n-nodes-yt-dlp-linux-x64',
+		);
+		if (platformPackage === undefined) throw new Error('The platform package fixture is missing.');
+		const packageRoot = join(platformPackage.extractedDirectory, 'package');
 		const [vectorContents, syntheticPlayer, ejsLibrary, ejsCore] = await Promise.all([
 			readFile(join(repositoryRoot, 'test', 'fixtures', 'ejs', 'vectors.json'), 'utf8'),
 			readFile(join(repositoryRoot, 'test', 'fixtures', 'ejs', 'synthetic-player.js'), 'utf8'),
-			readFile(join(repositoryRoot, 'packages', 'linux-x64', 'assets', 'ejs', 'yt.solver.lib.js'), 'utf8'),
-			readFile(join(repositoryRoot, 'packages', 'linux-x64', 'assets', 'ejs', 'yt.solver.core.js'), 'utf8'),
+			readFile(join(packageRoot, 'assets', 'ejs', 'yt.solver.lib.js'), 'utf8'),
+			readFile(join(packageRoot, 'assets', 'ejs', 'yt.solver.core.js'), 'utf8'),
 		]);
 		const vectors = JSON.parse(vectorContents) as {
 			fixture: { license: 'MIT'; origin: 'project-generated' };
@@ -247,7 +276,7 @@ describe('published Platform Gate packages', () => {
 		};
 		expect(vectors.source).toContain('aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8');
 		expect(vectors.fixture).toEqual({ license: 'MIT', origin: 'project-generated' });
-		const denoPath = join(repositoryRoot, 'packages', 'linux-x64', 'bin', 'deno');
+		const denoPath = join(packageRoot, 'bin', 'deno');
 		const solve = async (input: Record<string, unknown>) => {
 			const source = `${ejsLibrary}\nObject.assign(globalThis, lib);\n${ejsCore}\nconsole.log(JSON.stringify(jsc(${JSON.stringify(input)})));\n`;
 			return JSON.parse(await runDenoStdin(denoPath, source)) as {
@@ -366,10 +395,12 @@ describe('published Platform Gate packages', () => {
 					tag: '2026.07.14.233956',
 					commit: 'aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8',
 				},
-				assets: [{
-					name: 'yt-dlp_musllinux',
-					sha256: '8f5d14830ffcfc2a45de3c13b0e5158bc228d8d00bc58df2196d0d14e01d7023',
-				}],
+				assets: [
+					{
+						name: 'yt-dlp_musllinux',
+						sha256: '8f5d14830ffcfc2a45de3c13b0e5158bc228d8d00bc58df2196d0d14e01d7023',
+					},
+				],
 				license: 'Unlicense AND LicenseRef-yt-dlp-third-party',
 				sourceBundle: {
 					name: 'yt-dlp.tar.gz',
@@ -384,10 +415,12 @@ describe('published Platform Gate packages', () => {
 					tag: 'v2.9.3',
 					commit: 'f39575ecd50602a5b42b1ba8e93849460de9fcf4',
 				},
-				assets: [{
-					name: 'deno-x86_64-unknown-linux-gnu.zip',
-					sha256: '8101865641cbede56f08ad19c0a67a87df84bce127fee0d3e3e1f7467717ffa6',
-				}],
+				assets: [
+					{
+						name: 'deno-x86_64-unknown-linux-gnu.zip',
+						sha256: '8101865641cbede56f08ad19c0a67a87df84bce127fee0d3e3e1f7467717ffa6',
+					},
+				],
 				license: 'MIT',
 				sourceBundle: {
 					name: 'deno_src.tar.gz',
@@ -397,12 +430,10 @@ describe('published Platform Gate packages', () => {
 			expect.objectContaining({
 				name: 'linux-runtime',
 				build: expect.objectContaining({
-					image:
-						'gcc@sha256:3e239a5ea77200b9163c825a0a5ebc17ca99f3bbb4d08241ee0fb9c174325880',
+					image: 'gcc@sha256:3e239a5ea77200b9163c825a0a5ebc17ca99f3bbb4d08241ee0fb9c174325880',
 				}),
 				runtime: expect.objectContaining({
-					image:
-						'ubuntu@sha256:0e0a0fc6d18feda9db1590da249ac93e8d5abfea8f4c3c0c849ce512b5ef8982',
+					image: 'ubuntu@sha256:0e0a0fc6d18feda9db1590da249ac93e8d5abfea8f4c3c0c849ce512b5ef8982',
 				}),
 				muslRuntime: expect.objectContaining({
 					image:
@@ -537,9 +568,7 @@ describe('published Platform Gate packages', () => {
 			expect(cargoPackage.licenseFiles.length).toBeGreaterThan(0);
 			expect(
 				cargoPackage.licenseFiles.every((path) =>
-					path.startsWith(
-						`LICENSES/ffmpeg-static/50-rav1e/${cargoPackage.sourcePath.slice(2)}/`,
-					),
+					path.startsWith(`LICENSES/ffmpeg-static/50-rav1e/${cargoPackage.sourcePath.slice(2)}/`),
 				),
 			).toBe(true);
 		}
@@ -571,7 +600,9 @@ describe('published Platform Gate packages', () => {
 	});
 
 	it('carry the exact three-package dependency chain and Linux x64 metadata', async () => {
-		const byName = new Map(packages.map((packedPackage) => [packedPackage.metadata.name, packedPackage]));
+		const byName = new Map(
+			packages.map((packedPackage) => [packedPackage.metadata.name, packedPackage]),
+		);
 		const main = byName.get('n8n-nodes-yt-dlp')?.metadata;
 		const selector = byName.get('n8n-nodes-yt-dlp-platform')?.metadata;
 		const platformPackage = byName.get('n8n-nodes-yt-dlp-linux-x64');
@@ -632,7 +663,9 @@ describe('published Platform Gate packages', () => {
 	});
 
 	it('installs shallowly without scripts or bin links and probes the matching package by absolute path', async () => {
-		const byName = new Map(packages.map((packedPackage) => [packedPackage.metadata.name, packedPackage]));
+		const byName = new Map(
+			packages.map((packedPackage) => [packedPackage.metadata.name, packedPackage]),
+		);
 		const main = byName.get('n8n-nodes-yt-dlp');
 		const selector = byName.get('n8n-nodes-yt-dlp-platform');
 		const platform = byName.get('n8n-nodes-yt-dlp-linux-x64');
@@ -645,7 +678,9 @@ describe('published Platform Gate packages', () => {
 			[platform.metadata.name, platform],
 		]);
 		const server = createServer((request, response) => {
-			const requestPath = decodeURIComponent(new URL(request.url ?? '/', 'http://registry').pathname);
+			const requestPath = decodeURIComponent(
+				new URL(request.url ?? '/', 'http://registry').pathname,
+			);
 			const packedPackage = registryPackages.get(requestPath.slice(1));
 			if (packedPackage !== undefined) {
 				const address = server.address() as AddressInfo;
@@ -710,16 +745,8 @@ describe('published Platform Gate packages', () => {
 			});
 		}
 
-		const selectorDirectory = join(
-			installDirectory,
-			'node_modules',
-			'n8n-nodes-yt-dlp-platform',
-		);
-		const platformDirectory = join(
-			selectorDirectory,
-			'node_modules',
-			'n8n-nodes-yt-dlp-linux-x64',
-		);
+		const selectorDirectory = join(installDirectory, 'node_modules', 'n8n-nodes-yt-dlp-platform');
+		const platformDirectory = join(selectorDirectory, 'node_modules', 'n8n-nodes-yt-dlp-linux-x64');
 		expect(
 			JSON.parse(await readFile(join(selectorDirectory, 'package.json'), 'utf8')),
 		).toMatchObject({ name: 'n8n-nodes-yt-dlp-platform', version: '0.2.0' });
