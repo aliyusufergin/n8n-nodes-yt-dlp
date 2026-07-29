@@ -32,6 +32,7 @@ describe('release workflow', () => {
 			expect(job(workflow, status), `missing ${status} status`).not.toBe('');
 		}
 		expect(workflow).not.toContain('continue-on-error:');
+		expect(workflow).toContain('NODE_VERSION: 24.16.0');
 		expect(job(workflow, 'candidate')).toContain('actions/attest-build-provenance@v4');
 		expect(job(workflow, 'three-anchor')).toContain('test:e2e:release-gate');
 		expect(job(workflow, 'multiworker')).toContain('test:e2e:multiworker');

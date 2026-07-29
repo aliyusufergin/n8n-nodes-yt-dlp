@@ -215,7 +215,7 @@ describe('immutable Release Candidate Chain', () => {
 		}
 		expect(manifest.toolchain).toMatchObject({
 			buildTools: {
-				node: expect.stringMatching(/^v26\./u),
+				node: expect.stringMatching(/^v\d+\./u),
 				npm: expect.stringMatching(/^\d+\.\d+\.\d+$/u),
 			},
 			components: ['yt-dlp', 'ffmpeg', 'deno', 'linux-runtime', 'yt-dlp-ejs'],
