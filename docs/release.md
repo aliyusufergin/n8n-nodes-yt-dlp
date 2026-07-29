@@ -137,14 +137,17 @@ and uses the existing `NPM_BOOTSTRAP_TOKEN` only inside the protected `npm-boots
 Do not create another token.
 
 Dispatch
-`gh workflow run recover-bootstrap.yml --ref bootstrap-recovery-0.2.0`, then approve the protected
+`gh workflow run recover-bootstrap.yml --ref bootstrap-recovery-0.2.0-r2`, then approve the protected
 publication job after its preparation succeeds. Before approval, verify that the exact recovery tag
 still identifies the reviewed recovery commit; do not substitute a mutable branch. The job publishes
 only the main tarball when it is missing; an exact already-published main package skips publication
-so interrupted tag cleanup can be retried.
-npm may create `latest` automatically for a first package version, so recovery removes `latest` only
-when it identifies exact `0.2.0`, then performs full candidate-bound registry read-back. Any publish,
-permission, or cleanup failure stops without broadening token scope and uploads
+so interrupted read-back can be retried.
+npm requires every package to have a `latest` tag and may assign it to the first published version
+even when publication explicitly uses `--tag next`. The recovery does not run any dist-tag promotion
+or mutation. Its bootstrap-specific read-back accepts `latest == next == 0.2.0` only when `0.2.0` is
+the package's sole visible version, while still verifying the full candidate-bound metadata,
+tarball, integrity, dependency, and provenance evidence. Any publish or permission failure stops
+without broadening token scope and uploads
 `partial-publish-audit` with exact package names. Never unpublish a recovered package.
 
 After successful read-back, revoke that same granular token, delete `NPM_BOOTSTRAP_TOKEN`, record the

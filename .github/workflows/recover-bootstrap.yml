@@ -15,6 +15,7 @@ env:
   NODE_VERSION: 24.16.0
   NPM_VERSION: 11.16.0
   ORIGINAL_RUN_ID: 30467323585
+  RUNNER_REGION: ${{ vars.RUNNER_REGION }}
   VERSION: 0.2.0
 
 jobs:
@@ -78,18 +79,6 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_BOOTSTRAP_TOKEN }}
         run: |
-          remove_latest() {
-            package="$1"
-            latest="$(npm view "$package" dist-tags.latest --json)"
-            if [ -z "$latest" ] || [ "$latest" = null ]; then
-              return
-            fi
-            if [ "$latest" != "\"$VERSION\"" ]; then
-              echo "::error::$package latest unexpectedly identifies $latest"
-              return 1
-            fi
-            npm dist-tag rm "$package" latest
-          }
           publication_required="$(
             node --print \
               "require('./.bootstrap-recovery/bootstrap-recovery-state.json').publicationRequired"
@@ -104,9 +93,6 @@ jobs:
             echo "::error::Invalid bootstrap recovery publication state"
             exit 1
           fi
-          remove_latest n8n-nodes-yt-dlp-linux-x64
-          remove_latest n8n-nodes-yt-dlp-platform
-          remove_latest n8n-nodes-yt-dlp
 
   registry-readback:
     name: registry read-back
@@ -127,7 +113,7 @@ jobs:
           repository: ${{ github.repository }}
           run-id: ${{ env.ORIGINAL_RUN_ID }}
       - run: |
-          node scripts/release-candidate.mjs verify-registry \
+          node scripts/release-candidate.mjs verify-bootstrap-registry \
             .release-candidate \
             https://registry.npmjs.org \
             bootstrap-recovery-readback.json

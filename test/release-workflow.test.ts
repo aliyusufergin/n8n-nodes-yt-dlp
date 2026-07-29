@@ -118,18 +118,18 @@ describe('release workflow', () => {
 		expect(workflow).toContain('github-token: ${{ github.token }}');
 		expect(workflow).toContain('bootstrap-recovery.mjs prepare');
 		expect(workflow).toContain('npm run verify:ffmpeg-release');
+		expect(workflow).toContain('RUNNER_REGION: ${{ vars.RUNNER_REGION }}');
 		expect(workflow).toContain('bootstrap-recovery-state.json');
 		expect(workflow).toContain('n8n-nodes-yt-dlp-${VERSION}.tgz');
 		expect(workflow).toContain('--provenance-file');
-		expect(workflow).toContain('verify-registry');
+		expect(workflow).toContain('verify-bootstrap-registry');
 		expect(workflow).toContain('partial-publish-audit');
 		expect(workflow).toContain('audit-registry');
 		expect(workflow).toContain('BOOTSTRAP_RETIREMENT_EVIDENCE_JSON');
 		expect(workflow).toContain('environment: npm-bootstrap-retirement');
 		expect(workflow).not.toContain('n8n-nodes-yt-dlp-linux-x64-${VERSION}.tgz');
 		expect(workflow).not.toContain('n8n-nodes-yt-dlp-platform-${VERSION}.tgz');
-		expect(workflow).toContain('npm dist-tag rm "$package" latest');
-		expect(workflow.match(/remove_latest n8n-nodes-yt-dlp/gu)).toHaveLength(3);
+		expect(workflow).not.toContain('npm dist-tag');
 		expect(workflow).not.toMatch(/\bnpm unpublish\b/u);
 	});
 
@@ -146,7 +146,7 @@ describe('release workflow', () => {
 			'new patch',
 			'Never use `npm unpublish`',
 			'recover-bootstrap.yml',
-			'gh workflow run recover-bootstrap.yml --ref bootstrap-recovery-0.2.0',
+			'gh workflow run recover-bootstrap.yml --ref bootstrap-recovery-0.2.0-r2',
 			'exact recovery tag',
 		]) {
 			expect(documentation).toContain(required);

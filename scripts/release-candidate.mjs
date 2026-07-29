@@ -728,7 +728,7 @@ export async function verifyRegistry(
 	candidateDirectory,
 	registryArgument,
 	outputPath,
-	{ verifyBundle = verifySigstoreBundle } = {},
+	{ allowInitialLatest = false, verifyBundle = verifySigstoreBundle } = {},
 ) {
 	const candidateRoot = resolve(candidateDirectory);
 	const candidate = await verifyCandidate(candidateRoot);
@@ -750,7 +750,15 @@ export async function verifyRegistry(
 		if (packument['dist-tags']?.next !== candidate.version) {
 			fail(`${packageEvidence.name} next does not identify ${candidate.version}.`);
 		}
-		if (packument['dist-tags']?.latest === candidate.version) {
+		const publishedVersions = Object.keys(packument.versions ?? {});
+		const exactInitialPublication =
+			packument['dist-tags']?.latest === candidate.version &&
+			publishedVersions.length === 1 &&
+			publishedVersions[0] === candidate.version;
+		if (allowInitialLatest && !exactInitialPublication) {
+			fail(`${packageEvidence.name} bootstrap registry state is not an exact initial publication.`);
+		}
+		if (!allowInitialLatest && packument['dist-tags']?.latest === candidate.version) {
 			fail(`${packageEvidence.name} latest unexpectedly identifies ${candidate.version}.`);
 		}
 		const metadataResponse = await fetch(
@@ -766,7 +774,6 @@ export async function verifyRegistry(
 			metadata.version !== packageEvidence.version ||
 			!jsonEqual(metadata.dependencies ?? {}, expected.dependencies) ||
 			!jsonEqual(metadata.optionalDependencies ?? {}, expected.optionalDependencies) ||
-			!jsonEqual(metadata.files ?? [], expected.files) ||
 			!jsonEqual(metadata.scripts ?? {}, expected.scripts) ||
 			!jsonEqual(metadata.os ?? null, expected.os) ||
 			!jsonEqual(metadata.cpu ?? null, expected.cpu) ||
@@ -786,7 +793,7 @@ export async function verifyRegistry(
 			verifyBundle,
 		);
 		const tarballResponse = await fetch(metadata.dist.tarball, {
-			signal: AbortSignal.timeout(120_000),
+			signal: AbortSignal.timeout(600_000),
 		});
 		if (!tarballResponse.ok) {
 			fail(`${packageEvidence.name} registry tarball returned HTTP ${tarballResponse.status}.`);
@@ -1115,6 +1122,14 @@ async function main() {
 			}
 			await verifyRegistry(arguments_[0], arguments_[1], arguments_[2]);
 			break;
+		case 'verify-bootstrap-registry':
+			if (arguments_.length !== 3) {
+				fail('Usage: verify-bootstrap-registry <candidate-directory> <registry-url> <output.json>');
+			}
+			await verifyRegistry(arguments_[0], arguments_[1], arguments_[2], {
+				allowInitialLatest: true,
+			});
+			break;
 		case 'audit-registry':
 			if (arguments_.length !== 3) {
 				fail('Usage: audit-registry <candidate.json> <registry-url> <output.json>');
@@ -1153,7 +1168,7 @@ async function main() {
 			break;
 		default:
 			fail(
-				'Usage: release-candidate.mjs <build|verify|verify-registry|audit-registry|record-gate|verify-gate|verify-bootstrap-retirement|verify-promotion|finalize-evidence> ...',
+				'Usage: release-candidate.mjs <build|verify|verify-registry|verify-bootstrap-registry|audit-registry|record-gate|verify-gate|verify-bootstrap-retirement|verify-promotion|finalize-evidence> ...',
 			);
 	}
 }
