@@ -238,6 +238,7 @@ networks:
   e2e:
     internal: true
   control:
+    internal: true
 
 volumes:
   main_data:

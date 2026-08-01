@@ -31,7 +31,18 @@ function sha256(contents) {
 	return createHash('sha256').update(contents).digest('hex');
 }
 
-async function runBounded(command, arguments_, environment) {
+function canaryTimeoutMs() {
+	const override = process.env.LIVE_CANARY_TIMEOUT_MS;
+	if (process.env.LIVE_CANARY_TEST_OVERRIDE !== '1' || override === undefined) {
+		return timeoutMs;
+	}
+	if (!/^\d+$/u.test(override) || Number(override) < 1 || Number(override) > timeoutMs) {
+		fail('LIVE_CANARY_TIMEOUT_MS must be a bounded positive integer.');
+	}
+	return Number(override);
+}
+
+async function runBounded(command, arguments_, environment, runTimeoutMs = timeoutMs) {
 	return await new Promise((resolveRun, rejectRun) => {
 		const child = spawn(command, arguments_, {
 			cwd: repositoryRoot,
@@ -42,6 +53,7 @@ async function runBounded(command, arguments_, environment) {
 		const stderr = [];
 		let outputBytes = 0;
 		let exceeded = false;
+		let timedOut = false;
 		const collect = (collection) => (chunk) => {
 			outputBytes += chunk.byteLength;
 			if (outputBytes > outputLimitBytes) {
@@ -54,7 +66,10 @@ async function runBounded(command, arguments_, environment) {
 		child.stdout.on('data', collect(stdout));
 		child.stderr.on('data', collect(stderr));
 		child.once('error', rejectRun);
-		const timeout = setTimeout(() => child.kill('SIGKILL'), timeoutMs);
+		const timeout = setTimeout(() => {
+			timedOut = true;
+			child.kill('SIGKILL');
+		}, runTimeoutMs);
 		child.once('close', (code, signal) => {
 			clearTimeout(timeout);
 			resolveRun({
@@ -63,6 +78,7 @@ async function runBounded(command, arguments_, environment) {
 				signal,
 				stderr: Buffer.concat(stderr).toString('utf8'),
 				stdout: Buffer.concat(stdout).toString('utf8'),
+				timedOut,
 			});
 		});
 	});
@@ -72,8 +88,16 @@ async function executablePaths(candidate, candidateRoot) {
 	if (process.env.LIVE_CANARY_TEST_OVERRIDE === '1') {
 		const ytDlp = process.env.LIVE_CANARY_YTDLP_PATH;
 		const deno = process.env.LIVE_CANARY_DENO_PATH;
-		if (!ytDlp || !deno) fail('Live canary test override paths are incomplete.');
-		return { deno: resolve(deno), temporaryRoot: undefined, ytDlp: resolve(ytDlp) };
+		const toolchainLock = process.env.LIVE_CANARY_TOOLCHAIN_LOCK_PATH;
+		if (!ytDlp || !deno || !toolchainLock) {
+			fail('Live canary test override paths are incomplete.');
+		}
+		return {
+			deno: resolve(deno),
+			temporaryRoot: undefined,
+			toolchainLock: resolve(toolchainLock),
+			ytDlp: resolve(ytDlp),
+		};
 	}
 
 	const verification = await runBounded(
@@ -97,8 +121,55 @@ async function executablePaths(candidate, candidateRoot) {
 	return {
 		deno: join(temporaryRoot, 'package', 'bin', 'deno'),
 		temporaryRoot,
+		toolchainLock: join(temporaryRoot, 'package', 'TOOLCHAIN.lock.json'),
 		ytDlp: join(temporaryRoot, 'package', 'bin', 'yt-dlp'),
 	};
+}
+
+function packageIdentities(candidate) {
+	return candidate.packages.map(({ name, sha256: packageSha256, version }) => ({
+		name,
+		sha256: packageSha256,
+		version,
+	}));
+}
+
+async function publicRegistryIdentity(candidate, candidateBytes, candidateRoot) {
+	const evidence = JSON.parse(
+		await readFile(join(candidateRoot, 'registry-readback.json'), 'utf8'),
+	);
+	if (
+		evidence.schemaVersion !== 1 ||
+		evidence.candidateSha256 !== sha256(candidateBytes) ||
+		evidence.lane !== 'registry-readback' ||
+		evidence.outcome !== 'pass' ||
+		evidence.waived !== false ||
+		evidence.registry !== 'https://registry.npmjs.org' ||
+		JSON.stringify(evidence.identities?.packages) !== JSON.stringify(packageIdentities(candidate))
+	) {
+		fail('The live canary requires candidate-bound public registry evidence.');
+	}
+	return { distTag: 'next', url: evidence.registry };
+}
+
+async function toolVersions(toolchainLockPath, version) {
+	const lock = JSON.parse(await readFile(toolchainLockPath, 'utf8'));
+	if (
+		lock.schemaVersion !== 1 ||
+		lock.packageVersion !== version ||
+		!Array.isArray(lock.components)
+	) {
+		fail('The live canary Toolchain Lock is invalid.');
+	}
+	const versions = {};
+	for (const name of ['yt-dlp', 'ffmpeg', 'deno', 'yt-dlp-ejs']) {
+		const tag = lock.components.find((component) => component.name === name)?.upstream?.tag;
+		if (typeof tag !== 'string' || tag.length === 0) {
+			fail(`The live canary Toolchain Lock has no exact ${name} version.`);
+		}
+		versions[name] = tag;
+	}
+	return versions;
 }
 
 function classifyOutcome(result) {
@@ -116,7 +187,8 @@ function classifyOutcome(result) {
 		return { denoChallenge, extractedId, outcome: 'pass' };
 	}
 	if (
-		/(?:HTTP Error 429|Too Many Requests|timed out|Temporary failure|Name or service not known|Network is unreachable|Connection reset)/iu.test(
+		result.timedOut ||
+		/(?:HTTP Error (?:429|5\d{2})|Too Many Requests|timed out|Temporary failure|Name or service not known|Network is unreachable|Connection (?:reset|refused|aborted)|Unable to connect|(?:TLS|SSL)[^\r\n]{0,80}(?:handshake|certificate|failure|error|EOF)|Remote (?:end )?closed|(?:remote|unexpected) EOF)/iu.test(
 			result.stderr,
 		)
 	) {
@@ -133,8 +205,10 @@ const candidatePath = resolve(candidateArgument);
 const candidateRoot = dirname(candidatePath);
 const candidateBytes = await readFile(candidatePath);
 const candidate = JSON.parse(candidateBytes);
+const registry = await publicRegistryIdentity(candidate, candidateBytes, candidateRoot);
 const paths = await executablePaths(candidate, candidateRoot);
 try {
+	const versions = await toolVersions(paths.toolchainLock, candidate.version);
 	const environment = {
 		DENO_NO_UPDATE_CHECK: '1',
 		LANG: 'C.UTF-8',
@@ -171,6 +245,7 @@ try {
 			testUrl,
 		],
 		environment,
+		canaryTimeoutMs(),
 	);
 	const classified = classifyOutcome(result);
 	const evidence = {
@@ -183,11 +258,8 @@ try {
 			`deno-challenge=${classified.denoChallenge ? 'observed' : 'not-observed'}`,
 		],
 		identities: {
-			packages: candidate.packages.map(({ name, sha256: packageSha256, version }) => ({
-				name,
-				sha256: packageSha256,
-				version,
-			})),
+			packages: packageIdentities(candidate),
+			registry,
 			source: candidate.source,
 			test: {
 				id: testId,
@@ -195,7 +267,7 @@ try {
 				upstreamCommit,
 				url: testUrl,
 			},
-			toolchain: candidate.toolchain,
+			toolchain: { ...candidate.toolchain, versions },
 		},
 		lane: 'live-canary',
 		outcome: classified.outcome,

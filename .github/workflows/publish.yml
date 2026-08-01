@@ -28,6 +28,8 @@ env:
   HERMETIC_IMAGE: node@sha256:8d3442d5f074940723be6eece34e992eb147ba1f59c73888e8f257918dea2e78
   NODE_VERSION: 24.16.0
   NPM_VERSION: 11.16.0
+  PUBLISHED_CANDIDATE_RUN_ID: 30467323585
+  PUBLISHED_CANDIDATE_SHA256: 23b019830d524fe9a0cce7a50e78c5e505355a8df1f41c53167ce7884e3012db
   RELEASE_WORKFLOW_REF: ${{ github.ref }}
   RUNNER_REGION: ${{ vars.RUNNER_REGION }}
   VERSION: 0.2.0
@@ -37,6 +39,7 @@ jobs:
     name: candidate
     runs-on: ubuntu-24.04
     permissions:
+      actions: read
       attestations: write
       contents: read
       id-token: write
@@ -48,13 +51,29 @@ jobs:
         with:
           cache: npm
           node-version: ${{ env.NODE_VERSION }}
-      - run: npm install --global "npm@$NPM_VERSION"
+      - if: inputs.publish_mode == 'verify-existing'
+        uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-0.2.0
+          path: ${{ runner.temp }}/release-candidate
+          run-id: ${{ env.PUBLISHED_CANDIDATE_RUN_ID }}
+          github-token: ${{ github.token }}
+      - if: inputs.publish_mode != 'verify-existing'
+        run: npm install --global "npm@$NPM_VERSION"
       - run: npm ci
-      - run: |
+      - if: inputs.publish_mode != 'verify-existing'
+        run: |
           test "$(node --print "require('./package.json').version")" = "$VERSION"
           npm run release:candidate -- "$RUNNER_TEMP/release-candidate"
+      - if: inputs.publish_mode == 'verify-existing'
+        run: |
+          printf '%s  %s\n' \
+            "$PUBLISHED_CANDIDATE_SHA256" \
+            "$RUNNER_TEMP/release-candidate/release-candidate.json" | sha256sum --check --strict
+          node scripts/release-candidate.mjs verify "$RUNNER_TEMP/release-candidate"
       - run: sha256sum "$RUNNER_TEMP/release-candidate/release-candidate.json"
-      - uses: actions/attest-build-provenance@v4
+      - if: inputs.publish_mode != 'verify-existing'
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: ${{ runner.temp }}/release-candidate/tarballs/*.tgz
       - uses: actions/upload-artifact@v7
@@ -129,7 +148,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
-          name: release-candidate-0.2.0
+          name: published-candidate-0.2.0
           path: .release-candidate
       - run: npm ci
       - run: npm run test:e2e:release-gate
@@ -166,7 +185,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
-          name: release-candidate-0.2.0
+          name: published-candidate-0.2.0
           path: .release-candidate
       - run: npm ci
       - run: npm run test:e2e:multiworker
@@ -203,7 +222,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
-          name: release-candidate-0.2.0
+          name: published-candidate-0.2.0
           path: .release-candidate
       - run: npm ci
       - run: npm run test:e2e:capacity
@@ -240,7 +259,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
-          name: release-candidate-0.2.0
+          name: published-candidate-0.2.0
           path: .release-candidate
       - run: npm ci
       - name: solves official frozen EJS vectors
@@ -276,7 +295,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
-          name: release-candidate-0.2.0
+          name: published-candidate-0.2.0
           path: .release-candidate
       - run: npm ci
       - run: |
@@ -346,10 +365,17 @@ jobs:
           name: release-candidate-0.2.0
           path: .release-candidate
       - run: |
-          node scripts/release-candidate.mjs verify-registry \
+          node scripts/release-candidate.mjs materialize-registry \
             .release-candidate \
             https://registry.npmjs.org \
+            "$RUNNER_TEMP/published-candidate" \
             registry-readback.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: published-candidate-0.2.0
+          path: ${{ runner.temp }}/published-candidate
+          if-no-files-found: error
+          retention-days: 30
       - uses: actions/upload-artifact@v7
         with:
           name: gate-registry-readback
@@ -432,7 +458,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
-          name: release-candidate-0.2.0
+          name: published-candidate-0.2.0
           path: .release-candidate
       - run: npm ci
       - run: node scripts/release-candidate.mjs verify .release-candidate
@@ -485,7 +511,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
-          name: release-candidate-0.2.0
+          name: published-candidate-0.2.0
           path: .release-candidate
       - name: verify approved narrow acceptance-stack evidence
         env:
@@ -526,7 +552,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
-          name: release-candidate-0.2.0
+          name: published-candidate-0.2.0
           path: .release-candidate
       - uses: actions/download-artifact@v8
         with:
@@ -561,7 +587,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
-          name: release-candidate-0.2.0
+          name: published-candidate-0.2.0
           path: .release-candidate
       - name: verify interactive 2FA promotion with main moved last
         run: |

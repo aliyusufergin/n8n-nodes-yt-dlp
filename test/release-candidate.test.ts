@@ -136,7 +136,18 @@ async function writeGateEvidence(
 					})),
 					source: manifest.source,
 					test: { id: testId },
-					toolchain: manifest.toolchain,
+					toolchain:
+						lane === 'live-canary'
+							? {
+									...manifest.toolchain,
+									versions: {
+										deno: 'v2.9.3',
+										ffmpeg: 'autobuild-2026-07-12-15-07',
+										'yt-dlp': '2026.07.14.233956',
+										'yt-dlp-ejs': '0.8.0',
+									},
+								}
+							: manifest.toolchain,
 				},
 				lane,
 				outcome: 'pass',
@@ -618,7 +629,10 @@ describe('immutable Release Candidate Chain', () => {
 			const address = server.address() as AddressInfo;
 			const outputPath = join(candidateRoot, 'registry-readback.json');
 			const registry = `http://127.0.0.1:${address.port}`;
-			const verifyWithTestSignature = async (allowInitialLatest = false) =>
+			const verifyWithTestSignature = async (
+				allowInitialLatest = false,
+				materializeDirectory?: string,
+			) =>
 				await execFileAsync(
 					process.execPath,
 					[
@@ -630,6 +644,8 @@ describe('immutable Release Candidate Chain', () => {
 							await verifyRegistry(candidateRoot, registry, outputPath, {
 								allowInitialLatest:
 									process.env.ALLOW_INITIAL_LATEST === 'true',
+								materializeDirectory:
+									process.env.MATERIALIZE_DIRECTORY || undefined,
 								verifyBundle: async (bundle, identity) => {
 									if (
 										bundle?.dsseEnvelope?.signatures?.length !== 1 ||
@@ -653,6 +669,7 @@ describe('immutable Release Candidate Chain', () => {
 						env: {
 							...process.env,
 							ALLOW_INITIAL_LATEST: String(allowInitialLatest),
+							MATERIALIZE_DIRECTORY: materializeDirectory ?? '',
 							RUNNER_REGION: 'test-region',
 						},
 					},
@@ -700,6 +717,24 @@ describe('immutable Release Candidate Chain', () => {
 				})),
 			);
 			expect(attestationRequests).toBe(3);
+
+			const materializedRoot = join(candidateRoot, 'published-candidate');
+			await verifyWithTestSignature(false, materializedRoot);
+			for (const packageEvidence of manifest.packages) {
+				const materialized = await readFile(
+					join(materializedRoot, 'tarballs', packageEvidence.tarball),
+				);
+				expect(sha256(materialized)).toBe(packageEvidence.sha256);
+				expect(materialized.byteLength).toBe(packageEvidence.sizeBytes);
+			}
+			await expect(
+				readFile(join(materializedRoot, 'registry-readback.json'), 'utf8').then(JSON.parse),
+			).resolves.toMatchObject({
+				candidateSha256: sha256(await readFile(join(candidateRoot, 'release-candidate.json'))),
+				lane: 'registry-readback',
+				outcome: 'pass',
+				registry,
+			});
 			includeFiles = false;
 			await verifyWithTestSignature();
 			includeFiles = true;

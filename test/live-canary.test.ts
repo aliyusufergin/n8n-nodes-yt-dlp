@@ -15,6 +15,7 @@ let ytDlpPath: string;
 let denoPath: string;
 let invocationPath: string;
 let outputPath: string;
+let toolchainLockPath: string;
 
 beforeEach(async () => {
 	fixtureRoot = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-live-canary-'));
@@ -23,6 +24,7 @@ beforeEach(async () => {
 	denoPath = join(fixtureRoot, 'deno');
 	invocationPath = join(fixtureRoot, 'invocation');
 	outputPath = join(fixtureRoot, 'live-canary.json');
+	toolchainLockPath = join(fixtureRoot, 'TOOLCHAIN.lock.json');
 	await writeFile(
 		candidatePath,
 		`${JSON.stringify({
@@ -52,13 +54,47 @@ beforeEach(async () => {
 		})}\n`,
 	);
 	await writeFile(denoPath, '#!/bin/sh\nexit 0\n', { mode: 0o700 });
+	const candidateBytes = await readFile(candidatePath);
+	await writeFile(
+		join(fixtureRoot, 'registry-readback.json'),
+		`${JSON.stringify({
+			schemaVersion: 1,
+			candidateSha256: createHash('sha256').update(candidateBytes).digest('hex'),
+			identities: {
+				packages: [
+					{
+						name: 'n8n-nodes-yt-dlp-linux-x64',
+						sha256: 'b'.repeat(64),
+						version: '0.2.0',
+					},
+				],
+			},
+			lane: 'registry-readback',
+			outcome: 'pass',
+			registry: 'https://registry.npmjs.org',
+			waived: false,
+		})}\n`,
+	);
+	await writeFile(
+		toolchainLockPath,
+		`${JSON.stringify({
+			schemaVersion: 1,
+			packageVersion: '0.2.0',
+			components: [
+				{ name: 'yt-dlp', upstream: { tag: '2026.07.14.233956' } },
+				{ name: 'ffmpeg', upstream: { tag: 'autobuild-2026-07-12-15-07' } },
+				{ name: 'deno', upstream: { tag: 'v2.9.3' } },
+				{ name: 'yt-dlp-ejs', upstream: { tag: '0.8.0' } },
+			],
+		})}\n`,
+	);
 });
 
 afterEach(async () => {
 	await rm(fixtureRoot, { force: true, recursive: true });
 });
 
-async function runCanary(): Promise<void> {
+async function runCanary(environment: Record<string, string> = {}): Promise<void> {
 	await execFileAsync(process.execPath, ['scripts/live-canary.mjs', candidatePath, outputPath], {
 		cwd: repositoryRoot,
 		env: {
@@ -66,8 +102,10 @@ async function runCanary(): Promise<void> {
 			LIVE_CANARY_DENO_PATH: denoPath,
 			LIVE_CANARY_INVOCATION_PATH: invocationPath,
 			LIVE_CANARY_TEST_OVERRIDE: '1',
+			LIVE_CANARY_TOOLCHAIN_LOCK_PATH: toolchainLockPath,
 			LIVE_CANARY_YTDLP_PATH: ytDlpPath,
 			RUNNER_REGION: 'test-region',
+			...environment,
 		},
 	});
 }
@@ -87,8 +125,10 @@ describe('live extractor/JSC canary', () => {
 			candidateSha256: string;
 			diagnostics: string[];
 			identities: {
+				registry: { distTag: string; url: string };
 				source: { bundles: Array<{ sha256: string }> };
 				test: { id: string; upstreamCommit: string };
+				toolchain: { versions: Record<string, string> };
 			};
 			lane: string;
 			outcome: string;
@@ -102,12 +142,24 @@ describe('live extractor/JSC canary', () => {
 			region: 'test-region',
 			waived: false,
 			identities: {
+				registry: {
+					distTag: 'next',
+					url: 'https://registry.npmjs.org',
+				},
 				source: {
 					bundles: [{ sha256: 'd'.repeat(64) }],
 				},
 				test: {
 					id: 'YE7VzlLtp-4',
 					upstreamCommit: 'aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8',
+				},
+				toolchain: {
+					versions: {
+						deno: 'v2.9.3',
+						ffmpeg: 'autobuild-2026-07-12-15-07',
+						'yt-dlp': '2026.07.14.233956',
+						'yt-dlp-ejs': '0.8.0',
+					},
 				},
 			},
 		});
@@ -136,5 +188,59 @@ describe('live extractor/JSC canary', () => {
 			outcome: 'inconclusive',
 			waived: false,
 		});
+	});
+
+	it.each([
+		'ERROR: Unable to connect: [Errno 111] Connection refused',
+		'ERROR: HTTP Error 503: Service Unavailable',
+		'ERROR: TLS handshake failure',
+		'ERROR: Remote end closed connection without response',
+	])('records transient network failure as blocking inconclusive evidence: %s', async (message) => {
+		await writeFile(
+			ytDlpPath,
+			`#!/bin/sh\nprintf "%s\\n" ${JSON.stringify(message)} >&2\nexit 1\n`,
+			{ mode: 0o700 },
+		);
+
+		await expect(runCanary()).rejects.toMatchObject({ code: 1 });
+		await expect(readFile(outputPath, 'utf8').then(JSON.parse)).resolves.toMatchObject({
+			lane: 'live-canary',
+			outcome: 'inconclusive',
+			waived: false,
+		});
+	});
+
+	it('records a silent network timeout as blocking inconclusive evidence', async () => {
+		await writeFile(ytDlpPath, '#!/bin/sh\nsleep 1\n', { mode: 0o700 });
+
+		await expect(runCanary({ LIVE_CANARY_TIMEOUT_MS: '25' })).rejects.toMatchObject({
+			code: 1,
+		});
+		await expect(readFile(outputPath, 'utf8').then(JSON.parse)).resolves.toMatchObject({
+			lane: 'live-canary',
+			outcome: 'inconclusive',
+			waived: false,
+		});
+	});
+
+	it('rejects a canary that is not bound to the public registry read-back', async () => {
+		const registryEvidencePath = join(fixtureRoot, 'registry-readback.json');
+		const registryEvidence = JSON.parse(await readFile(registryEvidencePath, 'utf8')) as {
+			candidateSha256: string;
+		};
+		registryEvidence.candidateSha256 = '0'.repeat(64);
+		await writeFile(registryEvidencePath, `${JSON.stringify(registryEvidence)}\n`);
+		await writeFile(
+			ytDlpPath,
+			'#!/bin/sh\nprintf "%s\\n" invoked > "$LIVE_CANARY_INVOCATION_PATH"\n',
+			{ mode: 0o700 },
+		);
+
+		await expect(runCanary()).rejects.toMatchObject({
+			stderr: expect.stringContaining(
+				'The live canary requires candidate-bound public registry evidence.',
+			),
+		});
+		await expect(readFile(invocationPath)).rejects.toMatchObject({ code: 'ENOENT' });
 	});
 });
