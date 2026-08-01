@@ -27,7 +27,7 @@ const requiredLanes = [
 const npmPublishEnvelopeLimitBytes = 250 * 1024 * 1024;
 const imagesByLane: Partial<Record<(typeof requiredLanes)[number], string[]>> = {
 	'acceptance-stack': [
-		'docker.n8n.io/n8nio/n8n@sha256:6dd442962208ff080af3e0a8ab5254eb4c6138f2d188d4a7e3cf84eed3b7eae1',
+		'docker.n8n.io/n8nio/n8n@sha256:882b126a8ddd0646e7d17ec47630e7704615e4647f3363471859fddc3f8946e2',
 	],
 	capacity: [
 		'docker.n8n.io/n8nio/n8n@sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060',
@@ -107,7 +107,7 @@ async function writeGateEvidence(
 	for (const lane of requiredLanes) {
 		const testId =
 			lane === 'acceptance-stack'
-				? 'n8n-2.27.4-acceptance-stack'
+				? 'n8n-2.32.7-acceptance-stack'
 				: lane === 'live-canary'
 					? 'YE7VzlLtp-4'
 					: lane;
@@ -364,7 +364,7 @@ describe('immutable Release Candidate Chain', () => {
 		});
 	});
 
-	it('rejects the wrong acceptance image and an unknown runner region', async () => {
+	it('rejects the former acceptance image and an unknown runner region', async () => {
 		const candidateBytes = await readFile(join(candidateRoot, 'release-candidate.json'));
 		const evidenceRoot = join(candidateRoot, 'rejected-lane-identities');
 		await writeGateEvidence(evidenceRoot, sha256(candidateBytes));
@@ -372,7 +372,9 @@ describe('immutable Release Candidate Chain', () => {
 		const acceptance = JSON.parse(await readFile(acceptancePath, 'utf8')) as {
 			identities: { images: string[] };
 		};
-		acceptance.identities.images = imagesByLane['three-anchor']?.slice(0, 1) ?? [];
+		acceptance.identities.images = [
+			'docker.n8n.io/n8nio/n8n@sha256:6dd442962208ff080af3e0a8ab5254eb4c6138f2d188d4a7e3cf84eed3b7eae1',
+		];
 		await writeFile(acceptancePath, `${JSON.stringify(acceptance)}\n`);
 
 		const finalize = async () =>

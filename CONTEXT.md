@@ -125,7 +125,7 @@ GPL binary içeren Platform Paketi yayımlanmadan önce exact Corresponding Sour
 _Avoid_: Sonradan source ekleme, source-on-request, mutable downloader
 
 **Release Gate Matrix**:
-Bir Release Candidate Zinciri'nin `latest` olabilmesi için 2.x floor, gerçek kabul sürümü ve RC kesiminde dondurulan en yeni stable n8n sürümünün exact official Linux x64 image digest'lerinde çalıştırılan queue-mode E2E kümesi.
+Bir Release Candidate Zinciri'nin `latest` olabilmesi için 2.x floor, RC kesiminde mevcut deployment'tan dondurulan tarihsel matrix anchor ve o kesimdeki en yeni stable n8n sürümünün exact official Linux x64 image digest'lerinde çalıştırılan disposable queue-mode E2E kümesi.
 _Avoid_: Yalnız latest testi, mutable image tag'i, tüm 2.x test edildi iddiası
 
 **İki Katmanlı Release Test Gate**:
