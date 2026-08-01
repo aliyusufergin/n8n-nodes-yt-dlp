@@ -155,3 +155,31 @@ _Avoid_: Progress log'u, user-input label'ı, node-owned metrics server, healthz
 **Release Definition**:
 Aynı immutable üç npm paketinin `next` altında gerçek Community Packages kurulumu, üç-anchor disposable release matrix'i, temiz canlı JSC canary, ayrıca açıkça onaylanmış dar gerçek kabul-stack E2E'si ve tüm security, process, supply-chain, lisans, source-delivery ve dokümantasyon gate'leri geçmeden release-ready sayılamadığı v0.2.0 başarı sözleşmesi.
 _Avoid_: Local pack kanıtı, tek happy-path download, CI-only kabul, kısmi gate feragati
+
+**Agent Operasyon Yüzeyi**:
+Agent'ın resmî n8n MCP üzerinden instance'ı kontrol ettiği operatör-yanı sınır. Yayımlanan paketin, testlerin ve CI'ın bağımlılığı değildir ve ürettiği kanıt hiçbir hermetik gate'in yerine geçmez.
+_Avoid_: Runtime bağımlılığı, CI kanalı, gate ikamesi
+
+**Sahiplik İşareti**:
+Bir n8n kaynağının hangi repository'nin agent'ına ait olduğunu kanıtlayan ve her mutation öncesi fail-closed doğrulanan işaret kümesi. Kısmi eşleşme sahiplik değil, durma nedenidir.
+_Avoid_: Generic agent etiketi, tek işaret, sonradan tamamlanan işaret
+
+**Agent-Owned Kaynak**:
+Sahiplik İşareti'nin tamamını bu repository'nin slug'ıyla taşıyan ve yalnız bu nedenle agent tarafından mutate edilebilen n8n kaynağı. İşareti taşımayan her kaynak, başka bir agent'ın kaynağı dâhil, hard read-only'dir.
+_Avoid_: Personal project sahipliği, agent'ın oluşturduğu her kaynak, geçici workflow
+
+**Lane**:
+Bir Agent-Owned Kaynak'ın hangi kanıt sınıfını ürettiğini ve hangi issue kapandığında arşivleneceğini belirleyen kapsam. Yalnız `dev` ve `acceptance` amaçları vardır; production Agent-Owned Kaynak olamaz.
+_Avoid_: Ortam adı, ayrı instance, production lane'i, serbest etiket
+
+**Kabul Koşusu**:
+`acceptance` lane'inde çalıştırılan ve sonucu `pass`, `fail` ya da `inconclusive` olarak sınıflandırılıp kalıcı kanıt bırakan agent-owned execution. Agent bu sınıflandırmayı dönüştüremez.
+_Avoid_: Dev denemesi, retry sonrası sonuç, hermetik gate koşusu
+
+**Kanıt Yorumu**:
+Bir Kabul Koşusu'nun kaynak, sürüm, execution kimliği, sonucu, stack digest'i ve node-seviye sonuçlarını issue'ya sabit formatta ve redakte biçimde transkribe eden kalıcı kayıt. Execution budandığında da geçerli kalır.
+_Avoid_: Execution pointer'ı, ham payload, log dump'ı, repo evidence dosyası
+
+**Read-Only Komut Sözlüğü**:
+MCP'nin kapsamadığı image, container, log ve tarball kanıtları için sunucuda çalıştırılmasına izin verilen, sabit ve state değiştirmeyen komut listesi. Agent listeyi kendiliğinden genişletemez.
+_Avoid_: Genel SSH erişimi, okuma sayılan keyfi komut, permission onarımı
