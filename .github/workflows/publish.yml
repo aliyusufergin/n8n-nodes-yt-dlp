@@ -303,6 +303,7 @@ jobs:
             .release-candidate/release-candidate.json \
             live-canary.json
       - uses: actions/upload-artifact@v7
+        if: always()
         with:
           name: gate-live-canary
           path: live-canary.json
@@ -452,6 +453,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
+        with:
+          lfs: true
       - uses: actions/setup-node@v7
         with:
           cache: npm

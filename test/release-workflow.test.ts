@@ -145,6 +145,18 @@ describe('release workflow', () => {
 		);
 	});
 
+	it('hydrates packaged toolchain binaries before the hermetic suite runs', async () => {
+		const workflow = await readFile('.github/workflows/publish.yml', 'utf8');
+		expect(job(workflow, 'hermetic')).toContain('lfs: true');
+	});
+
+	it('retains bounded live-canary evidence when the canary blocks release', async () => {
+		const workflow = await readFile('.github/workflows/publish.yml', 'utf8');
+		expect(job(workflow, 'live-canary')).toMatch(
+			/- uses: actions\/upload-artifact@v7\n\s+if: always\(\)\n\s+with:\n\s+name: gate-live-canary/u,
+		);
+	});
+
 	it('recovers only the missing main package from the original signed candidate', async () => {
 		const workflow = await readFile('.github/workflows/recover-bootstrap.yml', 'utf8');
 		expect(workflow).toContain('environment: npm-bootstrap');
