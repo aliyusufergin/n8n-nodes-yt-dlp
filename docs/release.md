@@ -8,12 +8,20 @@ and rollback policy in `release-candidate.json`. GitHub build provenance and the
 `build-provenance.json` bind the same three package subjects.
 
 The bootstrap run stops after public registry read-back and credential retirement. A later
-`verify-existing` run performs every disposable E2E job for the published-byte ticket. Each job
-downloads that candidate artifact and sets both `E2E_RELEASE_CANDIDATE_ROOT` and
-`E2E_REQUIRE_PUBLISHED_NEXT`. Preparation fetches the exact version from public npm, requires all
-three `next` tags to identify it, compares the public tarball integrity and SHA-256 to the candidate,
-and only then mirrors those public bytes into the network-isolated Community Packages test stack.
-The checkout is never repacked for release evidence.
+`verify-existing` run performs every disposable E2E job for the published-byte ticket. Its
+`candidate` job downloads the exact `release-candidate-0.2.0` artifact from bootstrap run
+`30467323585` and requires manifest SHA-256
+`23b019830d524fe9a0cce7a50e78c5e505355a8df1f41c53167ce7884e3012db`. Registry read-back then
+verifies all three public `next` identities, metadata, provenance, integrity, and tarball SHA-256
+values while writing the fetched bytes to `published-candidate-0.2.0`. Every post-publication gate
+downloads that public-byte artifact; the checkout and original candidate tarballs are never used as
+release evidence.
+
+Each n8n anchor also sets `E2E_REQUIRE_PUBLISHED_NEXT`. Preparation re-fetches the explicit exact
+version from public npm, compares the bytes with the same candidate evidence, and only then mirrors
+them into the Community Packages registry. During workflow execution both `e2e` and `control`
+networks are internal, so the full node contract can reach only the prepared registry and fixture
+services.
 
 ## Blocking statuses
 
@@ -29,8 +37,12 @@ read-only container root, and no-new-privileges. Its evidence records that exact
 `network: none`; an ordinary hosted-runner test cannot satisfy this lane.
 
 The live canary uses the frozen yt-dlp upstream test identity `YE7VzlLtp-4`, disables media
-downloads and remote components, and must record actual packaged-Deno challenge execution.
-`inconclusive` is blocking, including network and rate-limit outcomes.
+downloads and remote components, and must record actual packaged-Deno challenge execution. Its
+evidence is bound to the public registry read-back and records the exact packaged yt-dlp, FFmpeg,
+Deno, and EJS versions from the Toolchain Lock. It records no credential or raw unbounded process
+output. `inconclusive` is blocking, including network and rate-limit outcomes. A clean result proves
+only that one frozen extractor/challenge path worked at the recorded URL, time, and region; it is not
+a supported-site guarantee.
 
 `source-delivery` runs the release verifier before `publish-next`. It checks the direct versioned
 GitHub source assets, their exact `.sha256` sidecar contents, clean isolated-rebuild evidence,
@@ -82,7 +94,8 @@ Before the one-time bootstrap, the operator must record this exact plan:
 - Temporary resources are the one-day token, two environment secrets, hosted-runner workspaces,
   and retention-bounded workflow artifacts. Verification reads back both GitHub source sidecars,
   every npm `next` tag, metadata, dependency graph, tarball integrity, and Sigstore provenance;
-  it also confirms that `latest` did not move.
+  for this first publication it accepts npm's automatic `latest == next == 0.2.0` only while `0.2.0`
+  is the sole visible version and performs no dist-tag promotion.
 
 For the one-time v0.2.0 bootstrap, choose `bootstrap`. The protected `npm-bootstrap` environment
 supplies the short-lived granular token. The workflow publishes with provenance under `next` in

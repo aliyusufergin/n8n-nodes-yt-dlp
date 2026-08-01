@@ -111,6 +111,40 @@ describe('release workflow', () => {
 		}
 	});
 
+	it('runs post-publication gates from the exact public next tarballs', async () => {
+		const workflow = await readFile('.github/workflows/publish.yml', 'utf8');
+		const candidate = job(workflow, 'candidate');
+		expect(candidate).toContain('PUBLISHED_CANDIDATE_RUN_ID');
+		expect(candidate).toContain('PUBLISHED_CANDIDATE_SHA256');
+		expect(candidate).toContain('run-id: ${{ env.PUBLISHED_CANDIDATE_RUN_ID }}');
+		expect(candidate).toContain('github-token: ${{ github.token }}');
+
+		const readback = job(workflow, 'registry-readback');
+		expect(readback).toContain('materialize-registry');
+		expect(readback).toContain('name: published-candidate-0.2.0');
+
+		for (const jobName of [
+			'hermetic',
+			'three-anchor',
+			'multiworker',
+			'capacity',
+			'official-ejs',
+			'live-canary',
+			'acceptance-stack',
+			'release-evidence',
+			'promote-latest',
+		]) {
+			expect(job(workflow, jobName), jobName).toContain('name: published-candidate-0.2.0');
+		}
+	});
+
+	it('keeps release workflow execution on internal-only container networks', async () => {
+		const compose = await readFile('e2e/n8n-2.27.4/compose.yaml', 'utf8');
+		expect(compose).toContain(
+			'networks:\n  e2e:\n    internal: true\n  control:\n    internal: true',
+		);
+	});
+
 	it('recovers only the missing main package from the original signed candidate', async () => {
 		const workflow = await readFile('.github/workflows/recover-bootstrap.yml', 'utf8');
 		expect(workflow).toContain('environment: npm-bootstrap');
@@ -138,6 +172,11 @@ describe('release workflow', () => {
 		for (const required of [
 			'Release Candidate Chain',
 			'verify-existing',
+			'published-candidate-0.2.0',
+			'both `e2e` and `control`',
+			'networks are internal',
+			'exact packaged yt-dlp, FFmpeg',
+			'Deno, and EJS versions',
 			'`inconclusive` is blocking',
 			'ACCEPTANCE_STACK_EVIDENCE_JSON',
 			'release-evidence-0.2.0.json',

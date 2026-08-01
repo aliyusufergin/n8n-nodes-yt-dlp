@@ -728,12 +728,19 @@ export async function verifyRegistry(
 	candidateDirectory,
 	registryArgument,
 	outputPath,
-	{ allowInitialLatest = false, verifyBundle = verifySigstoreBundle } = {},
+	{ allowInitialLatest = false, materializeDirectory, verifyBundle = verifySigstoreBundle } = {},
 ) {
 	const candidateRoot = resolve(candidateDirectory);
 	const candidate = await verifyCandidate(candidateRoot);
 	const candidateBytes = await readFile(join(candidateRoot, 'release-candidate.json'));
 	const registry = normalizeRegistry(registryArgument, 'Registry read-back');
+	const materializedRoot =
+		materializeDirectory === undefined ? undefined : resolve(materializeDirectory);
+	if (materializedRoot !== undefined) {
+		await mkdir(materializedRoot);
+		await mkdir(join(materializedRoot, 'tarballs'));
+		await writeFile(join(materializedRoot, 'release-candidate.json'), candidateBytes);
+	}
 	const packages = [];
 	for (const packageEvidence of candidate.packages) {
 		const expected = candidate.expectedRegistry.packages[packageEvidence.name];
@@ -805,6 +812,9 @@ export async function verifyRegistry(
 		) {
 			fail(`${packageEvidence.name} registry tarball digest mismatch.`);
 		}
+		if (materializedRoot !== undefined) {
+			await writeFile(join(materializedRoot, 'tarballs', packageEvidence.tarball), tarball);
+		}
 		packages.push({
 			name: packageEvidence.name,
 			provenance: provenancePredicateType,
@@ -831,7 +841,12 @@ export async function verifyRegistry(
 		version: candidate.version,
 		waived: false,
 	};
-	await writeFile(resolve(outputPath), `${JSON.stringify(readback, null, 2)}\n`);
+	const readbackBytes = `${JSON.stringify(readback, null, 2)}\n`;
+	await writeFile(resolve(outputPath), readbackBytes);
+	if (materializedRoot !== undefined) {
+		await writeFile(join(materializedRoot, 'registry-readback.json'), readbackBytes);
+		await verifyCandidate(materializedRoot);
+	}
 	process.stdout.write(`${JSON.stringify({ packages: packages.length, registry })}\n`);
 }
 
@@ -947,8 +962,18 @@ function validateGateIdentities(identities, lane, candidate) {
 	if (!jsonEqual(identities.source, candidate.source)) {
 		fail(`${lane} evidence source identity does not match the candidate.`);
 	}
-	if (!jsonEqual(identities.toolchain, candidate.toolchain)) {
+	const toolchainIdentity = { ...identities.toolchain };
+	const versions = toolchainIdentity.versions;
+	delete toolchainIdentity.versions;
+	if (!jsonEqual(toolchainIdentity, candidate.toolchain)) {
 		fail(`${lane} evidence tool identity does not match the candidate.`);
+	}
+	if (
+		lane === 'live-canary' &&
+		(!jsonEqual(Object.keys(versions ?? {}).sort(), ['deno', 'ffmpeg', 'yt-dlp', 'yt-dlp-ejs']) ||
+			Object.values(versions).some((version) => typeof version !== 'string' || version.length === 0))
+	) {
+		fail('live-canary evidence has no exact tool versions.');
 	}
 	const expectedTestIdentity = testIdentitiesByLane[lane] ?? lane;
 	if (identities.test?.id !== expectedTestIdentity) {
@@ -1130,6 +1155,17 @@ async function main() {
 				allowInitialLatest: true,
 			});
 			break;
+		case 'materialize-registry':
+			if (arguments_.length !== 4) {
+				fail(
+					'Usage: materialize-registry <candidate-directory> <registry-url> <output-directory> <output.json>',
+				);
+			}
+			await verifyRegistry(arguments_[0], arguments_[1], arguments_[3], {
+				allowInitialLatest: true,
+				materializeDirectory: arguments_[2],
+			});
+			break;
 		case 'audit-registry':
 			if (arguments_.length !== 3) {
 				fail('Usage: audit-registry <candidate.json> <registry-url> <output.json>');
@@ -1168,7 +1204,7 @@ async function main() {
 			break;
 		default:
 			fail(
-				'Usage: release-candidate.mjs <build|verify|verify-registry|verify-bootstrap-registry|audit-registry|record-gate|verify-gate|verify-bootstrap-retirement|verify-promotion|finalize-evidence> ...',
+				'Usage: release-candidate.mjs <build|verify|verify-registry|verify-bootstrap-registry|materialize-registry|audit-registry|record-gate|verify-gate|verify-bootstrap-retirement|verify-promotion|finalize-evidence> ...',
 			);
 	}
 }

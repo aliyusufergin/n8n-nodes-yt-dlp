@@ -113,7 +113,7 @@ Platform Paketi, Platform Selector ve ana paketin aynı exact sürümle önce `n
 _Avoid_: Main-first publish, doğrudan latest, bağımsız paket sürümü
 
 **Bootstrap Publish**:
-Henüz mevcut paket gerektiren Trusted Publisher ve staged publishing kullanılamadığı için yalnız `0.2.0` Release Candidate Zinciri'nde uygulanan, korumalı GitHub Environment içindeki kısa ömürlü granular token ile provenance üreten tek seferlik doğrudan `next` yayını.
+Henüz mevcut paket gerektiren Trusted Publisher ve staged publishing kullanılamadığı için yalnız `0.2.0` Release Candidate Zinciri'nde uygulanan, korumalı GitHub Environment içindeki kısa ömürlü granular token ile provenance üreten tek seferlik doğrudan `next` yayını. npm'in ilk görünür sürüme zorunlu otomatik `latest` ataması bilinçli terfi veya release-readiness kanıtı değildir.
 _Avoid_: Kalıcı npm token'ı, provenance'sız ilk yayın, tekrarlanan bootstrap
 
 **Lisans Yüzeyi**:
@@ -153,5 +153,5 @@ Node'un n8n public logger üzerinden yalnız bounded ve secret-safe terminal req
 _Avoid_: Progress log'u, user-input label'ı, node-owned metrics server, healthz toolchain garantisi
 
 **Release Definition**:
-Aynı immutable üç npm paketinin `next` altında gerçek Community Packages kurulumu, üç-anchor disposable release matrix'i, temiz canlı JSC canary, ayrıca açıkça onaylanmış dar gerçek kabul-stack E2E'si ve tüm security, process, supply-chain, lisans, source-delivery ve dokümantasyon gate'leri geçmeden `latest` olamadığı v0.2.0 başarı sözleşmesi.
+Aynı immutable üç npm paketinin `next` altında gerçek Community Packages kurulumu, üç-anchor disposable release matrix'i, temiz canlı JSC canary, ayrıca açıkça onaylanmış dar gerçek kabul-stack E2E'si ve tüm security, process, supply-chain, lisans, source-delivery ve dokümantasyon gate'leri geçmeden release-ready sayılamadığı v0.2.0 başarı sözleşmesi.
 _Avoid_: Local pack kanıtı, tek happy-path download, CI-only kabul, kısmi gate feragati
