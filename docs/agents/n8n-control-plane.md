@@ -112,6 +112,19 @@ A `dev` run produces no durable evidence.
 
 `docs/release.md` or an ADR is updated only when a gate **outcome** or its wording actually changes — not per run.
 
+## Known MCP drift
+
+The MCP reports some things inaccurately. Both of these below sent a previous session down the wrong path, so verify rather than trust:
+
+| Surface                    | Reported                                                                | Actual                                                                                                                                                        |
+| -------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get_workflow_details`     | `parentFolderId: null` for a workflow that is inside a folder            | The workflow is in the folder. Folder placement cannot be confirmed from this field — confirm in the n8n UI                                                     |
+| `triggerInfo` webhook URLs | Production URL with the `webhookId` prepended to the path                | n8n only prepends `webhookId` for paths with dynamic `:segments`. For a static multi-segment path the registered URL has no prefix, and the reported one 404s |
+
+There is also no folder-creating tool: `create_workflow_from_code` only accepts a `folderId` that already exists. The folder marker therefore depends on the operator creating the folder in the UI first, so ask for it before building rather than creating a partially marked workflow.
+
+Both entries were observed against n8n 2.32.7. Re-check them after an instance or MCP upgrade, and delete a row once it stops reproducing.
+
 ## Failure behaviour
 
 Fail-closed. On any unexpected result, error or permission failure:
