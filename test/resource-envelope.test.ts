@@ -14,7 +14,7 @@ describe('Resource Envelope policy', () => {
 			maximumArtifactCount: 20,
 			maximumArtifactSizeBytes: 128 * MEBIBYTE,
 			maximumTotalArtifactSizeBytes: 256 * MEBIBYTE,
-			maximumWorkspaceSizeBytes: 576 * MEBIBYTE,
+			maximumWorkspaceSizeBytes: 704 * MEBIBYTE,
 		});
 	});
 
@@ -31,7 +31,7 @@ describe('Resource Envelope policy', () => {
 			maximumArtifactCount: 50,
 			maximumArtifactSizeBytes: 256 * MEBIBYTE,
 			maximumTotalArtifactSizeBytes: 512 * MEBIBYTE,
-			maximumWorkspaceSizeBytes: 1088 * MEBIBYTE,
+			maximumWorkspaceSizeBytes: 1216 * MEBIBYTE,
 		});
 	});
 

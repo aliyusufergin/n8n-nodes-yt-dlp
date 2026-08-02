@@ -531,11 +531,16 @@ describe('download request', () => {
 	it('classifies a real workspace overshoot as an indexed request failure', async () => {
 		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-workspace-envelope-'));
 		temporaryDirectories.push(workspaceParent);
+		// Derived from the envelope so a change to the workspace formula cannot silently turn
+		// this into a test that no longer overshoots anything.
+		const overshootBytes =
+			createResourceEnvelope({ maximumTotalArtifactSizeMiB: 1 }).maximumWorkspaceSizeBytes +
+			1024 * 1024;
 		const executablePath = await createArtifactFixtureExecutable(
 			workspaceParent,
 			`await fs.writeFile(join(artifacts, '000001-video.mp4'), 'valid');\n` +
 				`await fs.writeFile(join(temp, 'overshoot.part'), '');\n` +
-				`await fs.truncate(join(temp, 'overshoot.part'), ${67 * 1024 * 1024});\n`,
+				`await fs.truncate(join(temp, 'overshoot.part'), ${overshootBytes});\n`,
 		);
 		const prepareBinaryData = vi.fn();
 		const context = createExecutionContext(
