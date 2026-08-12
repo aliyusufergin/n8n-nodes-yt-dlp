@@ -1,8 +1,8 @@
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import type { IExecuteFunctions, INode } from 'n8n-workflow';
-import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
+import type { IExecuteFunctions, INode, OnError } from 'n8n-workflow';
+import { NodeConnectionTypes, NodeOperationError, getNodeOutputs } from 'n8n-workflow';
 import { ToolchainAttestationError } from 'n8n-nodes-yt-dlp-platform';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -70,6 +70,7 @@ function createExecutionContext(
 	continueOnFail = false,
 	executionSignal?: AbortSignal,
 	authentication?: YtDlpAuthenticationData,
+	onError: OnError = continueOnFail ? 'continueRegularOutput' : 'stopWorkflow',
 ): IExecuteFunctions {
 	const node: INode = {
 		id: 'node-id',
@@ -78,6 +79,7 @@ function createExecutionContext(
 		typeVersion: 1,
 		position: [0, 0],
 		parameters: {},
+		onError,
 		credentials:
 			authentication === undefined
 				? undefined
@@ -85,7 +87,7 @@ function createExecutionContext(
 	};
 
 	return {
-		continueOnFail: vi.fn(() => continueOnFail),
+		continueOnFail: vi.fn(() => onError !== 'stopWorkflow'),
 		getExecutionId: vi.fn(() => 'execution-id'),
 		getExecutionCancelSignal: vi.fn(() => executionSignal),
 		getInputData: vi.fn(() => parameters.map(() => ({ json: {} }))),
@@ -114,6 +116,27 @@ describe('yt-dlp node metadata', () => {
 
 		expect(description.outputs).toEqual([NodeConnectionTypes.Main]);
 		expect(description).not.toHaveProperty('usableAsTool');
+	});
+
+	it('lets n8n append the error output under continueErrorOutput', () => {
+		const description = new YtDlp().description;
+		const node: INode = {
+			id: 'node-id',
+			name: 'yt-dlp',
+			type: 'n8n-nodes-yt-dlp.ytDlp',
+			typeVersion: 1,
+			position: [0, 0],
+			parameters: {},
+			onError: 'continueErrorOutput',
+		};
+
+		const outputs = getNodeOutputs(undefined as never, node, description);
+
+		expect(outputs).toHaveLength(2);
+		expect(outputs[1]).toMatchObject({
+			category: 'error',
+			type: NodeConnectionTypes.Main,
+		});
 	});
 
 	it('declares Source URL separately from Arguments', () => {
@@ -638,6 +661,150 @@ describe('yt-dlp node adapter', () => {
 		expect(startRequest).toHaveBeenCalledTimes(2);
 		expect(JSON.stringify(result)).not.toContain('sensitive');
 	});
+
+	it('keeps the Failure Item on the regular output under continueRegularOutput', async () => {
+		const startRequest = vi
+			.fn<DownloadRequestExecutor>()
+			.mockRejectedValue(new YtDlpProcessError('YTDLP_FAILED', 'secret', 'stdout', 'stderr'));
+		const context = createExecutionContext(
+			[{ sourceUrl: 'https://example.com/video', arguments: '' }],
+			true,
+			undefined,
+			undefined,
+			'continueRegularOutput',
+		);
+
+		const result = await executeYtDlpNode(context, startRequest);
+
+		expect(result).toEqual([
+			[
+				{
+					json: {
+						status: 'error',
+						errorCode: 'YTDLP_FAILED',
+						errorMessage: 'yt-dlp could not complete the Download Request.',
+					},
+					pairedItem: { item: 0 },
+				},
+			],
+		]);
+	});
+
+	it('routes the Failure Item to the error output under continueErrorOutput', async () => {
+		const successItem = {
+			json: { status: 'success' },
+			pairedItem: { item: 1 },
+		};
+		const startRequest = vi
+			.fn<DownloadRequestExecutor>()
+			.mockRejectedValueOnce(
+				new YtDlpProcessError('YTDLP_FAILED', 'sensitive', 'sensitive', 'sensitive'),
+			)
+			.mockResolvedValueOnce([successItem]);
+		const context = createExecutionContext(
+			[
+				{ sourceUrl: 'https://example.com/failed', arguments: '' },
+				{ sourceUrl: 'https://example.com/succeeded', arguments: '' },
+			],
+			true,
+			undefined,
+			undefined,
+			'continueErrorOutput',
+		);
+
+		const result = await executeYtDlpNode(context, startRequest);
+
+		expect(result).toEqual([
+			[successItem],
+			[
+				{
+					json: {
+						status: 'error',
+						errorCode: 'YTDLP_FAILED',
+						errorMessage: 'yt-dlp could not complete the Download Request.',
+					},
+					pairedItem: { item: 0 },
+				},
+			],
+		]);
+		expect(startRequest).toHaveBeenCalledTimes(2);
+		expect(JSON.stringify(result)).not.toContain('sensitive');
+	});
+
+	it('leaves the regular output empty under continueErrorOutput when every request fails', async () => {
+		const startRequest = vi
+			.fn<DownloadRequestExecutor>()
+			.mockRejectedValue(new YtDlpRequestResourceLimitError('secret'));
+		const context = createExecutionContext(
+			[{ sourceUrl: 'https://example.com/video', arguments: '' }],
+			true,
+			undefined,
+			undefined,
+			'continueErrorOutput',
+		);
+
+		const [regularOutput, errorOutput] = await executeYtDlpNode(context, startRequest);
+
+		expect(regularOutput).toEqual([]);
+		expect(errorOutput).toEqual([
+			{
+				json: {
+					status: 'error',
+					errorCode: 'RESOURCE_LIMIT',
+					errorMessage: 'The Download Request exceeded its Resource Envelope.',
+				},
+				pairedItem: { item: 0 },
+			},
+		]);
+	});
+
+	it('returns an empty error output under continueErrorOutput when no request fails', async () => {
+		const successItem = {
+			json: { status: 'success' },
+			pairedItem: { item: 0 },
+		};
+		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([successItem]);
+		const context = createExecutionContext(
+			[{ sourceUrl: 'https://example.com/video', arguments: '' }],
+			true,
+			undefined,
+			undefined,
+			'continueErrorOutput',
+		);
+
+		await expect(executeYtDlpNode(context, startRequest)).resolves.toEqual([[successItem], []]);
+	});
+
+	it.each([
+		['cancellation', new YtDlpProcessCancellationError()],
+		[
+			'process termination invariant',
+			new YtDlpProcessTerminationError(true, new Error('termination invariant')),
+		],
+		['toolchain invariant', new Error('toolchain invariant')],
+		['unknown exception', new Error('unknown exception')],
+	] as const)(
+		'stops the execution for a %s even under continueErrorOutput',
+		async (_name, globalError) => {
+			const startRequest = vi
+				.fn<DownloadRequestExecutor>()
+				.mockRejectedValueOnce(globalError)
+				.mockResolvedValueOnce([]);
+			const context = createExecutionContext(
+				[
+					{ sourceUrl: 'https://example.com/first', arguments: '' },
+					{ sourceUrl: 'https://example.com/second', arguments: '' },
+				],
+				true,
+				undefined,
+				undefined,
+				'continueErrorOutput',
+			);
+
+			await expect(executeYtDlpNode(context, startRequest)).rejects.toBe(globalError);
+			expect(startRequest).toHaveBeenCalledOnce();
+		},
+	);
 
 	it('accepts exactly 20 input items', async () => {
 		const parameters = Array.from({ length: 20 }, (_, index) => ({

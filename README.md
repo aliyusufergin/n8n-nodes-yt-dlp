@@ -246,6 +246,27 @@ continue:
 }
 ```
 
+Which output that Failure Item leaves on follows the node's **On Error** setting, so both standard
+branching patterns work:
+
+| On Error | Where a typed request error goes | Branch on it with |
+| --- | --- | --- |
+| **Stop Workflow** (default) | nowhere — the execution fails with an item-linked error | an n8n error workflow |
+| **Continue (using error output)** | the node's **Error** output; the **Success** output carries Artifact Items only | connecting the Error output |
+| **Continue** | the single main output, next to Artifact Items | an If/Switch on `{{ $json.status }}` |
+
+Artifact Items always stay on the first output. To branch on the error output, set On Error to
+**Continue (using error output)** and connect **yt-dlp → Error** to your handler; that handler
+receives the Failure Item above, and only Artifact Items reach the Success branch. To branch on a
+single output instead, set On Error to **Continue** and put an **If** node after yt-dlp with the
+condition `{{ $json.status }}` equals `error`; the true branch handles Failure Items, the false
+branch Artifact Items.
+
+Only a typed request error becomes a Failure Item. The node still throws for cancellation,
+execution-wide limits, and invariant or cleanup failures; n8n then applies On Error to that thrown
+error, so under **Continue (using error output)** the Error branch receives an n8n-authored error
+item rather than a Failure Item in the Result contract shape.
+
 The stable request error codes are `INVALID_SOURCE_URL`, `INVALID_ARGUMENTS`, `YTDLP_FAILED`,
 `REQUEST_TIMEOUT`, `PROCESS_OUTPUT_LIMIT`, `RESOURCE_LIMIT`, `INVALID_ARTIFACT_SET`, and
 `BINARY_TRANSFER_FAILED`. Cancellation, execution-wide limits, toolchain/invariant failures,

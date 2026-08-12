@@ -208,6 +208,10 @@ export async function executeYtDlpNode(
 	const executionStartedAt = Date.now();
 	const items = execution.getInputData();
 	const outputItems: INodeExecutionData[] = [];
+	const errorOutputItems: INodeExecutionData[] = [];
+	// n8n appends the error output itself for `continueErrorOutput`, so the node keeps one
+	// declared output and only decides which returned branch a Failure Item lands in.
+	const usesErrorOutput = execution.getNode().onError === 'continueErrorOutput';
 	const executionController = new AbortController();
 	let executionTerminationReason: 'cancelled' | 'timeout' | undefined;
 	let executionWorkspace: ExecutionWorkspace | undefined;
@@ -354,7 +358,7 @@ export async function executeYtDlpNode(
 						outcome: 'failure',
 					});
 					if (execution.continueOnFail()) {
-						outputItems.push({
+						(usesErrorOutput ? errorOutputItems : outputItems).push({
 							json: {
 								status: 'error',
 								errorCode,
@@ -434,7 +438,7 @@ export async function executeYtDlpNode(
 	}
 
 	if (executionError !== undefined) throw executionError;
-	return [outputItems];
+	return usesErrorOutput ? [outputItems, errorOutputItems] : [outputItems];
 }
 
 export class YtDlp implements INodeType {

@@ -29,7 +29,7 @@ Tek bir İndirme İsteği'ni başarısız kılan ancak node'un diğer input item
 _Avoid_: Node arızası, cancellation, kısmi başarı
 
 **Failure Item**:
-`Continue On Fail` açıkken bir İstek Hatası'nı kararlı hata kodu ve redakte edilmiş mesajla temsil eden, binary içermeyen ve kaynak input'a bağlı output item.
+`Continue On Fail` açıkken bir İstek Hatası'nı kararlı hata kodu ve redakte edilmiş mesajla temsil eden, binary içermeyen ve kaynak input'a bağlı output item. `onError: continueRegularOutput` altında regular output'a, `onError: continueErrorOutput` altında error output'a düşer.
 _Avoid_: Artifact Item, ham stderr, hata dump'ı
 
 **Uyumluluk Hedefi**:
@@ -133,7 +133,7 @@ Yayımlanmış exact tarball'ların dış ağ kapalı sentetik queue-mode E2E'si
 _Avoid_: Yalnız canlı site testi, yalnız direct-file fixture, supported-site garantisi
 
 **Sonuç Sözleşmesi**:
-Tek main output'ta `status` ile ayrılan, her Artifact için minimal ve kaynak input'a bağlı Artifact Item ya da yalnız `Continue On Fail` için kararlı request hata kodlu Failure Item üreten workflow-visible sözleşme. Binary metadata doğrulanmış basename, explicit MIME ve stat boyutundan gelir; input, secret, process çıktısı ve worker path'i output'a kopyalanmaz.
+Node'un ilan ettiği tek main output'ta `status` ile ayrılan, her Artifact için minimal ve kaynak input'a bağlı Artifact Item ya da yalnız `Continue On Fail` için kararlı request hata kodlu Failure Item üreten workflow-visible sözleşme. `onError: continueErrorOutput` seçildiğinde n8n ikinci bir error output ekler ve Failure Item regular output yerine oraya gider. Binary metadata doğrulanmış basename, explicit MIME ve stat boyutundan gelir; input, secret, process çıktısı ve worker path'i output'a kopyalanmaz.
 _Avoid_: Ham yt-dlp sonucu, log item'ı, input echo, helper'a özgü metadata sözleşmesi
 
 **AI Tool Sınırı**:
