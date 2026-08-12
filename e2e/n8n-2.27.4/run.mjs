@@ -215,6 +215,7 @@ function workflowDefinition({
 	continueOnFail = false,
 	credential,
 	name,
+	onError = continueOnFail ? 'continueRegularOutput' : undefined,
 	roundTrip = true,
 	sourceUrl,
 	ytParameters = {},
@@ -254,7 +255,7 @@ function workflowDefinition({
 			credentials: credential
 				? { ytDlpAuthentication: { id: credential.id, name: credential.name } }
 				: undefined,
-			onError: continueOnFail ? 'continueRegularOutput' : undefined,
+			onError,
 		},
 	);
 	const nodes = [trigger, ytDlp];
@@ -280,6 +281,16 @@ function workflowDefinition({
 		);
 		connections['YT-DLP'] = {
 			main: [[{ index: 0, node: 'Round-trip', type: 'main' }]],
+		};
+	}
+	if (onError === 'continueErrorOutput') {
+		// n8n appends the error output at workflow level, so the Failure Item branch is main[1].
+		nodes.push(node('Error Handler', 'n8n-nodes-base.noOp', 1, {}, [520, 200]));
+		connections['YT-DLP'] = {
+			main: [
+				connections['YT-DLP']?.main?.[0] ?? [],
+				[{ index: 0, node: 'Error Handler', type: 'main' }],
+			],
 		};
 	}
 	return {
@@ -1573,6 +1584,53 @@ async function main() {
 			result: continueOnFail.items[0].json,
 		};
 
+		const errorOutputWorkflow = await client.createWorkflow(
+			workflowDefinition({
+				name: 'E2E continue using error output',
+				onError: 'continueErrorOutput',
+				roundTrip: false,
+				sourceUrl: 'ftp://fixture/direct.mp4',
+			}),
+		);
+		const errorOutputExecutionId = await client.runManual(errorOutputWorkflow, 'Error Handler');
+		const errorOutputExecution = await client.waitForExecution(errorOutputExecutionId);
+		const errorOutputRunData = executionData(errorOutputExecution)?.resultData?.runData ?? {};
+		const errorOutputBranches = errorOutputRunData['YT-DLP']?.at(-1)?.data?.main ?? [];
+		const errorOutputState = JSON.stringify({
+			branchLengths: errorOutputBranches.map((branch) => branch?.length ?? null),
+			ranNodes: Object.keys(errorOutputRunData),
+			savedOnError: errorOutputWorkflow.nodes.find(({ name }) => name === 'YT-DLP')?.onError,
+			status: errorOutputExecution.status,
+		});
+		const regularOutputItems = errorOutputBranches[0] ?? [];
+		assert(
+			regularOutputItems.length === 1 &&
+				regularOutputItems[0].json.status === 'error' &&
+				regularOutputItems[0].json.errorCode === 'INVALID_SOURCE_URL' &&
+				regularOutputItems[0].binary === undefined,
+			`continueErrorOutput did not keep the stable binary-free Failure Item on the regular output: ${errorOutputState}.`,
+		);
+		// n8n's engine owns the error output: handleNodeErrorOutput overwrites it with the items
+		// it recognises as errors on the earlier outputs, and a Failure Item is not one of those
+		// shapes. The branch therefore stays empty and the node warns instead.
+		assert(
+			(errorOutputBranches[1]?.length ?? 0) === 0 &&
+				errorOutputRunData['Error Handler'] === undefined,
+			`The engine-owned error output was not empty: ${errorOutputState}.`,
+		);
+		const errorOutputHints = errorOutputRunData['YT-DLP']?.at(-1)?.hints ?? [];
+		assert(
+			errorOutputHints.some(({ message }) => message?.includes('error output stays empty')),
+			`continueErrorOutput produced no dead-branch warning hint: ${JSON.stringify(errorOutputHints)}.`,
+		);
+		evidence.scenarios.continueErrorOutput = {
+			errorOutputItems: errorOutputBranches[1]?.length ?? 0,
+			executionId: errorOutputExecutionId,
+			hint: 'warned',
+			outcome: 'pass',
+			result: regularOutputItems[0].json,
+		};
+
 		const resourceLimit = await createAndRunManual(client, {
 			continueOnFail: true,
 			name: 'E2E resource limit',
@@ -1586,7 +1644,12 @@ async function main() {
 		assert(
 			resourceLimit.items[0].json.errorCode === 'RESOURCE_LIMIT' &&
 				resourceLimit.items[0].binary === undefined,
-			'Resource limit did not return a binary-free RESOURCE_LIMIT Failure Item.',
+			`Resource limit did not return a binary-free RESOURCE_LIMIT Failure Item: ${JSON.stringify(
+				{
+					items: successfulJson(resourceLimit.items),
+					status: resourceLimit.execution.status,
+				},
+			)}.`,
 		);
 		evidence.scenarios.resourceLimit = {
 			executionId: resourceLimit.executionId,

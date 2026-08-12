@@ -208,10 +208,18 @@ export async function executeYtDlpNode(
 	const executionStartedAt = Date.now();
 	const items = execution.getInputData();
 	const outputItems: INodeExecutionData[] = [];
-	const errorOutputItems: INodeExecutionData[] = [];
-	// n8n appends the error output itself for `continueErrorOutput`, so the node keeps one
-	// declared output and only decides which returned branch a Failure Item lands in.
-	const usesErrorOutput = execution.getNode().onError === 'continueErrorOutput';
+	// n8n owns the error output: for `continueErrorOutput` its engine overwrites the last main
+	// output with the items it recognises as errors on the earlier outputs, so a node cannot
+	// write that branch itself. The Failure Item is not an engine-recognised error shape, so the
+	// error branch would stay silently empty. Warn instead of leaving a dead branch.
+	if (execution.getNode().onError === 'continueErrorOutput') {
+		execution.addExecutionHints({
+			message:
+				'This node reports a Download Request failure as a Failure Item on its regular output, so the error output stays empty. Branch on {{ $json.status }} instead.',
+			location: 'outputPane',
+			type: 'warning',
+		});
+	}
 	const executionController = new AbortController();
 	let executionTerminationReason: 'cancelled' | 'timeout' | undefined;
 	let executionWorkspace: ExecutionWorkspace | undefined;
@@ -358,7 +366,7 @@ export async function executeYtDlpNode(
 						outcome: 'failure',
 					});
 					if (execution.continueOnFail()) {
-						(usesErrorOutput ? errorOutputItems : outputItems).push({
+						outputItems.push({
 							json: {
 								status: 'error',
 								errorCode,
@@ -438,7 +446,7 @@ export async function executeYtDlpNode(
 	}
 
 	if (executionError !== undefined) throw executionError;
-	return usesErrorOutput ? [outputItems, errorOutputItems] : [outputItems];
+	return [outputItems];
 }
 
 export class YtDlp implements INodeType {

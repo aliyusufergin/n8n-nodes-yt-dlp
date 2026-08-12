@@ -246,21 +246,24 @@ continue:
 }
 ```
 
-Which output that Failure Item leaves on follows the node's **On Error** setting, so both standard
-branching patterns work:
+The Failure Item always arrives on the node's single main output, whichever **On Error** value is
+set:
 
 | On Error | Where a typed request error goes | Branch on it with |
 | --- | --- | --- |
 | **Stop Workflow** (default) | nowhere — the execution fails with an item-linked error | an n8n error workflow |
-| **Continue (using error output)** | the node's **Error** output; the **Success** output carries Artifact Items only | connecting the Error output |
-| **Continue** | the single main output, next to Artifact Items | an If/Switch on `{{ $json.status }}` |
+| **Continue** | the main output, next to Artifact Items | an If/Switch on `{{ $json.status }}` |
+| **Continue (using error output)** | the main output as well — the **Error** output stays empty | an If/Switch on `{{ $json.status }}` |
 
-Artifact Items always stay on the first output. To branch on the error output, set On Error to
-**Continue (using error output)** and connect **yt-dlp → Error** to your handler; that handler
-receives the Failure Item above, and only Artifact Items reach the Success branch. To branch on a
-single output instead, set On Error to **Continue** and put an **If** node after yt-dlp with the
+To branch on failures, set On Error to **Continue** and put an **If** node after yt-dlp with the
 condition `{{ $json.status }}` equals `error`; the true branch handles Failure Items, the false
 branch Artifact Items.
+
+**Continue (using error output)** does not move the Failure Item to the Error branch, and the node
+raises an execution warning saying so. n8n's engine — not the node — fills that output: it scans the
+regular outputs for items it recognises as errors (an `error` key, alone or beside `message`) and
+overwrites the Error output with what it finds. A Failure Item carries `status`, `errorCode`, and
+`errorMessage`, so it is never claimed, and writing that output from the node is not possible.
 
 Only a typed request error becomes a Failure Item. The node still throws for cancellation,
 execution-wide limits, and invariant or cleanup failures; n8n then applies On Error to that thrown
