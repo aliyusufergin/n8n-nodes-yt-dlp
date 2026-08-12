@@ -123,7 +123,7 @@ The MCP reports some things inaccurately. Both of these below sent a previous se
 
 There is also no folder-creating tool: `create_workflow_from_code` only accepts a `folderId` that already exists. The folder marker therefore depends on the operator creating the folder in the UI first, so ask for it before building rather than creating a partially marked workflow.
 
-Both entries were observed against n8n 2.32.7. Re-check them after an instance or MCP upgrade, and delete a row once it stops reproducing.
+Both entries were first observed against n8n 2.32.7; the `parentFolderId` row still reproduced on 2.34.5 (2026-08-12). Re-check them after an instance or MCP upgrade, and delete a row once it stops reproducing.
 
 ## Failure behaviour
 
@@ -141,7 +141,7 @@ Rollback is not automatic. `restore_workflow_version` runs only when the operato
 
 Some evidence the release gates need is outside the MCP: the running image digest (ADR 0033 rejects the mutable `stable` tag as evidence), container state, worker logs, published tarball bytes.
 
-Acceptance stack, verified 2026-08-01 — n8n 2.32.7 at digest `sha256:882b126a8ddd0646e7d17ec47630e7704615e4647f3363471859fddc3f8946e2` on both main and worker, matching ADR 0033:
+Acceptance stack, verified 2026-08-12 — n8n 2.34.5 at digest `sha256:d91033b4fac2f7b75c5c4007e10824c66147f7d7a3cccb488720e97452ee7dc7` on both main and worker, matching ADR 0033. The containers run the mutable `stable` tag, so the version moves on its own: re-resolve the digest at the start of every acceptance run rather than trusting this line.
 
 | Role         | Target                                        |
 | ------------ | --------------------------------------------- |
