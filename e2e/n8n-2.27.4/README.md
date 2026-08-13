@@ -6,19 +6,26 @@ same unmodified n8n main and worker topology with Postgres, Redis, queue mode,
 offloaded manual executions, production executions, and database binary
 storage.
 
-The release-candidate cut on 2026-07-17 froze these official Linux x64 images:
+These official Linux x64 images are frozen for the matrix. The floor and acceptance
+rows were frozen at the 2026-07-17 release-candidate cut; the stable-head row was
+refrozen on 2026-08-13 (see the note below the table):
 
 | Role               | Exact n8n version | Exact Linux x64 image digest                                              |
 | ------------------ | ----------------- | ------------------------------------------------------------------------- |
 | 2.x floor          | 2.0.0             | `sha256:bd39d2d238b51af2626b2ac7b6b9938efff069390cce83ba769e52f10eedf795` |
 | Acceptance         | 2.27.4            | `sha256:6dd442962208ff080af3e0a8ab5254eb4c6138f2d188d4a7e3cf84eed3b7eae1` |
-| Frozen stable head | 2.30.7            | `sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060` |
+| Frozen stable head | 2.34.5            | `sha256:7e82936bc03d310ddb8759c361f4e225412f0c3daad8d4b4e0d10c7e034c1b11` |
+
+The stable-head row was advanced on 2026-08-13 under ADR 0025's own advance
+clause, from 2.30.7
+(`sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060`) to
+2.34.5, and refrozen at that date. The floor and acceptance rows are unchanged.
 
 The Uyumluluk Hedefi remains `>=2.0.0 <3.0.0`. Doğrulanmış Destek is limited
 to the exact anchors above after all three lanes pass; the matrix does not
-claim that every intermediate 2.x patch was tested. n8n 2.30.8 and every n8n
-release after the cut, including 2.32.5, are unverified for `0.2.0`. A later
-node release must advance and refreeze the stable-head anchor.
+claim that every intermediate 2.x patch was tested. Every n8n release after
+2.34.5 is unverified for `0.2.0`, as is every intermediate patch between the
+anchors. A later node release must advance and refreeze the stable-head anchor.
 
 The hermetic registry is available only inside the disposable Docker network.
 It presents the exact packed tarballs at n8n's default

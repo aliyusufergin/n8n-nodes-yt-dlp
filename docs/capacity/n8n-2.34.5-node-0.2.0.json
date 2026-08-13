@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-08-13T20:56:17.461Z",
+  "rawEvidence": {
+    "path": "e2e/n8n-2.27.4/.generated/2.34.5/evidence/n8n-2.34.5.json",
+    "sha256": "7307b9cc9121b37637bced9bd5d5622e0c95109259ad7fbc99a01c1c63695b81"
+  },
+  "image": {
+    "name": "docker.n8n.io/n8nio/n8n",
+    "version": "2.34.5",
+    "platform": "linux/amd64",
+    "digest": "sha256:7e82936bc03d310ddb8759c361f4e225412f0c3daad8d4b4e0d10c7e034c1b11",
+    "indexDigest": "sha256:d91033b4fac2f7b75c5c4007e10824c66147f7d7a3cccb488720e97452ee7dc7"
+  },
+  "packages": [
+    {
+      "name": "n8n-nodes-yt-dlp-linux-x64",
+      "version": "0.2.0",
+      "sha256": "c944fb08ee3125c7cb30b9772f8a23f5ff57957911ea4179db8be80f4ffedc8e",
+      "sizeBytes": 199161878
+    },
+    {
+      "name": "n8n-nodes-yt-dlp-platform",
+      "version": "0.2.0",
+      "sha256": "1298b8e0c7762a40741c557936712f27484cc89d78fef16ec851b99c8a49c28c",
+      "sizeBytes": 3703
+    },
+    {
+      "name": "n8n-nodes-yt-dlp",
+      "version": "0.2.0",
+      "sha256": "48849e72c5947a0e5dcd0ab15f1df4a1d39e5342c75a41cf45b3e7726a8b3898",
+      "sizeBytes": 102467
+    }
+  ],
+  "topology": {
+    "hostCpuCount": 4,
+    "hostMemoryBytes": 16648032256,
+    "containerDriver": "overlayfs",
+    "cgroupVersion": 2,
+    "workersUnderLoad": 1,
+    "workerConcurrency": 10,
+    "database": "Postgres 16",
+    "queue": "Redis 7",
+    "binaryStorage": "database"
+  },
+  "workload": {
+    "concurrentRequests": 10,
+    "artifactCountPerRequest": 2,
+    "individualArtifactHardLimitBytes": 268435456,
+    "totalArtifactHardLimitBytes": 536870912,
+    "ffmpegThreads": 1,
+    "requestTimeoutMinutes": 60
+  },
+  "alertThresholds": {
+    "scope": "this exact disposable topology and package chain",
+    "eventLoopLagSeconds": 1,
+    "hostAvailableMemoryBytes": 2147483648,
+    "queueLatencyP95Ms": 30000,
+    "workerContainerMemoryBytes": 5485101056,
+    "workerTempFreeBytes": 6442450944
+  },
+  "measurements": {
+    "durationMs": 196815,
+    "successfulRequests": 3,
+    "failedRequests": 7,
+    "failureCodes": {
+      "BINARY_TRANSFER_FAILED": 7
+    },
+    "binaryGrowthBytes": 1342214585,
+    "binaryRowGrowth": 8,
+    "databasePeakBytes": 31693847,
+    "redisUsedMemoryPeakBytes": 2239528,
+    "eventLoopLagPeakSeconds": 1.724907519,
+    "queueLatencyMaximumMs": 1558,
+    "queueLatencyP95Ms": 1558,
+    "hostCpuPercent": 93.4316958037811,
+    "hostMinimumAvailableMemoryBytes": 7923290112,
+    "workerProcessRssPeakBytes": 4601495552,
+    "workerContainerCpuPeakPercent": 272.94,
+    "workerContainerMemoryPeakBytes": 4387309092.864,
+    "workerTemporaryDiskPeakBytes": 3236093952,
+    "workerMinimumTempFreeBytes": 38728138752,
+    "postgresContainerCpuPeakPercent": 122.91,
+    "postgresContainerMemoryPeakBytes": 1399085596.672,
+    "redisContainerCpuPeakPercent": 12.66,
+    "redisContainerMemoryPeakBytes": 15518924.8,
+    "ytDlpProcessPeak": 10,
+    "ytDlpWithoutFfmpegThreadRestrictionObserved": true,
+    "ffmpegProcessPeak": 1,
+    "ffmpegWithoutThreadRestrictionObserved": false,
+    "ffmpegThreadRestrictionProven": false,
+    "sampleCount": 28,
+    "processObservationCount": 437
+  },
+  "failureRecovery": {
+    "controlledProcessBoundary": {
+      "requestTimeout": "terminated",
+      "outputFlood": "terminated",
+      "workspaceDiskOvershoot": "terminated",
+      "processDescendants": "terminated"
+    },
+    "binaryTransferFailure": {
+      "partialArtifactItemsPublished": false,
+      "hardDeleteApi": "public REST /executions/delete",
+      "internalDeletionApiUsed": false,
+      "unreferencedRowsAfterPruning": 0
+    },
+    "sigkillStaleSweep": {
+      "exitCode": 137,
+      "staleWorkspaceCount": 1,
+      "workerContainerChanged": false,
+      "recoveryProbe": "pass",
+      "remainingExecutionWorkspaces": 0
+    },
+    "sigkillTargetedRecreation": {
+      "exitCode": 137,
+      "staleWorkspaceCount": 1,
+      "workerContainerChanged": true,
+      "unaffectedContainersChanged": false,
+      "recoveryProbe": "pass",
+      "remainingExecutionWorkspaces": 0
+    }
+  },
+  "acceptance": {
+    "allRequestsSucceeded": false,
+    "binaryGrowthObserved": true,
+    "eventLoopHealthy": false,
+    "ffmpegThreadsRestricted": false,
+    "hostMemoryHeadroom": true,
+    "queueLatencyBounded": true,
+    "tempDiskHeadroom": true
+  },
+  "decision": {
+    "safeAtConcurrency10": false,
+    "workerConcurrency": 1,
+    "supportedScope": "worker concurrency 1 until a lower-concurrency disposable load lane passes",
+    "nodeHardCapsChanged": false
+  }
+}

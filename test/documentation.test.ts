@@ -33,7 +33,7 @@ describe('public documentation', () => {
 			missingSectionContent(readme, {
 				'## Support boundary': [
 					'| Uyumluluk Hedefi (compatibility target) | n8n `>=2.0.0 <3.0.0` |',
-					'| Doğrulanmış Destek (exact verified support) | Official n8n Docker Linux x64 images for n8n 2.0.0, 2.27.4, and 2.30.7 |',
+					'| Doğrulanmış Destek (exact verified support) | Official n8n Docker Linux x64 images for n8n 2.0.0, 2.27.4, and 2.34.5 |',
 					'Only official n8n Docker Linux x64 is supported.',
 				],
 				'## Install, update, and rollback': [
@@ -106,7 +106,7 @@ describe('public documentation', () => {
 				],
 				'## License and Corresponding Source': [
 					'[Toolchain Lock](packages/linux-x64/TOOLCHAIN.lock.json)',
-					'`f32fd4b76ac05569be0cde8c52016f3ef31859378b4144530f41c3227ce960c2`',
+					'`c944fb08ee3125c7cb30b9772f8a23f5ff57957911ea4179db8be80f4ffedc8e`',
 					'`3dcd8963e229e3b34fb9d0d969377e59e25a01146fd128282ad599200034e882`',
 					'./toolchain/rebuild.sh /absolute/output/directory',
 				],
@@ -141,9 +141,10 @@ describe('public documentation', () => {
 					'backend writes are not a transaction',
 				],
 				'## Frozen-head v0.2.0 capacity decision': [
-					'capacity/n8n-2.30.7-node-0.2.0.json',
+					'capacity/n8n-2.34.5-node-0.2.0.json',
 					'worker concurrency 1',
 					'greater than 1 second',
+					'greater than 5,485,101,056 bytes',
 					'less than 6 GiB',
 				],
 				'## Diagnose': [
