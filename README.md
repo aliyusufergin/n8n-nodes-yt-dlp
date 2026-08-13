@@ -16,13 +16,13 @@ The v0.2.0 support statement has two deliberately separate parts:
 | Boundary | v0.2.0 statement |
 | --- | --- |
 | Uyumluluk Hedefi (compatibility target) | n8n `>=2.0.0 <3.0.0` |
-| Doğrulanmış Destek (exact verified support) | Official n8n Docker Linux x64 images for n8n 2.0.0, 2.27.4, and 2.30.7 |
+| Doğrulanmış Destek (exact verified support) | Official n8n Docker Linux x64 images for n8n 2.0.0, 2.27.4, and 2.34.5 |
 | Binary storage | Queue mode with `database` binary storage |
 | Worker concurrency | 1 until a lower-concurrency disposable capacity lane passes |
 
-The compatibility target is an intention, not certification of every n8n 2.x patch. Versions
-after the 2026-07-17 release-candidate cut, including 2.30.8 and later, and intermediate versions
-not listed above are unverified for node 0.2.0.
+The compatibility target is an intention, not certification of every n8n 2.x patch. The
+stable-head anchor was advanced from 2.30.7 to 2.34.5 on 2026-08-13 and refrozen there. Versions
+after that head, and intermediate versions not listed above, are unverified for node 0.2.0.
 
 Only official n8n Docker Linux x64 is supported. n8n Cloud, n8n 1.x or 3.x, Linux arm64,
 Windows, macOS, bare-metal npm installs, alternative container bases, and other Linux x64
@@ -344,15 +344,19 @@ and verbatim `packages/linux-x64/LICENSES/` inventory.
 
 The [Toolchain Lock](packages/linux-x64/TOOLCHAIN.lock.json) freezes upstream tags/commits, asset
 names, SHA-256 values, licenses, runtime-image identities, and source-bundle identities. The
-issue-18 disposable capacity record measured these exact packed bytes:
+issue-18 disposable capacity record for the current frozen head, [n8n 2.34.5 / node
+0.2.0](docs/capacity/n8n-2.34.5-node-0.2.0.json), measured these exact packed bytes:
 
 | Package tarball | SHA-256 |
 | --- | --- |
-| `n8n-nodes-yt-dlp-linux-x64@0.2.0` | `f32fd4b76ac05569be0cde8c52016f3ef31859378b4144530f41c3227ce960c2` |
-| `n8n-nodes-yt-dlp-platform@0.2.0` | `b525d359da35fcf77091e84603c221aa2bc34e87c814511644fa974852ad701e` |
-| `n8n-nodes-yt-dlp@0.2.0` | `d6f7bc87f15942a8b45bcc7cc4c04b95073e56468def1d5408754f902c94629e` |
+| `n8n-nodes-yt-dlp-linux-x64@0.2.0` | `c944fb08ee3125c7cb30b9772f8a23f5ff57957911ea4179db8be80f4ffedc8e` |
+| `n8n-nodes-yt-dlp-platform@0.2.0` | `1298b8e0c7762a40741c557936712f27484cc89d78fef16ec851b99c8a49c28c` |
+| `n8n-nodes-yt-dlp@0.2.0` | `48849e72c5947a0e5dcd0ab15f1df4a1d39e5342c75a41cf45b3e7726a8b3898` |
 
 Those are local release-gate tarball digests, not proof that registry bytes have been published.
+`0.2.0` is unreleased, so these digests move whenever node code lands; the previous frozen head's
+record, [n8n 2.30.7 / node 0.2.0](docs/capacity/n8n-2.30.7-node-0.2.0.json), measured a different
+and now superseded set. Read digests from the capacity record matching your n8n anchor.
 Registry metadata, provenance, and tarball digests must be read back and matched before promotion.
 
 The immutable FFmpeg Corresponding Source Bundle is

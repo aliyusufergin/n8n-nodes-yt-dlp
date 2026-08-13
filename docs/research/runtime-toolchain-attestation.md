@@ -5,16 +5,26 @@ Accessed: 2026-07-17
 ## Runtime anchors
 
 - n8n 2.0.0 official image: Node.js 22.21.0
-- n8n 2.27.4 and 2.30.7 official images: Node.js 24.16.0
+- n8n 2.27.4 and 2.30.7 (previous frozen head) official images: Node.js 24.16.0
+- n8n 2.34.5 (frozen head since 2026-08-13) official image: Node.js 24.18.0
 - Existing product decisions: ADR 0013 Toolchain Lock, ADR 0020 process lifecycle, ADR 0028 Platform Gate
+
+Re-verified on 2026-08-13 after the head advance. The new head moves the image
+runtime one patch level, from Node.js 24.16.0 to 24.18.0; its base is still
+Alpine 3.24 and the container still runs as `uid=1000(node)`. Source: [`2.34.5
+n8n-base Dockerfile`](https://github.com/n8n-io/n8n/blob/f745babb4b5a72bdecf454f2cc81f0ba7d9c0e19/docker/images/n8n-base/Dockerfile),
+which pins `node:24.18.0-alpine3.24`. Every API this document depends on is
+present in both 24.x lines, so no finding changed. The findings below now cite
+24.18.0 alongside the retained 24.16.0 and 22.21.0 links, because 24.16.0 still
+covers the 2.27.4 acceptance anchor.
 
 ## Findings
 
-1. **Kanıtlanmış platform gerçeği:** Node.js 22 and 24 expose `fs.open`/`FileHandle`, descriptor-based `stat`, and descriptor-backed read streams. Linux `O_NOFOLLOW` makes open fail when the final path component is a symbolic link. Sources: [Node.js 22.21.0 filesystem API](https://nodejs.org/download/release/v22.21.0/docs/api/fs.html) and [Node.js 24.16.0 filesystem API](https://nodejs.org/download/release/v24.16.0/docs/api/fs.html).
+1. **Kanıtlanmış platform gerçeği:** Node.js 22 and 24 expose `fs.open`/`FileHandle`, descriptor-based `stat`, and descriptor-backed read streams. Linux `O_NOFOLLOW` makes open fail when the final path component is a symbolic link. Sources: [Node.js 22.21.0 filesystem API](https://nodejs.org/download/release/v22.21.0/docs/api/fs.html), [Node.js 24.16.0 filesystem API](https://nodejs.org/download/release/v24.16.0/docs/api/fs.html), and [Node.js 24.18.0 filesystem API](https://nodejs.org/download/release/v24.18.0/docs/api/fs.html).
 
-2. **Kanıtlanmış platform gerçeği:** Node.js `crypto.createHash()` supports streaming SHA-256 over large files rather than buffering them. Sources: [Node.js 22.21.0 crypto API](https://nodejs.org/download/release/v22.21.0/docs/api/crypto.html) and [Node.js 24.16.0 crypto API](https://nodejs.org/download/release/v24.16.0/docs/api/crypto.html).
+2. **Kanıtlanmış platform gerçeği:** Node.js `crypto.createHash()` supports streaming SHA-256 over large files rather than buffering them. Sources: [Node.js 22.21.0 crypto API](https://nodejs.org/download/release/v22.21.0/docs/api/crypto.html), [Node.js 24.16.0 crypto API](https://nodejs.org/download/release/v24.16.0/docs/api/crypto.html), and [Node.js 24.18.0 crypto API](https://nodejs.org/download/release/v24.18.0/docs/api/crypto.html).
 
-3. **Kanıtlanmış platform gerçeği:** The supported Node.js runtimes expose shell-free `child_process.spawn(command, args, options)`. This supplies the mechanism for bounded, no-network version probes using absolute executable paths; it does not itself validate an executable. Sources: [Node.js 22.21.0 child-process API](https://nodejs.org/download/release/v22.21.0/docs/api/child_process.html) and [Node.js 24.16.0 child-process API](https://nodejs.org/download/release/v24.16.0/docs/api/child_process.html).
+3. **Kanıtlanmış platform gerçeği:** The supported Node.js runtimes expose shell-free `child_process.spawn(command, args, options)`. This supplies the mechanism for bounded, no-network version probes using absolute executable paths; it does not itself validate an executable. Sources: [Node.js 22.21.0 child-process API](https://nodejs.org/download/release/v22.21.0/docs/api/child_process.html), [Node.js 24.16.0 child-process API](https://nodejs.org/download/release/v24.16.0/docs/api/child_process.html), and [Node.js 24.18.0 child-process API](https://nodejs.org/download/release/v24.18.0/docs/api/child_process.html).
 
 4. **Ürün kararı:** ADR 0013 already requires the Toolchain Lock to pin upstream tags/commits, asset names, SHA-256 values, licenses, and source-bundle identity. Upstream signatures/checksums, clean build inputs, npm tarballs, provenance, and release E2E are publication gates; runtime checks do not replace them.
 
