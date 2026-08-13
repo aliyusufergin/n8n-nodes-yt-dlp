@@ -534,9 +534,12 @@ async function buildCandidate(outputDirectory) {
 	process.stdout.write(`${JSON.stringify({ commit, outputRoot, version })}\n`);
 }
 
-export async function verifyCandidate(candidateDirectory) {
+export async function verifyCandidate(candidateDirectory, candidateBytes) {
 	const candidateRoot = resolve(candidateDirectory);
-	const candidate = await readJson(join(candidateRoot, 'release-candidate.json'));
+	const candidate =
+		candidateBytes === undefined
+			? await readJson(join(candidateRoot, 'release-candidate.json'))
+			: JSON.parse(candidateBytes);
 	if (
 		candidate.schemaVersion !== 1 ||
 		typeof candidate.version !== 'string' ||
@@ -724,34 +727,15 @@ export async function verifyRegistryProvenance(
 	}
 }
 
-export async function verifyRegistry(
-	candidateDirectory,
-	registryArgument,
-	outputPath,
-	{ allowInitialLatest = false, materializeDirectory, verifyBundle = verifySigstoreBundle } = {},
-) {
-	const candidateRoot = resolve(candidateDirectory);
-	const candidate = await verifyCandidate(candidateRoot);
-	const candidateBytes = await readFile(join(candidateRoot, 'release-candidate.json'));
-	const registry = normalizeRegistry(registryArgument, 'Registry read-back');
-	const materializedRoot =
-		materializeDirectory === undefined ? undefined : resolve(materializeDirectory);
-	if (materializedRoot !== undefined) {
-		await mkdir(materializedRoot);
-		await mkdir(join(materializedRoot, 'tarballs'));
-		await writeFile(join(materializedRoot, 'release-candidate.json'), candidateBytes);
-	}
-	const packages = [];
+async function assertRegistryDistTagState(candidate, registry, allowInitialLatest) {
+	if (!Array.isArray(candidate.packages)) fail('Release Candidate Chain manifest is invalid.');
 	for (const packageEvidence of candidate.packages) {
-		const expected = candidate.expectedRegistry.packages[packageEvidence.name];
-		const packageUrl = `${registry}/${encodeURIComponent(packageEvidence.name)}`;
-		const packumentResponse = await fetch(packageUrl, {
-			signal: AbortSignal.timeout(30_000),
-		});
+		const packumentResponse = await fetch(
+			`${registry}/${encodeURIComponent(packageEvidence.name)}`,
+			{ signal: AbortSignal.timeout(30_000) },
+		);
 		if (!packumentResponse.ok) {
-			fail(
-				`${packageEvidence.name} next tag read-back returned HTTP ${packumentResponse.status}.`,
-			);
+			fail(`${packageEvidence.name} next tag read-back returned HTTP ${packumentResponse.status}.`);
 		}
 		const packument = await packumentResponse.json();
 		if (packument['dist-tags']?.next !== candidate.version) {
@@ -768,10 +752,39 @@ export async function verifyRegistry(
 		if (!allowInitialLatest && packument['dist-tags']?.latest === candidate.version) {
 			fail(`${packageEvidence.name} latest unexpectedly identifies ${candidate.version}.`);
 		}
-		const metadataResponse = await fetch(
-			`${packageUrl}/${packageEvidence.version}`,
-			{ signal: AbortSignal.timeout(30_000) },
-		);
+	}
+}
+
+export async function verifyRegistry(
+	candidateDirectory,
+	registryArgument,
+	outputPath,
+	{ allowInitialLatest = false, materializeDirectory, verifyBundle = verifySigstoreBundle } = {},
+) {
+	const candidateRoot = resolve(candidateDirectory);
+	const candidateBytes = await readFile(join(candidateRoot, 'release-candidate.json'));
+	const registry = normalizeRegistry(registryArgument, 'Registry read-back');
+	// Dist-tag state is the cheapest gate and the one a candidate most often fails, so it runs
+	// before the local chain is re-hashed and re-extracted. It reads the manifest before
+	// verifyCandidate has validated it, so both are given the same bytes: nothing it decides can
+	// come from a manifest other than the one verified here, and no evidence is recorded until
+	// verifyCandidate returns.
+	await assertRegistryDistTagState(JSON.parse(candidateBytes), registry, allowInitialLatest);
+	const candidate = await verifyCandidate(candidateRoot, candidateBytes);
+	const materializedRoot =
+		materializeDirectory === undefined ? undefined : resolve(materializeDirectory);
+	if (materializedRoot !== undefined) {
+		await mkdir(materializedRoot);
+		await mkdir(join(materializedRoot, 'tarballs'));
+		await writeFile(join(materializedRoot, 'release-candidate.json'), candidateBytes);
+	}
+	const packages = [];
+	for (const packageEvidence of candidate.packages) {
+		const expected = candidate.expectedRegistry.packages[packageEvidence.name];
+		const packageUrl = `${registry}/${encodeURIComponent(packageEvidence.name)}`;
+		const metadataResponse = await fetch(`${packageUrl}/${packageEvidence.version}`, {
+			signal: AbortSignal.timeout(30_000),
+		});
 		if (!metadataResponse.ok) {
 			fail(`${packageEvidence.name} registry metadata returned HTTP ${metadataResponse.status}.`);
 		}

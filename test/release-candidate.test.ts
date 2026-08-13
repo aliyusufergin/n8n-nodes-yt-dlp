@@ -2,12 +2,13 @@ import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
+import type { RequestListener, Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { npmPublishEnvelopeBytes } from '../scripts/release-candidate.mjs';
 
@@ -505,14 +506,17 @@ describe('immutable Release Candidate Chain', () => {
 		}
 	});
 
-	it('matches registry metadata, provenance, and tarball bytes on read-back', async () => {
+	describe('registry read-back', () => {
 		let attestationRequests = 0;
 		let includeFiles = true;
 		let latestVersion: string | undefined;
-		let nextVersion = manifest.version;
-		let publishedVersions = [manifest.version];
-		let provenanceCommit = manifest.commit;
-		const server = createServer((request, response) => {
+		let nextVersion: string;
+		let publishedVersions: string[];
+		let provenanceCommit: string;
+		let registry: string;
+		let server: Server;
+
+		const handle: RequestListener = (request, response) => {
 			const url = new URL(request.url ?? '/', 'http://registry');
 			const tarball = manifest.packages.find(
 				(packageEvidence) => url.pathname === `/tarballs/${packageEvidence.tarball}`,
@@ -608,7 +612,6 @@ describe('immutable Release Candidate Chain', () => {
 				response.end();
 				return;
 			}
-			const address = server.address() as AddressInfo;
 			const registryMetadata: Record<string, unknown> = {
 				...expected,
 				name,
@@ -618,31 +621,48 @@ describe('immutable Release Candidate Chain', () => {
 						provenance: {
 							predicateType: 'https://slsa.dev/provenance/v1',
 						},
-						url: `http://127.0.0.1:${address.port}/attestations/${name}`,
+						url: `${registry}/attestations/${name}`,
 					},
 					integrity: expected.integrity,
-					tarball: `http://127.0.0.1:${address.port}/tarballs/${expected.tarball}`,
+					tarball: `${registry}/tarballs/${expected.tarball}`,
 				},
 			};
 			if (!includeFiles) delete registryMetadata.files;
 			response.setHeader('content-type', 'application/json');
 			response.end(JSON.stringify(registryMetadata));
+		};
+
+		beforeAll(async () => {
+			server = createServer(handle);
+			await new Promise<void>((resolveListen) => server.listen(0, '127.0.0.1', resolveListen));
+			registry = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 		});
-		await new Promise<void>((resolveListen) => server.listen(0, '127.0.0.1', resolveListen));
-		try {
-			const address = server.address() as AddressInfo;
-			const outputPath = join(candidateRoot, 'registry-readback.json');
-			const registry = `http://127.0.0.1:${address.port}`;
-			const verifyWithTestSignature = async (
-				allowInitialLatest = false,
-				materializeDirectory?: string,
-			) =>
-				await execFileAsync(
-					process.execPath,
-					[
-						'--input-type=module',
-						'--eval',
-						`
+
+		afterAll(async () => {
+			await new Promise<void>((resolveClose, rejectClose) => {
+				server.close((error) => (error === undefined ? resolveClose() : rejectClose(error)));
+			});
+		});
+
+		beforeEach(() => {
+			attestationRequests = 0;
+			includeFiles = true;
+			latestVersion = undefined;
+			nextVersion = manifest.version;
+			publishedVersions = [manifest.version];
+			provenanceCommit = manifest.commit;
+		});
+
+		const verifyWithTestSignature = async (
+			allowInitialLatest = false,
+			materializeDirectory?: string,
+		) =>
+			await execFileAsync(
+				process.execPath,
+				[
+					'--input-type=module',
+					'--eval',
+					`
 							import { verifyRegistry } from './scripts/release-candidate.mjs';
 							const [candidateRoot, registry, outputPath] = process.argv.slice(1);
 							await verifyRegistry(candidateRoot, registry, outputPath, {
@@ -664,27 +684,27 @@ describe('immutable Release Candidate Chain', () => {
 								},
 							});
 						`,
-						candidateRoot,
-						registry,
-						outputPath,
-					],
-					{
-						cwd: repositoryRoot,
-						env: {
-							...process.env,
-							ALLOW_INITIAL_LATEST: String(allowInitialLatest),
-							MATERIALIZE_DIRECTORY: materializeDirectory ?? '',
-							RUNNER_REGION: 'test-region',
-						},
+					candidateRoot,
+					registry,
+					join(candidateRoot, 'registry-readback.json'),
+				],
+				{
+					cwd: repositoryRoot,
+					env: {
+						...process.env,
+						ALLOW_INITIAL_LATEST: String(allowInitialLatest),
+						MATERIALIZE_DIRECTORY: materializeDirectory ?? '',
+						RUNNER_REGION: 'test-region',
 					},
-				);
-			const verifyProvenanceWithTestSignature = async () =>
-				await execFileAsync(
-					process.execPath,
-					[
-						'--input-type=module',
-						'--eval',
-						`
+				},
+			);
+		const verifyProvenanceWithTestSignature = async () =>
+			await execFileAsync(
+				process.execPath,
+				[
+					'--input-type=module',
+					'--eval',
+					`
 							import { readFile } from 'node:fs/promises';
 							import { verifyRegistryProvenance } from './scripts/release-candidate.mjs';
 							const [candidatePath, provenanceUrl] = process.argv.slice(1);
@@ -704,15 +724,16 @@ describe('immutable Release Candidate Chain', () => {
 								},
 							);
 						`,
-						join(candidateRoot, 'release-candidate.json'),
-						`${registry}/attestations/${manifest.packages[0].name}`,
-					],
-					{ cwd: repositoryRoot },
-				);
+					join(candidateRoot, 'release-candidate.json'),
+					`${registry}/attestations/${manifest.packages[0].name}`,
+				],
+				{ cwd: repositoryRoot },
+			);
+		it('matches registry metadata, provenance, and tarball bytes on read-back', async () => {
 			await verifyWithTestSignature();
-			const readback = JSON.parse(await readFile(outputPath, 'utf8')) as {
-				packages: Array<{ name: string; provenance: string; sha256: string }>;
-			};
+			const readback = JSON.parse(
+				await readFile(join(candidateRoot, 'registry-readback.json'), 'utf8'),
+			) as { packages: Array<{ name: string; provenance: string; sha256: string }> };
 			expect(readback.packages).toEqual(
 				manifest.packages.map(({ name, sha256: packageSha256 }) => ({
 					name,
@@ -721,7 +742,9 @@ describe('immutable Release Candidate Chain', () => {
 				})),
 			);
 			expect(attestationRequests).toBe(3);
+		}, 60_000);
 
+		it('materializes the published chain from the registry bytes it read back', async () => {
 			const materializedRoot = join(candidateRoot, 'published-candidate');
 			await verifyWithTestSignature(false, materializedRoot);
 			for (const packageEvidence of manifest.packages) {
@@ -739,9 +762,14 @@ describe('immutable Release Candidate Chain', () => {
 				outcome: 'pass',
 				registry,
 			});
+		}, 60_000);
+
+		it('reads back registry metadata that omits the files field', async () => {
 			includeFiles = false;
 			await verifyWithTestSignature();
-			includeFiles = true;
+		}, 60_000);
+
+		it('rejects dist-tags that do not stage the candidate under next alone', async () => {
 			nextVersion = '0.2.1';
 			await expect(verifyWithTestSignature()).rejects.toMatchObject({
 				stderr: expect.stringContaining('next does not identify 0.2.0'),
@@ -751,39 +779,40 @@ describe('immutable Release Candidate Chain', () => {
 			await expect(verifyWithTestSignature()).rejects.toMatchObject({
 				stderr: expect.stringContaining('latest unexpectedly identifies 0.2.0'),
 			});
-			await verifyWithTestSignature(true);
-			latestVersion = undefined;
-			await expect(verifyWithTestSignature(true)).rejects.toMatchObject({
-				stderr: expect.stringContaining(
-					'bootstrap registry state is not an exact initial publication',
-				),
-			});
-			latestVersion = '0.1.0';
-			await expect(verifyWithTestSignature(true)).rejects.toMatchObject({
-				stderr: expect.stringContaining(
-					'bootstrap registry state is not an exact initial publication',
-				),
-			});
+		}, 60_000);
+
+		it('accepts only an exact initial publication as a bootstrap latest', async () => {
 			latestVersion = manifest.version;
-			publishedVersions = ['0.1.0', manifest.version];
-			await expect(verifyWithTestSignature(true)).rejects.toMatchObject({
-				stderr: expect.stringContaining(
-					'bootstrap registry state is not an exact initial publication',
-				),
-			});
-			latestVersion = '0.1.0';
-			await expect(verifyWithTestSignature(true)).rejects.toMatchObject({
-				stderr: expect.stringContaining(
-					'bootstrap registry state is not an exact initial publication',
-				),
-			});
-			publishedVersions = [manifest.version];
-			latestVersion = undefined;
+			await verifyWithTestSignature(true);
+		}, 60_000);
+
+		it('rejects every bootstrap registry state that is not an exact initial publication', async () => {
+			// The table is built inside the test because `manifest` is only read back in beforeAll.
+			const states: Array<[string, string | undefined, string[]]> = [
+				['no latest tag', undefined, [manifest.version]],
+				['a latest tag on another version', '0.1.0', [manifest.version]],
+				['an earlier published version', manifest.version, ['0.1.0', manifest.version]],
+				['both a foreign latest and an earlier version', '0.1.0', ['0.1.0', manifest.version]],
+			];
+			for (const [state, latest, published] of states) {
+				latestVersion = latest;
+				publishedVersions = published;
+				await expect(verifyWithTestSignature(true), state).rejects.toMatchObject({
+					stderr: expect.stringContaining(
+						'bootstrap registry state is not an exact initial publication',
+					),
+				});
+			}
+		}, 60_000);
+
+		it('rejects registry provenance that is not candidate-bound', async () => {
 			provenanceCommit = '0'.repeat(40);
 			await expect(verifyProvenanceWithTestSignature()).rejects.toMatchObject({
 				stderr: expect.stringContaining('registry provenance is not candidate-bound'),
 			});
-			provenanceCommit = manifest.commit;
+		}, 60_000);
+
+		it('rejects an incomplete Sigstore bundle', async () => {
 			await expect(
 				execFileAsync(
 					process.execPath,
@@ -808,12 +837,8 @@ describe('immutable Release Candidate Chain', () => {
 			).rejects.toMatchObject({
 				stderr: expect.stringContaining('The Sigstore bundle is incomplete'),
 			});
-		} finally {
-			await new Promise<void>((resolveClose, rejectClose) => {
-				server.close((error) => (error === undefined ? resolveClose() : rejectClose(error)));
-			});
-		}
-	}, 120_000);
+		}, 60_000);
+	});
 
 	it('reports exact package names after a partial publication', async () => {
 		const publishedName = manifest.packages[0].name;
