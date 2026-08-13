@@ -32,6 +32,13 @@ export const DEFAULT_REQUEST_TIMEOUT_MS = DEFAULT_REQUEST_TIMEOUT_MINUTES * 60 *
 export const MAXIMUM_REQUEST_TIMEOUT_MS = MAXIMUM_REQUEST_TIMEOUT_MINUTES * 60 * 1000;
 export const PROCESS_TERMINATION_GRACE_MS = 5_000;
 export const WORKSPACE_POLL_INTERVAL_MS = 1_000;
+/**
+ * yt-dlp exits 101 when a break condition stops the download process. The only break condition an
+ * execution plan carries is the Resource Envelope's single-Artifact size filter — `--max-downloads`
+ * and `--break-on-existing` are outside the supported option profile and cannot be requested — so
+ * this exit code means the request exceeded its Resource Envelope, not that yt-dlp failed.
+ */
+export const YTDLP_BREAK_EXIT_CODE = 101;
 
 export type YtDlpProcessErrorCode =
 	| 'PROCESS_OUTPUT_LIMIT'
@@ -448,6 +455,14 @@ export async function superviseYtDlpExecutionPlan(
 				: terminationReason === 'REQUEST_TIMEOUT'
 					? 'yt-dlp exceeded the request timeout.'
 					: 'yt-dlp exceeded the request workspace limit.',
+			stdoutTail.finish(),
+			stderrTail.finish(),
+		);
+	}
+	if (exitCode === YTDLP_BREAK_EXIT_CODE) {
+		throw new YtDlpProcessError(
+			'RESOURCE_LIMIT',
+			'yt-dlp rejected a format that exceeds the request Resource Envelope.',
 			stdoutTail.finish(),
 			stderrTail.finish(),
 		);
