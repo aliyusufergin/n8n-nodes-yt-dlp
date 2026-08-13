@@ -8,13 +8,22 @@ Accessed: 2026-07-17
 |---|---|---|---|
 | 2.x floor | [`n8n@2.0.0`](https://github.com/n8n-io/n8n/tree/a8ecda44f7627630bc8b78cf671405157ad41c4f) | `a8ecda44f7627630bc8b78cf671405157ad41c4f` | `sha256:bd39d2d238b51af2626b2ac7b6b9938efff069390cce83ba769e52f10eedf795` |
 | Acceptance deployment | [`n8n@2.27.4`](https://github.com/n8n-io/n8n/tree/a4d0dfce294064026be1a6a246e6da348fea1485) | `a4d0dfce294064026be1a6a246e6da348fea1485` | `sha256:cf11c96b0d0089bb24459bf97b445fd7008f41543b673cce4d955f7c0ed8752d` |
-| Current release head | [`n8n@2.30.7`](https://github.com/n8n-io/n8n/tree/1e2d027d6d239a55fc95598179e2a25d47e78c9b) | `1e2d027d6d239a55fc95598179e2a25d47e78c9b` | `sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060` |
+| Current release head | [`n8n@2.34.5`](https://github.com/n8n-io/n8n/tree/f745babb4b5a72bdecf454f2cc81f0ba7d9c0e19) | `f745babb4b5a72bdecf454f2cc81f0ba7d9c0e19` | `sha256:7e82936bc03d310ddb8759c361f4e225412f0c3daad8d4b4e0d10c7e034c1b11` |
 
 The release-head tag was the newest non-draft, non-prerelease 2.x GitHub release at inspection time. It is a moving fact and must be frozen again at release-candidate cut.
+
+Head advanced 2026-08-13, per ADR 0025's own advance clause, from 2.30.7
+(`1e2d027d6d239a55fc95598179e2a25d47e78c9b`, `sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060`)
+to 2.34.5. The 2.34.5 image index digest is
+`sha256:d91033b4fac2f7b75c5c4007e10824c66147f7d7a3cccb488720e97452ee7dc7`, which is the
+same image ADR 0033 records for the acceptance deployment. Findings below still carry
+their 2026-07-17 access date against the previous head unless a finding names 2.34.5.
 
 ## Findings
 
 1. **Kanıtlanmış platform gerçeği:** The official Linux amd64 images exist for all three anchors. The 2.0.0 Docker source uses Node.js 22.21.0 on Alpine 3.22; 2.30.7 uses Node.js 24.16.0 on Alpine 3.24. The inspected 2.27.4 deployment uses Node.js 24.16.0 on Alpine 3.22. Sources: [`2.0.0 n8n-base Dockerfile`](https://github.com/n8n-io/n8n/blob/a8ecda44f7627630bc8b78cf671405157ad41c4f/docker/images/n8n-base/Dockerfile), [`2.30.7 n8n-base Dockerfile`](https://github.com/n8n-io/n8n/blob/1e2d027d6d239a55fc95598179e2a25d47e78c9b/docker/images/n8n-base/Dockerfile), official registry manifests, and the read-only acceptance inspection.
+
+   Head advance, measured 2026-08-13 by running the pinned amd64 image itself: 2.34.5 reports `Docker Hardened Images (Alpine)` 3.24, Node.js 24.18.0, npm 11.18.0, and runs as `uid=1000(node)`. The previous head 2.30.7 reports the same hardened Alpine 3.24 base and the same UID with Node.js 24.16.0 and npm 11.17.0, so the head advance changes the Node.js and npm patch levels and nothing else about the base.
 
 2. **Kanıtlanmış platform gerçeği:** n8n 2.0.0 already exposes `getExecutionCancelSignal()`, `onExecutionCancellation()`, and stream-capable `prepareBinaryData()`. Sources: [`base-execute-context.ts`](https://github.com/n8n-io/n8n/blob/a8ecda44f7627630bc8b78cf671405157ad41c4f/packages/core/src/execution-engine/node-execution-context/base-execute-context.ts) and [`interfaces.ts`](https://github.com/n8n-io/n8n/blob/a8ecda44f7627630bc8b78cf671405157ad41c4f/packages/workflow/src/interfaces.ts), n8n 2.0.0.
 

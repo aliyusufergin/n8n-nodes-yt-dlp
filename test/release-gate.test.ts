@@ -37,15 +37,15 @@ describe('n8n 2.x Release Gate Matrix', () => {
 				},
 				{
 					image:
-						'docker.n8n.io/n8nio/n8n@sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060',
-					indexDigest: 'sha256:23a26975c21aa6f7113286668b35e2831ec898d3a7fbfa1ac8ff16f1bdf88c37',
+						'docker.n8n.io/n8nio/n8n@sha256:7e82936bc03d310ddb8759c361f4e225412f0c3daad8d4b4e0d10c7e034c1b11',
+					indexDigest: 'sha256:d91033b4fac2f7b75c5c4007e10824c66147f7d7a3cccb488720e97452ee7dc7',
 					role: 'frozen stable head',
 					capacity: true,
 					scaleRecovery: true,
-					tag: '2.30.7',
+					tag: '2.34.5',
 				},
 			],
-			frozenAt: '2026-07-17',
+			frozenAt: '2026-08-13',
 		});
 	});
 
@@ -85,8 +85,8 @@ describe('n8n 2.x Release Gate Matrix', () => {
 					.map((line) => JSON.parse(line) as { anchor?: string })
 					.filter((entry): entry is { anchor: string } => typeof entry.anchor === 'string')
 					.map(({ anchor }) => anchor),
-			).toEqual(['2.0.0', '2.27.4', '2.30.7']);
-			expect(failure.stderr).toContain('Release Gate Matrix failed: 2.0.0, 2.27.4, 2.30.7');
+			).toEqual(['2.0.0', '2.27.4', '2.34.5']);
+			expect(failure.stderr).toContain('Release Gate Matrix failed: 2.0.0, 2.27.4, 2.34.5');
 		} finally {
 			await rm(executableDirectory, { force: true, recursive: true });
 		}
@@ -99,17 +99,17 @@ describe('n8n 2.x Release Gate Matrix', () => {
 		]);
 		expect(JSON.parse(stdout)).toEqual({
 			capacity: {
-				anchors: ['2.30.7'],
+				anchors: ['2.34.5'],
 				capacity: true,
 				scaleRecovery: true,
 			},
 			core: {
-				anchors: ['2.0.0', '2.27.4', '2.30.7'],
+				anchors: ['2.0.0', '2.27.4', '2.34.5'],
 				capacity: false,
 				scaleRecovery: false,
 			},
 			multiworker: {
-				anchors: ['2.30.7'],
+				anchors: ['2.34.5'],
 				capacity: false,
 				scaleRecovery: true,
 			},
@@ -123,9 +123,9 @@ describe('n8n 2.x Release Gate Matrix', () => {
 			lane: 'capacity',
 			anchors: [
 				{
-					tag: '2.30.7',
+					tag: '2.34.5',
 					image:
-						'docker.n8n.io/n8nio/n8n@sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060',
+						'docker.n8n.io/n8nio/n8n@sha256:7e82936bc03d310ddb8759c361f4e225412f0c3daad8d4b4e0d10c7e034c1b11',
 				},
 			],
 		});

@@ -27,18 +27,18 @@ const releaseGate = {
 		{
 			capacity: true,
 			image:
-				'docker.n8n.io/n8nio/n8n@sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060',
-			indexDigest: 'sha256:23a26975c21aa6f7113286668b35e2831ec898d3a7fbfa1ac8ff16f1bdf88c37',
+				'docker.n8n.io/n8nio/n8n@sha256:7e82936bc03d310ddb8759c361f4e225412f0c3daad8d4b4e0d10c7e034c1b11',
+			indexDigest: 'sha256:d91033b4fac2f7b75c5c4007e10824c66147f7d7a3cccb488720e97452ee7dc7',
 			role: 'frozen stable head',
 			scaleRecovery: true,
-			tag: '2.30.7',
+			tag: '2.34.5',
 		},
 	],
-	frozenAt: '2026-07-17',
+	frozenAt: '2026-08-13',
 };
 const releaseLanes = {
 	capacity: {
-		anchors: ['2.30.7'],
+		anchors: ['2.34.5'],
 		capacity: true,
 		scaleRecovery: true,
 	},
@@ -48,7 +48,7 @@ const releaseLanes = {
 		scaleRecovery: false,
 	},
 	multiworker: {
-		anchors: ['2.30.7'],
+		anchors: ['2.34.5'],
 		capacity: false,
 		scaleRecovery: true,
 	},
