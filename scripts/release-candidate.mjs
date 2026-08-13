@@ -728,6 +728,10 @@ export async function verifyRegistryProvenance(
 }
 
 async function assertRegistryDistTagState(candidate, registry, allowInitialLatest) {
+	// Deliberately duplicates the invariant verifyCandidate re-asserts below, so a manifest with no
+	// package chain cannot skip this gate silently. No test covers this line and none can: with the
+	// guard removed the loop iterates nothing, issues no request, and verifyCandidate then fails
+	// with this exact message. It is fail-fast, not coverage.
 	if (!Array.isArray(candidate.packages)) fail('Release Candidate Chain manifest is invalid.');
 	for (const packageEvidence of candidate.packages) {
 		const packumentResponse = await fetch(
