@@ -506,6 +506,10 @@ describe('immutable Release Candidate Chain', () => {
 		}
 	});
 
+	// One scenario per test, sharing one fixture registry. Every verifyRegistry invocation re-hashes
+	// and re-extracts the whole local chain, so a scenario costs ~11s and the happy path that also
+	// materializes costs double. Collapsing these back into one `it` is what timed out in #51: the
+	// combined budget landed at 118.2s against 120s and tipped over under full-suite load.
 	describe('registry read-back', () => {
 		let attestationRequests = 0;
 		let includeFiles = true;
