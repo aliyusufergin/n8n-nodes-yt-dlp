@@ -280,8 +280,16 @@ function createWorkspacePlan(
 			ffmpegPath,
 			'--abort-on-error',
 			'--no-progress',
-			'--max-filesize',
-			String(resourceEnvelope.maximumArtifactSizeBytes),
+			// The single-Artifact budget is a Resource Envelope term, so a violation must reach the
+			// consumer as RESOURCE_LIMIT. `--max-filesize` cannot carry that: it refuses the download,
+			// writes nothing and still exits 0, which reaches `validateArtifactSet` as an empty Artifact
+			// set and is classified INVALID_ARTIFACT_SET. A breaking match filter reports the same
+			// rejection as exit code 101, which `superviseYtDlpExecutionPlan` maps to RESOURCE_LIMIT. The
+			// `?` suffix passes formats whose size is unknown before the download (direct links carry no
+			// `filesize`), and those are caught by the Artifact size checks in `validateArtifactSet`.
+			'--break-match-filters',
+			`filesize<=?${resourceEnvelope.maximumArtifactSizeBytes} & ` +
+				`filesize_approx<=?${resourceEnvelope.maximumArtifactSizeBytes}`,
 			'--concurrent-fragments',
 			'1',
 			'--postprocessor-args',

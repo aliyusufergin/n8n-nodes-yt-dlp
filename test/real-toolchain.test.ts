@@ -44,7 +44,11 @@ function contentType(pathname: string): string {
 	return 'text/html; charset=utf-8';
 }
 
-function createExecutionContext(sourceUrl: string, argumentsValue: string): IExecuteFunctions {
+function createExecutionContext(
+	sourceUrl: string,
+	argumentsValue: string,
+	envelopeParameters: Readonly<Record<string, number>> = {},
+): IExecuteFunctions {
 	const node: INode = {
 		id: 'node-id',
 		name: 'yt-dlp',
@@ -63,7 +67,7 @@ function createExecutionContext(sourceUrl: string, argumentsValue: string): IExe
 		getNodeParameter: vi.fn((name: string, _itemIndex: number, fallback?: unknown) => {
 			if (name === 'sourceUrl') return sourceUrl;
 			if (name === 'arguments') return argumentsValue;
-			return fallback;
+			return envelopeParameters[name] ?? fallback;
 		}),
 		helpers: {
 			prepareBinaryData: vi.fn(
@@ -196,6 +200,28 @@ beforeAll(async () => {
 		'copy',
 		join(fixtureDirectory, 'combined.mkv'),
 	]);
+	// Playable media that overflows the smallest configurable single-Artifact budget of 1 MiB.
+	await execFileAsync(ffmpegPath, [
+		'-hide_banner',
+		'-loglevel',
+		'error',
+		'-f',
+		'lavfi',
+		'-i',
+		'testsrc=size=1280x720:rate=30',
+		'-t',
+		'20',
+		'-an',
+		'-c:v',
+		'libx264',
+		'-preset',
+		'ultrafast',
+		'-crf',
+		'18',
+		'-pix_fmt',
+		'yuv420p',
+		join(fixtureDirectory, 'oversized.mp4'),
+	]);
 	await execFileAsync(ffmpegPath, [
 		'-hide_banner',
 		'-loglevel',
@@ -288,7 +314,13 @@ beforeAll(async () => {
 			: requestedName;
 		try {
 			const body = await readFile(join(fixtureDirectory, fixtureName));
-			response.writeHead(200, { 'content-type': contentType(pathname) });
+			// A real origin advertises the size of a static file. Answering chunked instead hides
+			// it, and a size yt-dlp cannot see before the download changes which Resource Envelope
+			// path a request takes, so the fixture origin must not be more forgiving than reality.
+			response.writeHead(200, {
+				'content-length': String(body.byteLength),
+				'content-type': contentType(pathname),
+			});
 			response.end(body);
 		} catch {
 			response.writeHead(404);
@@ -312,6 +344,21 @@ afterAll(async () => {
 });
 
 describe('real packaged media toolchain', () => {
+	// Regression for #52. The Artifact size checks in `validateArtifactSet` are only reachable when
+	// the packaged yt-dlp actually writes the Artifact, so a fixture executable that writes an
+	// oversized file directly cannot pin this: it never runs the option profile that decides
+	// whether an envelope violation is even observable. Only the real toolchain can.
+	it('classifies media over the single-Artifact budget as RESOURCE_LIMIT', async () => {
+		const context = createExecutionContext(`${originUrl}/oversized.mp4`, '', {
+			maximumArtifactSizeMiB: 1,
+			maximumTotalArtifactSizeMiB: 2,
+		});
+
+		await expect(executeYtDlpNode(context)).rejects.toMatchObject({
+			context: { errorCode: 'RESOURCE_LIMIT', itemIndex: 0 },
+		});
+	}, 60_000);
+
 	it('merges separate synthetic formats into one Artifact with video and audio streams', async () => {
 		const context = createExecutionContext(
 			`${originUrl}/manifest.mpd`,

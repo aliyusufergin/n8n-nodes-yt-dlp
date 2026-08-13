@@ -10,6 +10,7 @@ import { createYtDlpExecutionPlan } from '../nodes/YtDlp/arguments';
 import {
 	PROCESS_OUTPUT_LIMIT_BYTES,
 	PROCESS_STREAM_TAIL_BYTES,
+	YTDLP_BREAK_EXIT_CODE,
 	YtDlpProcessError,
 	spawnYtDlpExecutionPlan,
 	superviseYtDlpExecutionPlan,
@@ -128,6 +129,31 @@ describe('yt-dlp process boundary', () => {
 		);
 		expect((error as YtDlpProcessError).stderrTail.endsWith('<redacted>')).toBe(true);
 		expect((error as YtDlpProcessError).stderrTail).not.toContain('secret-across-chunks');
+	});
+
+	it('classifies the break exit code as a Resource Envelope violation', async () => {
+		// yt-dlp answers a single-Artifact size rejection with exit 101 and no Artifact. Reading
+		// that as YTDLP_FAILED — or letting it reach an empty Artifact set — hides an envelope
+		// violation the consumer can resolve by widening its budget.
+		const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-break-exit-'));
+		temporaryDirectories.push(workspace);
+		const executablePath = join(workspace, 'controlled-executable');
+		await writeFile(
+			executablePath,
+			`#!${process.execPath}\n` +
+				`process.stdout.write('does not pass filter (filesize<=?1048576), skipping');\n` +
+				`process.exitCode = ${YTDLP_BREAK_EXIT_CODE};\n`,
+			{ mode: 0o700 },
+		);
+
+		const error = await superviseYtDlpExecutionPlan(
+			executablePath,
+			{ argv: [] },
+			{ cwd: workspace },
+		).catch((cause: unknown) => cause);
+
+		expect(error).toBeInstanceOf(YtDlpProcessError);
+		expect(error).toMatchObject({ code: 'RESOURCE_LIMIT' });
 	});
 
 	it('terminates output floods above the combined eight MiB limit', async () => {
