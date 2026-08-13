@@ -52,8 +52,18 @@ On success, bounded evidence is written under
   package mounts, queue-versus-node readiness, and fail-closed toolchain
   evidence;
 - production/manual Result equivalence and database binary IDs;
-- direct, FFmpeg, playlist, credential/proxy, Continue On Fail, cancellation,
-  resource/output limit, Nth-transfer, pruning, log, and cleanup outcomes.
+- direct, FFmpeg, playlist, credential/proxy, Continue On Fail, error-output
+  branching, cancellation, resource/output limit, Nth-transfer, pruning, log,
+  and cleanup outcomes.
+
+The error-output scenario pins what `onError: continueErrorOutput` really does.
+n8n's engine owns that output: `handleNodeErrorOutput` overwrites it with the
+items it recognises as errors on the earlier outputs, so a node cannot write it
+and the three-field Failure Item is never recognised. The lane runs the node in
+that mode with its **Error** output wired to a downstream node and asserts that
+the Failure Item stays on the regular output, that the error branch is empty and
+its handler never ran, and that the node emitted the dead-branch warning hint
+(issue #44).
 
 The output-limit proof is the approved controlled-process seam because the V1
 workflow surface cannot intentionally make the immutable packaged yt-dlp emit

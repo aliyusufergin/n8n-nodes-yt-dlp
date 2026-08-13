@@ -87,6 +87,7 @@ function createExecutionContext(
 	};
 
 	return {
+		addExecutionHints: vi.fn(),
 		continueOnFail: vi.fn(() => onError !== 'stopWorkflow'),
 		getExecutionId: vi.fn(() => 'execution-id'),
 		getExecutionCancelSignal: vi.fn(() => executionSignal),
@@ -118,7 +119,7 @@ describe('yt-dlp node metadata', () => {
 		expect(description).not.toHaveProperty('usableAsTool');
 	});
 
-	it('lets n8n append the error output under continueErrorOutput', () => {
+	it('is given an engine-owned error output it cannot write under continueErrorOutput', () => {
 		const description = new YtDlp().description;
 		const node: INode = {
 			id: 'node-id',
@@ -690,7 +691,7 @@ describe('yt-dlp node adapter', () => {
 		]);
 	});
 
-	it('routes the Failure Item to the error output under continueErrorOutput', async () => {
+	it('keeps the Failure Item on the single output under continueErrorOutput', async () => {
 		const successItem = {
 			json: { status: 'success' },
 			pairedItem: { item: 1 },
@@ -715,7 +716,6 @@ describe('yt-dlp node adapter', () => {
 		const result = await executeYtDlpNode(context, startRequest);
 
 		expect(result).toEqual([
-			[successItem],
 			[
 				{
 					json: {
@@ -725,16 +725,15 @@ describe('yt-dlp node adapter', () => {
 					},
 					pairedItem: { item: 0 },
 				},
+				successItem,
 			],
 		]);
 		expect(startRequest).toHaveBeenCalledTimes(2);
 		expect(JSON.stringify(result)).not.toContain('sensitive');
 	});
 
-	it('leaves the regular output empty under continueErrorOutput when every request fails', async () => {
-		const startRequest = vi
-			.fn<DownloadRequestExecutor>()
-			.mockRejectedValue(new YtDlpRequestResourceLimitError('secret'));
+	it('warns that the error output stays empty under continueErrorOutput', async () => {
+		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([]);
 		const context = createExecutionContext(
 			[{ sourceUrl: 'https://example.com/video', arguments: '' }],
 			true,
@@ -743,37 +742,32 @@ describe('yt-dlp node adapter', () => {
 			'continueErrorOutput',
 		);
 
-		const [regularOutput, errorOutput] = await executeYtDlpNode(context, startRequest);
+		await executeYtDlpNode(context, startRequest);
 
-		expect(regularOutput).toEqual([]);
-		expect(errorOutput).toEqual([
-			{
-				json: {
-					status: 'error',
-					errorCode: 'RESOURCE_LIMIT',
-					errorMessage: 'The Download Request exceeded its Resource Envelope.',
-				},
-				pairedItem: { item: 0 },
-			},
-		]);
+		expect(context.addExecutionHints).toHaveBeenCalledWith({
+			message: expect.stringContaining('the error output stays empty'),
+			location: 'outputPane',
+			type: 'warning',
+		});
 	});
 
-	it('returns an empty error output under continueErrorOutput when no request fails', async () => {
-		const successItem = {
-			json: { status: 'success' },
-			pairedItem: { item: 0 },
-		};
-		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([successItem]);
-		const context = createExecutionContext(
-			[{ sourceUrl: 'https://example.com/video', arguments: '' }],
-			true,
-			undefined,
-			undefined,
-			'continueErrorOutput',
-		);
+	it.each(['stopWorkflow', 'continueRegularOutput'] as const)(
+		'adds no execution hint under %s',
+		async (onError) => {
+			const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([]);
+			const context = createExecutionContext(
+				[{ sourceUrl: 'https://example.com/video', arguments: '' }],
+				onError !== 'stopWorkflow',
+				undefined,
+				undefined,
+				onError,
+			);
 
-		await expect(executeYtDlpNode(context, startRequest)).resolves.toEqual([[successItem], []]);
-	});
+			await executeYtDlpNode(context, startRequest);
+
+			expect(context.addExecutionHints).not.toHaveBeenCalled();
+		},
+	);
 
 	it.each([
 		['cancellation', new YtDlpProcessCancellationError()],

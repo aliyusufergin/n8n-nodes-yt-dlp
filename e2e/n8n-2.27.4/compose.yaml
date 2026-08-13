@@ -112,8 +112,6 @@ services:
     volumes:
       - ${E2E_SUITE_ROOT}:/e2e:ro
       - ${E2E_GENERATED_ROOT}/fixtures:/fixtures:ro
-    ports:
-      - "127.0.0.1:${E2E_FIXTURE_PORT:-18080}:8080"
     healthcheck:
       test:
         [
@@ -131,6 +129,32 @@ services:
           - fixture.example.test
       control:
 
+  # Owns the published host ports. n8n, the fixture origin, and the hermetic
+  # registry stay on internal networks with no egress; Docker 28+ refuses to
+  # publish ports for such containers, so the host reaches them through here.
+  gateway:
+    image: node:24-alpine
+    command: ["node", "/e2e/gateway-server.mjs"]
+    volumes:
+      - ${E2E_SUITE_ROOT}:/e2e:ro
+    ports:
+      - "127.0.0.1:${E2E_N8N_PORT:-15678}:5678"
+      - "127.0.0.1:${E2E_FIXTURE_PORT:-18080}:8080"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('node:net').connect(5678,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))",
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    networks:
+      - e2e
+      - edge
+
   main:
     <<: *n8n-service
     entrypoint: ["/bin/sh", "-c"]
@@ -141,8 +165,6 @@ services:
       N8N_PORT: 5678
       N8N_PROTOCOL: http
       WEBHOOK_URL: http://127.0.0.1:${E2E_N8N_PORT:-15678}
-    ports:
-      - "127.0.0.1:${E2E_N8N_PORT:-15678}:5678"
     networks:
       - e2e
       - control
@@ -239,6 +261,7 @@ networks:
     internal: true
   control:
     internal: true
+  edge:
 
 volumes:
   main_data:
