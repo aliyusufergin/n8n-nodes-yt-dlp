@@ -114,16 +114,36 @@ A `dev` run produces no durable evidence.
 
 ## Known MCP drift
 
-The MCP reports some things inaccurately. Both of these below sent a previous session down the wrong path, so verify rather than trust:
+The MCP reports some things inaccurately, so verify rather than trust:
 
-| Surface                    | Reported                                                                | Actual                                                                                                                                                        |
-| -------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `get_workflow_details`     | `parentFolderId: null` for a workflow that is inside a folder            | The workflow is in the folder. Folder placement cannot be confirmed from this field — confirm in the n8n UI                                                     |
-| `triggerInfo` webhook URLs | Production URL with the `webhookId` prepended to the path                | n8n only prepends `webhookId` for paths with dynamic `:segments`. For a static multi-segment path the registered URL has no prefix, and the reported one 404s |
+| Surface                | Reported                                                     | Actual                                                                                                     |
+| ---------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `get_workflow_details` | `parentFolderId: null` for a workflow that is inside a folder | The workflow is in the folder. Folder placement cannot be confirmed from this field — confirm in the n8n UI |
 
 There is also no folder-creating tool: `create_workflow_from_code` only accepts a `folderId` that already exists. The folder marker therefore depends on the operator creating the folder in the UI first, so ask for it before building rather than creating a partially marked workflow.
 
-Both entries were first observed against n8n 2.32.7; the `parentFolderId` row still reproduced on 2.34.5 (2026-08-12). Re-check them after an instance or MCP upgrade, and delete a row once it stops reproducing.
+`create_workflow_from_code` has no tag parameter either, so a workflow is always born carrying only two of the three ownership markers. Follow every create immediately with an `update_workflow` `addTags` operation. A workflow in that gap is mid-create, not a partial match to report.
+
+The `parentFolderId` row was first observed against n8n 2.32.7 and still reproduced on 2.34.5 (2026-08-13). A second row — `triggerInfo` prepending `webhookId` to static multi-segment webhook paths — stopped reproducing on 2.34.5 and has been deleted: the reported production URL is now unprefixed and serves correctly. Re-check the remaining row after an instance or MCP upgrade, and delete it once it stops reproducing.
+
+## Wait-node response holding
+
+A webhook workflow on the `responseNode` path can delay its response with a Wait node, which is the only way to build a slow HTTP source inside the namespace without touching the container or the proxy. The delay is bounded, and the failure past the bound is silent.
+
+Measured on n8n 2.34.5 (2026-08-13), `Webhook -> Wait(timeInterval) -> Respond(binary)`:
+
+| Requested wait | Result                                                      |
+| -------------- | ----------------------------------------------------------- |
+| 10 s           | 200, correct binary body, ~15.5 s time-to-first-byte        |
+| 30 s           | 200, correct binary body, ~35.1 s                            |
+| 60 s           | 200, correct binary body, ~65.3 s                            |
+| 64 s           | 200, correct binary body, ~68.9 s                            |
+| 70 s           | 200 in ~0.3 s, `application/json`, **zero bytes**            |
+| 120 s          | 200 in ~0.3 s, `application/json`, **zero bytes**            |
+
+Under ~65 s n8n resumes the wait in memory and keeps the held HTTP response. Over it, the execution is persisted and resumed from the database, the held response is abandoned, and the caller gets an immediate empty 200 — not a hang and not an error, so a downloader sees success with an empty file. Keep any response-holding wait at 60 s or below, and treat an empty `application/json` reply to a binary fixture as the threshold having been crossed.
+
+Actual time-to-first-byte runs about 5 s longer than the requested wait. The threshold applies to the requested amount, not to the observed latency.
 
 ## Failure behaviour
 
