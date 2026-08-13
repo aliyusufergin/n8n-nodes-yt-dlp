@@ -7,10 +7,17 @@ Accessed: 2026-07-17
 | Role | n8n tag | Source commit | Official Linux amd64 manifest |
 |---|---|---|---|
 | 2.x floor | [`n8n@2.0.0`](https://github.com/n8n-io/n8n/tree/a8ecda44f7627630bc8b78cf671405157ad41c4f) | `a8ecda44f7627630bc8b78cf671405157ad41c4f` | `sha256:bd39d2d238b51af2626b2ac7b6b9938efff069390cce83ba769e52f10eedf795` |
-| Acceptance deployment | [`n8n@2.27.4`](https://github.com/n8n-io/n8n/tree/a4d0dfce294064026be1a6a246e6da348fea1485) | `a4d0dfce294064026be1a6a246e6da348fea1485` | `sha256:cf11c96b0d0089bb24459bf97b445fd7008f41543b673cce4d955f7c0ed8752d` |
+| Acceptance deployment | [`n8n@2.27.4`](https://github.com/n8n-io/n8n/tree/a4d0dfce294064026be1a6a246e6da348fea1485) | `a4d0dfce294064026be1a6a246e6da348fea1485` | `sha256:6dd442962208ff080af3e0a8ab5254eb4c6138f2d188d4a7e3cf84eed3b7eae1` |
 | Current release head | [`n8n@2.34.5`](https://github.com/n8n-io/n8n/tree/f745babb4b5a72bdecf454f2cc81f0ba7d9c0e19) | `f745babb4b5a72bdecf454f2cc81f0ba7d9c0e19` | `sha256:7e82936bc03d310ddb8759c361f4e225412f0c3daad8d4b4e0d10c7e034c1b11` |
 
 The release-head tag was the newest non-draft, non-prerelease 2.x GitHub release at inspection time. It is a moving fact and must be frozen again at release-candidate cut.
+
+The last column is the exact linux/amd64 platform manifest, matching `image` in
+`e2e/release-gate/run.mjs`. The multi-arch index digests are separate values and are recorded
+alongside each anchor there as `indexDigest`; 2.27.4's is
+`sha256:cf11c96b0d0089bb24459bf97b445fd7008f41543b673cce4d955f7c0ed8752d`, which is the reference
+the acceptance-deployment research documents cite as the pulled image. Both address the same
+image; only the platform manifest belongs in this column.
 
 Head advanced 2026-08-13, per ADR 0025's own advance clause, from 2.30.7
 (`1e2d027d6d239a55fc95598179e2a25d47e78c9b`, `sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060`)
