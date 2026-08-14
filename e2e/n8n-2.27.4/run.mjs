@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { parse as parseFlatted } from 'flatted';
 
+import { captureCapacityEvidence, markPartialRun } from './capacity-evidence.mjs';
 import {
 	failureCodeCounts,
 	queueLatencies,
@@ -1315,8 +1316,43 @@ async function stopTimedOutRequests(client, requests) {
 	);
 }
 
-async function runCapacityLane(client) {
+/**
+ * Runs the capacity lane, recording each measurement as it is taken.
+ *
+ * Every measurement is written into `progress` the moment the lane holds it,
+ * and `progress.step` names the step the lane is inside. The lane's own result
+ * is built from that same record, so what a completed run reports and what a
+ * failed run leaves behind are the same measurements rather than two shapes
+ * that can drift apart. The caller owns `progress`: when the lane throws — most
+ * likely in one of the two SIGKILL recovery steps that end it — the caller
+ * writes the partial evidence from it and rethrows.
+ *
+ * `durationMs` is measured from the lane's first step rather than from the load
+ * window, so a partial record and a passing one report the same span. Records
+ * written before this change measured only from the load window onward and are
+ * shorter by the lane's setup — the worker scale-down, the container lookups,
+ * the binary baseline, and the ten workflow creations.
+ */
+async function runCapacityLane(client, progress) {
+	Object.assign(progress, {
+		startedAt: Date.now(),
+		step: 'worker scale down',
+		topology: {
+			binaryStorage: 'database',
+			ffmpegThreads: 1,
+			hostCpuCount: cpus().length,
+			requests: 10,
+			workerConcurrency: 10,
+			workersUnderLoad: 1,
+		},
+		workload: {
+			artifactCountPerRequest: 2,
+			individualArtifactHardLimitBytes: 256 * 1024 ** 2,
+			totalArtifactHardLimitBytes: 512 * 1024 ** 2,
+		},
+	});
 	await compose(['stop', 'worker-secondary', 'worker-late']);
+	progress.step = 'container identification';
 	const serviceIds = Object.fromEntries(
 		await Promise.all(
 			['main', 'worker', 'postgres', 'redis'].map(async (service) => [
@@ -1325,7 +1361,9 @@ async function runCapacityLane(client) {
 			]),
 		),
 	);
+	progress.step = 'binary storage baseline';
 	const binaryBefore = await binaryStorageSnapshot();
+	progress.step = 'workflow creation';
 	const workflows = await Promise.all(
 		Array.from({ length: 10 }, async (_, index) =>
 			await client.createWorkflow(
@@ -1345,7 +1383,7 @@ async function runCapacityLane(client) {
 			),
 		),
 	);
-	const startedAt = Date.now();
+	progress.step = 'load window';
 	const {
 		metricsSampling,
 		processObservations,
@@ -1407,9 +1445,18 @@ async function runCapacityLane(client) {
 			);
 		},
 	);
+	progress.completedRequests = loadRequests;
+	progress.rawProcessObservations = processObservations;
+	progress.rawSamples = samples;
+	progress.step = 'request stop';
 	const executions = await stopTimedOutRequests(client, loadRequests);
+	progress.completedRequests = executions;
+	progress.step = 'binary storage growth';
 	const binaryAfter = await binaryStorageSnapshot();
+	progress.step = 'ffmpeg thread restriction probe';
 	const ffmpegProbe = await runFfmpegThreadRestrictionProbe(client, serviceIds);
+	progress.rawFfmpegProbeObservations = ffmpegProbe.observations;
+	progress.step = 'capacity summary';
 	const summary = summarizeCapacity(
 		samples,
 		metricsSampling,
@@ -1419,10 +1466,12 @@ async function runCapacityLane(client) {
 		binaryBefore,
 		binaryAfter,
 	);
+	Object.assign(progress, summary);
 	// The pruning proof is taken over the requests that finished on their own. A request the lane
 	// stopped waiting for was still writing binary rows when its wait ended, so polling its rows to
 	// zero would prove nothing about pruning and could hang the proof itself; its rows are deleted
 	// after the proof, best effort, and the proof reports how many requests it covered.
+	progress.step = 'binary pruning proof';
 	const prunedRequests = executions.filter(({ timedOut }) => timedOut !== true);
 	await client.request('/executions/delete', {
 		body: { ids: prunedRequests.map(({ executionId }) => executionId) },
@@ -1463,42 +1512,29 @@ async function runCapacityLane(client) {
 			method: 'POST',
 		});
 	}
+	progress.binaryPruning = {
+		hardDeleteApi: 'public REST /executions/delete',
+		internalDeletionApiUsed: false,
+		provenRequestCount: prunedRequests.length,
+		timedOutRequestRowsRemaining: timedOutRowsRemaining,
+		unreferencedRowsAfterPruning: 0,
+	};
+	progress.step = 'stale sweep recovery';
 	const staleSweep = await runUncatchableRecovery(client, 'stale sweep', false);
+	progress.failureRecovery = { staleSweep };
+	progress.step = 'targeted recreation recovery';
 	const targetedRecreation = await runUncatchableRecovery(
 		client,
 		'targeted recreation',
 		true,
 	);
+	progress.failureRecovery = { staleSweep, targetedRecreation };
+	const { startedAt, step, ...collected } = progress;
 	return {
-		...summary,
-		binaryPruning: {
-			hardDeleteApi: 'public REST /executions/delete',
-			internalDeletionApiUsed: false,
-			provenRequestCount: prunedRequests.length,
-			timedOutRequestRowsRemaining: timedOutRowsRemaining,
-			unreferencedRowsAfterPruning: 0,
-		},
-		completedRequests: executions,
+		...collected,
 		durationMs: Date.now() - startedAt,
-		failureRecovery: { staleSweep, targetedRecreation },
 		outcome: 'pass',
-		rawFfmpegProbeObservations: ffmpegProbe.observations,
-		rawProcessObservations: processObservations,
-		rawSamples: samples,
 		schemaVersion: 1,
-		topology: {
-			binaryStorage: 'database',
-			ffmpegThreads: 1,
-			hostCpuCount: cpus().length,
-			requests: 10,
-			workerConcurrency: 10,
-			workersUnderLoad: 1,
-		},
-		workload: {
-			artifactCountPerRequest: 2,
-			individualArtifactHardLimitBytes: 256 * 1024 ** 2,
-			totalArtifactHardLimitBytes: 512 * 1024 ** 2,
-		},
 	};
 }
 
@@ -1530,11 +1566,16 @@ async function main() {
 		completedAt: undefined,
 		fixtureService: undefined,
 		image: n8nImage,
+		outcome: undefined,
 		packages: prepared.packages,
+		partial: undefined,
 		registryRequests: undefined,
 		scenarios: {},
 		schemaVersion: 1,
 	};
+	const evidencePath = join(generatedRoot, `evidence/n8n-${n8nTag}.json`);
+	const writeEvidence = async () =>
+		await writeFile(evidencePath, JSON.stringify(evidence, null, 2));
 
 	await run('npm', [
 		'test',
@@ -1969,33 +2010,71 @@ async function main() {
 
 			if (capacity) {
 				report('capacity:start');
-				evidence.scenarios.capacity = await runCapacityLane(client);
-				evidence.fixtureService = await readFixtureEvidence();
+				// The lane's measurements are written to disk whether or not the lane passes. A
+				// 25-minute disposable run is not repeatable — each run measures a different spread —
+				// so a throw in one of its last steps must not take the sample series, the process
+				// observations, the probe, and the pruning proof down with it. The record is written
+				// marked partial and the failure is rethrown, so the run's exit code and the release
+				// gate's behaviour are exactly what they were before it was written.
+				await captureCapacityEvidence({
+					evidence,
+					lane: async (progress) => await runCapacityLane(client, progress),
+					onPartial: async ({ partial }) => {
+						await writeEvidence();
+						report('capacity:partial-evidence', {
+							evidencePath,
+							failedStep: partial.failedStep,
+							reason: partial.reason,
+						});
+					},
+				});
 				report('capacity:complete');
 			}
 
-			const registryRequests = (
-			await readFile(join(generatedRoot, 'registry/requests.ndjson'), 'utf8')
-		)
-			.trim()
-			.split('\n')
-			.filter(Boolean)
-			.map((line) => JSON.parse(line))
-			.filter((request_) => request_.path.startsWith('/n8n-nodes-yt-dlp'));
-		for (const packageName of [
-			'n8n-nodes-yt-dlp',
-			'n8n-nodes-yt-dlp-platform',
-			'n8n-nodes-yt-dlp-linux-x64',
-		]) {
-			assert(
-				registryRequests.some((request_) => request_.path === `/${packageName}`),
-				`Registry saw no metadata request for ${packageName}.`,
-			);
-		}
-		evidence.registryRequests = registryRequests;
+			// The steps that close the run — the fixture service's own evidence, the registry's
+			// recorded requests — read services that have been running for the whole lane, and a
+			// failure in either used to discard the capacity measurements just as surely as a
+			// failure inside the lane did. They are a result of the run rather than of the lane, so
+			// the lane's record keeps the outcome it earned and the run is marked partial at the top
+			// of the file before the failure is rethrown.
+			let closingStep = 'fixture service evidence';
+			try {
+				if (capacity) evidence.fixtureService = await readFixtureEvidence();
+				closingStep = 'registry request evidence';
+				const registryRequests = (
+					await readFile(join(generatedRoot, 'registry/requests.ndjson'), 'utf8')
+				)
+					.trim()
+					.split('\n')
+					.filter(Boolean)
+					.map((line) => JSON.parse(line))
+					.filter((request_) => request_.path.startsWith('/n8n-nodes-yt-dlp'));
+				for (const packageName of [
+					'n8n-nodes-yt-dlp',
+					'n8n-nodes-yt-dlp-platform',
+					'n8n-nodes-yt-dlp-linux-x64',
+				]) {
+					assert(
+						registryRequests.some((request_) => request_.path === `/${packageName}`),
+						`Registry saw no metadata request for ${packageName}.`,
+					);
+				}
+				evidence.registryRequests = registryRequests;
+			} catch (error) {
+				if (evidence.scenarios.capacity !== undefined) {
+					markPartialRun(evidence, closingStep, error);
+					await writeEvidence();
+					report('run:partial-evidence', {
+						evidencePath,
+						failedStep: evidence.partial.failedStep,
+						reason: evidence.partial.reason,
+					});
+				}
+				throw error;
+			}
 		evidence.completedAt = new Date().toISOString();
-		const evidencePath = join(generatedRoot, `evidence/n8n-${n8nTag}.json`);
-		await writeFile(evidencePath, JSON.stringify(evidence, null, 2));
+		evidence.outcome = 'pass';
+		await writeEvidence();
 		report('scenarios:complete');
 		process.stdout.write(`${evidencePath}\n`);
 	} finally {

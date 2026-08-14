@@ -63,6 +63,11 @@ On success, bounded evidence is written under
   branching, cancellation, resource/output limit, Nth-transfer, pruning, log,
   and cleanup outcomes.
 
+The file's top-level `outcome` is `pass` on a run that reached its end. A
+capacity run that stopped early writes the file anyway with `outcome: partial`,
+no `completedAt`, and a `partial` object naming the step it stopped in — see
+the capacity lane's partial-evidence contract below.
+
 The error-output scenario pins what `onError: continueErrorOutput` really does.
 n8n's engine owns that output: `handleNodeErrorOutput` overwrites it with the
 items it recognises as errors on the earlier outputs, so a node cannot write it
@@ -272,6 +277,60 @@ sweep without replacing the worker container. The second proves that targeted
 worker recreation replaces only the affected container and restores exact
 package/execution readiness. The bounded result is committed under
 `docs/capacity/`; raw samples remain in the ignored generated evidence.
+
+A lane that fails still leaves its measurements on disk. Those two recovery
+runs are the last steps of a 25-minute disposable run and assert from end to
+end — the killed worker's exit code, the container limit, the exact package
+state, the recovery probe, the absence of a leftover workspace — so the step
+likeliest to throw is also the one that used to discard everything measured
+before it: the sample series, 300+ process observations, the container and host
+extrema, the FFmpeg probe, the pruning proof, and the request time-limit
+measurement. None of it is reproducible by rerunning, because every disposable
+run measures a different spread. The lane now records each measurement as it
+takes it, and a throw writes the evidence file from that record before the
+failure is rethrown.
+
+Writing it does not soften the verdict. The recovery assertions are unchanged
+and still fail the lane; the run's exit code and the Release Gate Matrix behave
+exactly as before. The written record is marked as the partial thing it is:
+
+- `scenarios.capacity.outcome` is `partial`, never `pass`.
+- `scenarios.capacity.partial.failedStep` names the step the lane stopped in
+  (`load window`, `ffmpeg thread restriction probe`, `stale sweep recovery`, …)
+  and `partial.reason` carries a bounded description of the failure — bounded
+  because the record is evidence, not a second log.
+- `scenarios.capacity.capacityDecision` is forced to the unsupported decision
+  (`safeAtConcurrency10: false`, `concurrentRequests: 1`) whatever the summary
+  had already computed, so a partial run can never enter a capacity decision as
+  safe.
+- `outcome` at the top of the evidence file is `partial`, and `completedAt`
+  stays absent — a run that never reached the end never claims a completion
+  time.
+- `durationMs` covers the whole lane, from the worker scale-down that opens it,
+  so a partial record and a passing one measure the same span. Records written
+  before this change measured only from the load window onward and are shorter
+  by the lane's setup.
+
+The two steps that close a capacity run — reading the fixture service's own
+evidence and reading and asserting the registry's requests — run when the
+lane's measurements are already in hand, and a failure there used to discard
+them just as surely. They are a result of the run rather than of the lane, so
+the lane's record keeps the outcome it earned, the top of the file carries
+`outcome: partial` with `partial.failedStep` of `fixture service evidence` or
+`registry request evidence`, and the failure is still rethrown.
+
+The contract of a partial record is that it carries what was measured, not
+everything. Guaranteed: `outcome`, `partial`, `capacityDecision`,
+`schemaVersion`, `topology`, and `workload`, plus `durationMs` once the lane
+has begun. Everything else is present only if the lane got that far —
+`rawSamples`, `rawProcessObservations`, and `completedRequests` after the load
+window, `rawFfmpegProbeObservations` after the probe, `acceptance`,
+`alertThresholds`, and `measurements` after the summary, `binaryPruning` after
+the pruning proof, and `failureRecovery` with only the recovery runs that
+finished. `fixtureService` and `registryRequests` at the top of the file are
+absent, because both are read after the capacity lane returns. A consumer of a
+partial record must therefore check `outcome` first and treat every other field
+as optional.
 
 The release command runs every frozen anchor even if an earlier anchor fails,
 then exits unsuccessfully with the complete failed-anchor list. Any failed or
