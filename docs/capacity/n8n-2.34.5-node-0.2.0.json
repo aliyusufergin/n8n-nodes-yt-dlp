@@ -1,9 +1,13 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-08-14T10:59:50.168Z",
+  "recordedAt": "2026-08-14T11:40:54.361Z",
   "rawEvidence": {
     "path": "e2e/n8n-2.27.4/.generated/2.34.5/evidence/n8n-2.34.5.json",
-    "sha256": "fad68bea6d8c19b6008a96a11a1e8dbabef5408a08fb106c3e52d792349c5e6f"
+    "sha256": "22946498f962fc779794de56eb6e3598b080a585abfa852513cd9e7104fac8ae"
+  },
+  "supersedes": {
+    "recordedAt": "2026-08-13T20:56:17.461Z",
+    "reason": "The first 2.34.5 run was recorded with a process observer that counted an execve-window read as a thread-restriction violation, which set ffmpegThreadRestrictionProven to false. Issue #58 fixed the observer and this record replaces that run in place, as the same anchor. The superseded run measured ffmpegProcessPeak 1 with ffmpegWithoutThreadRestrictionObserved false; that FFmpeg observation is not reproduced here and is not claimed by this record."
   },
   "image": {
     "name": "docker.n8n.io/n8nio/n8n",
@@ -56,51 +60,50 @@
     "eventLoopLagSeconds": 1,
     "hostAvailableMemoryBytes": 2147483648,
     "queueLatencyP95Ms": 30000,
-    "workerContainerMemoryBytes": 4694474752,
+    "workerContainerMemoryBytes": 4205838336,
     "workerTempFreeBytes": 6442450944
   },
   "measurements": {
-    "durationMs": 178931,
-    "successfulRequests": 5,
-    "failedRequests": 5,
+    "durationMs": 214380,
+    "successfulRequests": 4,
+    "failedRequests": 6,
     "failureCodes": {
-      "BINARY_TRANSFER_FAILED": 4,
+      "BINARY_TRANSFER_FAILED": 5,
       "UNKNOWN": 1
     },
-    "binaryGrowthBytes": 2147558258,
+    "binaryGrowthBytes": 2415981279,
     "binaryRowGrowth": 14,
-    "databasePeakBytes": 41344023,
-    "redisUsedMemoryPeakBytes": 2239656,
-    "eventLoopLagPeakSeconds": 1.523580927,
-    "queueLatencyMaximumMs": 655,
-    "queueLatencyP95Ms": 655,
-    "hostCpuPercent": 91.05133841975947,
-    "hostMinimumAvailableMemoryBytes": 6123995136,
-    "workerProcessRssPeakBytes": 4644290560,
-    "workerContainerCpuPeakPercent": 307.1,
-    "workerContainerMemoryPeakBytes": 3754875158.528,
-    "workerTemporaryDiskPeakBytes": 3233439744,
-    "workerMinimumTempFreeBytes": 37709742080,
-    "postgresContainerCpuPeakPercent": 185.7,
-    "postgresContainerMemoryPeakBytes": 1658931118.08,
-    "redisContainerCpuPeakPercent": 13.85,
-    "redisContainerMemoryPeakBytes": 16777216,
+    "databasePeakBytes": 44514327,
+    "redisUsedMemoryPeakBytes": 2235848,
+    "eventLoopLagPeakSeconds": 2.860515327,
+    "queueLatencyMaximumMs": 1109,
+    "queueLatencyP95Ms": 1109,
+    "hostCpuPercent": 94.32249512983752,
+    "hostMinimumAvailableMemoryBytes": 6705696768,
+    "workerProcessRssPeakBytes": 3585699840,
+    "workerContainerCpuPeakPercent": 259.21,
+    "workerContainerMemoryPeakBytes": 3364033134.592,
+    "workerTemporaryDiskPeakBytes": 3242029056,
+    "workerMinimumTempFreeBytes": 37189111808,
+    "postgresContainerCpuPeakPercent": 104.63,
+    "postgresContainerMemoryPeakBytes": 1055916032,
+    "redisContainerCpuPeakPercent": 11.58,
+    "redisContainerMemoryPeakBytes": 16148070.4,
     "ytDlpProcessPeak": 10,
     "ytDlpWithoutFfmpegThreadRestrictionObserved": false,
-    "ytDlpUnconfirmedFfmpegThreadRestrictionTotal": 1,
+    "ytDlpArgvUnwrittenTotal": 0,
     "ffmpegProcessPeak": 0,
     "ffmpegWithoutThreadRestrictionObserved": false,
-    "ffmpegUnconfirmedRestrictionReadTotal": 0,
+    "ffmpegArgvUnwrittenTotal": 0,
     "ffmpegThreadRestrictionProven": true,
-    "sampleCount": 27,
-    "processObservationCount": 471
+    "sampleCount": 34,
+    "processObservationCount": 543
   },
   "processObserver": {
-    "method": "docker top every 100 ms; a process that reads as unrestricted is re-read once after a short delay and counted as a violation only when the same pid still runs the same program and still carries no restriction",
-    "invariantUnchanged": "The node builds --postprocessor-args ffmpeg:-threads 1 on its only yt-dlp spawn path unconditionally, so a real unrestricted process is still unrestricted on the re-read and still fails the lane. Only a read the observer could not complete is excluded, and an unmeasured process is not evidence of a violation.",
-    "unconfirmedReadsAreNotPasses": "Reads that could not be confirmed are reported as ytDlpUnconfirmedFfmpegThreadRestrictionTotal and ffmpegUnconfirmedRestrictionReadTotal rather than folded into the restriction booleans.",
-    "observedExecWindowReads": "One observation of 471 sampled eight yt-dlp processes and read one of them mid-execve, before its argv was written. The re-read showed the restriction, so it was recorded as unconfirmed and no violation was counted.",
-    "confirmingRun": "A second capacity run at this anchor on the same host produced ffmpegThreadRestrictionProven true with zero unconfirmed reads. The two runs agree on the boolean; this record is the later of the two."
+    "method": "docker top every 100 ms. A packaged yt-dlp or FFmpeg process whose argv the kernel has not published yet is reported as an unwritten-argv read and excluded from the restriction counts in both directions; every process with a written argv is checked on the sample that saw it.",
+    "invariantUnchanged": "The kernel publishes the argument vector in one step, so a sampled row is either the bracketed comm or a complete command line and never half of one, and a real invocation of either program always carries a full argument vector. The node builds --postprocessor-args ffmpeg:-threads 1 into its only yt-dlp spawn unconditionally, so a genuinely unrestricted process is measurable the first time it is sampled and still fails the lane however briefly it runs. Only a process the observer cannot measure at all is excluded, and an unmeasured process is not evidence of a violation.",
+    "unwrittenArgvReadsAreNotPasses": "Unwritten-argv reads are reported as ytDlpArgvUnwrittenTotal and ffmpegArgvUnwrittenTotal and are never folded into ytDlpWithoutFfmpegThreadRestrictionObserved, ffmpegWithoutThreadRestrictionObserved, or ffmpegThreadRestrictionProven.",
+    "ffmpegEvidenceLimit": "This run sampled no packaged FFmpeg process at all (ffmpegProcessPeak 0), so ffmpegThreadRestrictionProven rests on the yt-dlp command lines, which carry the restriction the node passes to FFmpeg, and not on a directly sampled FFmpeg process. The lane's acceptance flag does not require an FFmpeg process to be sampled."
   },
   "failureRecovery": {
     "controlledProcessBoundary": {

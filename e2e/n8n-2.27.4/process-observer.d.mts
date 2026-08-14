@@ -1,30 +1,22 @@
 export interface WorkerProcess {
-	ffmpeg: boolean;
-	ffmpegThreadsOne: boolean;
+	argvWritten: boolean;
 	n8nWorker: boolean;
 	pid: number;
+	program: 'ffmpeg' | 'other' | 'yt-dlp';
 	rssBytes: number;
-	ytDlp: boolean;
-	ytDlpFfmpegThreadsOne: boolean;
+	threadRestricted: boolean;
 }
 
 export interface WorkerProcessObservation {
+	ffmpegArgvUnwrittenCount: number;
 	ffmpegCount: number;
-	ffmpegThreadsOne: boolean;
-	ffmpegUnconfirmedRestrictionReadCount: number;
 	ffmpegUnrestrictedCount: number;
 	workerRssBytes: number;
+	ytDlpArgvUnwrittenCount: number;
 	ytDlpCount: number;
 	ytDlpMissingFfmpegThreadRestrictionCount: number;
-	ytDlpUnconfirmedFfmpegThreadRestrictionCount: number;
 }
 
 export function parseWorkerProcessSample(sample: string): WorkerProcess[];
 
-export function observeWorkerProcesses(
-	readProcesses: () => Promise<WorkerProcess[]>,
-	options?: {
-		confirmationDelayMs?: number;
-		wait?: (milliseconds: number) => Promise<void>;
-	},
-): Promise<WorkerProcessObservation>;
+export function summarizeWorkerProcesses(processes: WorkerProcess[]): WorkerProcessObservation;

@@ -108,22 +108,22 @@ surface and verifies pruning without an internal deletion API.
 
 The lane's process observer reads `docker top` every 100 ms and requires every
 packaged yt-dlp and FFmpeg process to carry the forced one-thread restriction.
-A process sampled inside its execve window reports its new `comm` while
-`/proc/<pid>/cmdline` is still empty or partly written, so that read carries no
-argv to check and produced a false violation at 2.34.5. The observer therefore
-re-reads the process table once, after a short delay, whenever a process reads
-as unrestricted, and counts a violation only when the same pid still runs the
-same program and still carries no restriction. A read that cannot be confirmed
-is reported separately as `ffmpegUnconfirmedRestrictionReadTotal` or
-`ytDlpUnconfirmedFfmpegThreadRestrictionTotal`, never as a pass.
+A process sampled inside its execve window already reports its new `comm` while
+`/proc/<pid>/cmdline` is still unwritten, which `ps` renders as the bracketed
+comm. That read carries no argv to check, and counting it produced a false
+violation at 2.34.5. The observer now marks such a row as an unwritten argv and
+reports it as `ytDlpArgvUnwrittenTotal` or `ffmpegArgvUnwrittenTotal`, never as
+a violation and never as a pass — it is excluded from the restriction counts in
+both directions.
 
-This does not relax the invariant. The restriction is an unconditional argv the
-node builds on its only spawn path, so a real unrestricted process keeps
-running unrestricted and is still unrestricted on the re-read, and still fails
-the lane. Only a read the observer could not complete — an unfinished argv, a
-pid that left the table, a pid another program has taken over — is excluded,
-and an unmeasured process is not evidence of a violation. Counts, worker RSS,
-and every peak still come from the first read alone.
+This does not relax the invariant. The kernel publishes the argument vector in
+one step, so a sampled row is either bracketed or complete and never half a
+command line; a real invocation of either program always carries a full
+argument vector. The restriction is an unconditional argv the node builds on
+its only spawn path, so a genuinely unrestricted process is measurable the
+first time it is sampled and still fails the lane, however briefly it runs.
+Only a process the observer cannot measure at all is excluded, and an
+unmeasured process is not evidence of a violation.
 
 Two slow requests are separately interrupted with SIGKILL. The first proves
 that an aged, owner-verified workspace is removed by the next execution's stale

@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-	observeWorkerProcesses,
 	parseWorkerProcessSample,
-	type WorkerProcess,
+	summarizeWorkerProcesses,
 } from '../e2e/n8n-2.27.4/process-observer.mjs';
 
 const restrictedYtDlpArguments =
@@ -12,64 +11,22 @@ const unrestrictedYtDlpArguments =
 	'/opt/n8n-nodes-yt-dlp/yt-dlp -o /tmp/out.%(ext)s http://fixture:8080/capacity-playlist';
 
 function topOutput(rows: string[]): string {
-	return ['PID                 PPID                RSS                 COMMAND             COMMAND', ...rows].join(
-		'\n',
-	);
+	return [
+		'PID                 PPID                RSS                 COMMAND             COMMAND',
+		...rows,
+	].join('\n');
 }
 
 function row(pid: number, rssKiB: number, command: string, argumentsText: string): string {
 	return `${pid}                1                   ${rssKiB}                 ${command}             ${argumentsText}`;
 }
 
-function ytDlpProcess(pid: number, restricted: boolean): WorkerProcess {
-	return {
-		ffmpeg: false,
-		ffmpegThreadsOne: false,
-		n8nWorker: false,
-		pid,
-		rssBytes: 1024 * 1024,
-		ytDlp: true,
-		ytDlpFfmpegThreadsOne: restricted,
-	};
-}
-
-function ffmpegProcess(pid: number, restricted: boolean): WorkerProcess {
-	return {
-		ffmpeg: true,
-		ffmpegThreadsOne: restricted,
-		n8nWorker: false,
-		pid,
-		rssBytes: 1024 * 1024,
-		ytDlp: false,
-		ytDlpFfmpegThreadsOne: false,
-	};
-}
-
-function reader(...reads: WorkerProcess[][]): {
-	readProcesses: () => Promise<WorkerProcess[]>;
-	readCount: () => number;
-} {
-	let index = 0;
-	return {
-		readCount: () => index,
-		readProcesses: async () => {
-			const read = reads[Math.min(index, reads.length - 1)];
-			index += 1;
-			return read;
-		},
-	};
-}
-
-async function observe(...reads: WorkerProcess[][]) {
-	const { readProcesses } = reader(...reads);
-	return await observeWorkerProcesses(readProcesses, {
-		confirmationDelayMs: 0,
-		wait: async () => {},
-	});
+function summarize(rows: string[]) {
+	return summarizeWorkerProcesses(parseWorkerProcessSample(topOutput(rows)));
 }
 
 describe('capacity lane worker process observer', () => {
-	it('parses pid, resident memory, command, and thread-restriction flags from a docker top sample', () => {
+	it('parses pid, resident memory, program, and thread-restriction state from a docker top sample', () => {
 		const processes = parseWorkerProcessSample(
 			topOutput([
 				row(7, 327176, 'n8n', '/usr/local/bin/node /usr/local/bin/n8n worker --concurrency 10'),
@@ -80,36 +37,33 @@ describe('capacity lane worker process observer', () => {
 
 		expect(processes).toEqual([
 			{
-				ffmpeg: false,
-				ffmpegThreadsOne: false,
+				argvWritten: true,
 				n8nWorker: true,
 				pid: 7,
+				program: 'other',
 				rssBytes: 327176 * 1024,
-				ytDlp: false,
-				ytDlpFfmpegThreadsOne: false,
+				threadRestricted: false,
 			},
 			{
-				ffmpeg: false,
-				ffmpegThreadsOne: false,
+				argvWritten: true,
 				n8nWorker: false,
 				pid: 1240,
+				program: 'yt-dlp',
 				rssBytes: 4096 * 1024,
-				ytDlp: true,
-				ytDlpFfmpegThreadsOne: true,
+				threadRestricted: true,
 			},
 			{
-				ffmpeg: true,
-				ffmpegThreadsOne: true,
+				argvWritten: true,
 				n8nWorker: false,
 				pid: 1241,
+				program: 'ffmpeg',
 				rssBytes: 8192 * 1024,
-				ytDlp: false,
-				ytDlpFfmpegThreadsOne: false,
+				threadRestricted: true,
 			},
 		]);
 	});
 
-	it('reads a fully written argv without the restriction and a bracketed exec-window argv alike', () => {
+	it('marks a process still inside its execve window as carrying no argv to check', () => {
 		const processes = parseWorkerProcessSample(
 			topOutput([
 				row(1242, 512, 'yt-dlp', '[yt-dlp]'),
@@ -118,120 +72,90 @@ describe('capacity lane worker process observer', () => {
 		);
 
 		expect(processes).toMatchObject([
-			{ pid: 1242, ytDlp: true, ytDlpFfmpegThreadsOne: false },
-			{ pid: 1243, ytDlp: true, ytDlpFfmpegThreadsOne: false },
+			{ argvWritten: false, pid: 1242, program: 'yt-dlp', threadRestricted: false },
+			{ argvWritten: true, pid: 1243, program: 'yt-dlp', threadRestricted: false },
 		]);
 	});
 
-	it('takes counts and worker memory from the first read only', async () => {
-		const observation = await observe([
-			{ ...ytDlpProcess(1, true), rssBytes: 0 },
-			ytDlpProcess(2, true),
-			{
-				ffmpeg: false,
-				ffmpegThreadsOne: false,
-				n8nWorker: true,
-				pid: 7,
-				rssBytes: 335_028_224,
-				ytDlp: false,
-				ytDlpFfmpegThreadsOne: false,
-			},
-			ffmpegProcess(3, true),
-		]);
-
-		expect(observation).toEqual({
+	it('sums worker resident memory and counts every packaged process in the sample', () => {
+		expect(
+			summarize([
+				row(7, 327176, 'n8n', '/usr/local/bin/node /usr/local/bin/n8n worker --concurrency 10'),
+				row(8, 100, 'n8n', '/usr/local/bin/node /usr/local/bin/n8n worker --concurrency 10'),
+				row(1240, 4096, 'yt-dlp', restrictedYtDlpArguments),
+				row(1241, 4096, 'yt-dlp', restrictedYtDlpArguments),
+				row(1242, 8192, 'ffmpeg', '/opt/n8n-nodes-yt-dlp/ffmpeg -threads 1 -i a.mp4 out.mp4'),
+			]),
+		).toEqual({
+			ffmpegArgvUnwrittenCount: 0,
 			ffmpegCount: 1,
-			ffmpegThreadsOne: true,
-			ffmpegUnconfirmedRestrictionReadCount: 0,
 			ffmpegUnrestrictedCount: 0,
-			workerRssBytes: 335_028_224,
+			workerRssBytes: (327176 + 100) * 1024,
+			ytDlpArgvUnwrittenCount: 0,
 			ytDlpCount: 2,
 			ytDlpMissingFfmpegThreadRestrictionCount: 0,
-			ytDlpUnconfirmedFfmpegThreadRestrictionCount: 0,
 		});
 	});
 
-	it('does not re-read the process table when the first read is clean', async () => {
-		const { readCount, readProcesses } = reader([ytDlpProcess(1, true)]);
-
-		await observeWorkerProcesses(readProcesses, { confirmationDelayMs: 0, wait: async () => {} });
-
-		expect(readCount()).toBe(1);
-	});
-
-	it('discards a partial exec-window read that carries the restriction on re-read', async () => {
-		const observation = await observe(
-			[ytDlpProcess(1, true), ytDlpProcess(2, false)],
-			[ytDlpProcess(1, true), ytDlpProcess(2, true)],
-		);
-
-		expect(observation).toMatchObject({
+	it('reports an execve-window read as an unwritten argv rather than as a violation', () => {
+		expect(
+			summarize([
+				row(1240, 4096, 'yt-dlp', restrictedYtDlpArguments),
+				row(1241, 512, 'yt-dlp', '[yt-dlp]'),
+			]),
+		).toMatchObject({
+			ytDlpArgvUnwrittenCount: 1,
 			ytDlpCount: 2,
 			ytDlpMissingFfmpegThreadRestrictionCount: 0,
-			ytDlpUnconfirmedFfmpegThreadRestrictionCount: 1,
 		});
 	});
 
-	it('discards a suspect that left the process table before it could be re-read', async () => {
-		const observation = await observe([ytDlpProcess(1, false)], []);
-
-		expect(observation).toMatchObject({
-			ytDlpMissingFfmpegThreadRestrictionCount: 0,
-			ytDlpUnconfirmedFfmpegThreadRestrictionCount: 1,
-		});
-	});
-
-	it('discards a suspect whose pid was reused by another program before the re-read', async () => {
-		const observation = await observe([ytDlpProcess(1, false)], [ffmpegProcess(1, false)]);
-
-		expect(observation).toMatchObject({
+	it('never folds an execve-window read into a restriction count in either direction', () => {
+		expect(summarize([row(1241, 512, 'ffmpeg', '[ffmpeg]')])).toMatchObject({
+			ffmpegArgvUnwrittenCount: 1,
+			ffmpegCount: 1,
 			ffmpegUnrestrictedCount: 0,
-			ytDlpMissingFfmpegThreadRestrictionCount: 0,
-			ytDlpUnconfirmedFfmpegThreadRestrictionCount: 1,
 		});
 	});
 
-	it('counts a yt-dlp process that still carries no restriction on re-read as a violation', async () => {
-		const observation = await observe(
-			[ytDlpProcess(1, true), ytDlpProcess(2, false)],
-			[ytDlpProcess(1, true), ytDlpProcess(2, false)],
-		);
-
-		expect(observation).toMatchObject({
+	it('counts a yt-dlp process whose written argv carries no restriction as a violation', () => {
+		expect(
+			summarize([
+				row(1240, 4096, 'yt-dlp', restrictedYtDlpArguments),
+				row(1241, 4096, 'yt-dlp', unrestrictedYtDlpArguments),
+			]),
+		).toMatchObject({
+			ytDlpArgvUnwrittenCount: 0,
 			ytDlpCount: 2,
 			ytDlpMissingFfmpegThreadRestrictionCount: 1,
-			ytDlpUnconfirmedFfmpegThreadRestrictionCount: 0,
 		});
 	});
 
-	it('counts an ffmpeg process that still carries no one-thread restriction on re-read as a violation', async () => {
-		const observation = await observe([ffmpegProcess(9, false)], [ffmpegProcess(9, false)]);
+	it('counts a short-lived unrestricted process the first time it is sampled', () => {
+		expect(summarize([row(1241, 4096, 'yt-dlp', unrestrictedYtDlpArguments)])).toMatchObject({
+			ytDlpMissingFfmpegThreadRestrictionCount: 1,
+		});
+	});
 
-		expect(observation).toMatchObject({
+	it('counts an ffmpeg process whose written argv carries no one-thread restriction as a violation', () => {
+		expect(
+			summarize([row(1241, 8192, 'ffmpeg', '/opt/n8n-nodes-yt-dlp/ffmpeg -i a.mp4 out.mp4')]),
+		).toMatchObject({
+			ffmpegArgvUnwrittenCount: 0,
 			ffmpegCount: 1,
-			ffmpegThreadsOne: false,
-			ffmpegUnconfirmedRestrictionReadCount: 0,
 			ffmpegUnrestrictedCount: 1,
 		});
 	});
 
-	it('reports no restricted ffmpeg evidence when no ffmpeg process was sampled', async () => {
-		const observation = await observe([ytDlpProcess(1, true)]);
-
-		expect(observation).toMatchObject({ ffmpegCount: 0, ffmpegThreadsOne: false });
+	it('does not treat an unrelated worker process as a packaged program', () => {
+		expect(
+			summarize([row(9, 2048, 'node', '/usr/local/bin/node /usr/local/bin/n8n worker')]),
+		).toMatchObject({ ffmpegCount: 0, ytDlpCount: 0 });
 	});
 
-	it('waits the confirmation delay before re-reading the process table', async () => {
-		const delays: number[] = [];
-		const { readProcesses } = reader([ytDlpProcess(1, false)], [ytDlpProcess(1, true)]);
-
-		await observeWorkerProcesses(readProcesses, {
-			confirmationDelayMs: 250,
-			wait: async (milliseconds) => {
-				delays.push(milliseconds);
-			},
-		});
-
-		expect(delays).toEqual([250]);
+	it('rejects a process line it cannot parse instead of silently dropping it', () => {
+		expect(() => parseWorkerProcessSample(topOutput(['not a process line'])),).toThrow(
+			'Cannot parse worker process sample',
+		);
 	});
 });

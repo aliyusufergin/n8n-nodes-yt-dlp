@@ -7,8 +7,8 @@ import { promisify } from 'node:util';
 import { parse as parseFlatted } from 'flatted';
 
 import {
-	observeWorkerProcesses,
 	parseWorkerProcessSample,
+	summarizeWorkerProcesses,
 } from './process-observer.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -766,15 +766,13 @@ fetch('http://127.0.0.1:5678/metrics')
 }
 
 async function workerProcessSnapshot(workerId) {
-	return await observeWorkerProcesses(async () => {
-		const { stdout } = await run('docker', [
-			'top',
-			workerId,
-			'-eo',
-			'pid,ppid,rss,comm,args',
-		]);
-		return parseWorkerProcessSample(stdout);
-	});
+	const { stdout } = await run('docker', [
+		'top',
+		workerId,
+		'-eo',
+		'pid,ppid,rss,comm,args',
+	]);
+	return summarizeWorkerProcesses(parseWorkerProcessSample(stdout));
 }
 
 async function workerTemporaryDiskSnapshot() {
@@ -1114,14 +1112,14 @@ function summarizeCapacity(
 						return counts;
 					}, new Map()),
 			),
+			ffmpegArgvUnwrittenTotal: processObservations.reduce(
+				(total, { ffmpegArgvUnwrittenCount }) => total + ffmpegArgvUnwrittenCount,
+				0,
+			),
 			ffmpegProcessPeak: Math.max(
 				...processObservations.map(({ ffmpegCount }) => ffmpegCount),
 			),
-			ffmpegUnconfirmedRestrictionReadTotal: processObservations.reduce(
-				(total, { ffmpegUnconfirmedRestrictionReadCount }) =>
-					total + ffmpegUnconfirmedRestrictionReadCount,
-				0,
-			),
+			ffmpegThreadRestrictionProven: acceptance.ffmpegThreadsRestricted,
 			ffmpegWithoutThreadRestrictionObserved: processObservations.some(
 				({ ffmpegUnrestrictedCount }) => ffmpegUnrestrictedCount > 0,
 			),
@@ -1130,22 +1128,23 @@ function summarizeCapacity(
 			hostTotalMemoryBytes: firstHost.totalMemoryBytes,
 			minimumHostAvailableMemoryBytes,
 			minimumWorkerTempFreeBytes,
+			processObservationCount: processObservations.length,
 			queueLatencyMaximumMs: Math.max(...queueLatencyMs),
 			queueLatencyP95Ms: percentile(queueLatencyMs, 95),
 			redisUsedMemoryPeakBytes: Math.max(
 				...samples.map(({ storage }) => storage.redisUsedMemoryBytes),
 			),
+			sampleCount: samples.length,
 			workerProcessRssPeakBytes,
 			workerTemporaryDiskPeakBytes: Math.max(
 				...samples.map(({ temporaryDisk }) => temporaryDisk.usedBytes),
 			),
+			ytDlpArgvUnwrittenTotal: processObservations.reduce(
+				(total, { ytDlpArgvUnwrittenCount }) => total + ytDlpArgvUnwrittenCount,
+				0,
+			),
 			ytDlpProcessPeak: Math.max(
 				...processObservations.map(({ ytDlpCount }) => ytDlpCount),
-			),
-			ytDlpUnconfirmedFfmpegThreadRestrictionTotal: processObservations.reduce(
-				(total, { ytDlpUnconfirmedFfmpegThreadRestrictionCount }) =>
-					total + ytDlpUnconfirmedFfmpegThreadRestrictionCount,
-				0,
 			),
 			ytDlpWithoutFfmpegThreadRestrictionObserved: processObservations.some(
 				({ ytDlpMissingFfmpegThreadRestrictionCount }) =>

@@ -55,11 +55,13 @@ moves. One recorded field differed on the first head run: `ffmpegThreadRestricti
 was `false` at 2.34.5 because a single process sample out of 437 reported a yt-dlp
 command line without the FFmpeg thread flag. The node builds that argv unconditionally,
 so this was an observer-robustness defect in the lane rather than a platform or node
-change. Issue #58 fixed the observer — a process that reads as unrestricted is re-read
-once and counted only when the second read agrees — and the lane was rerun at 2.34.5 on
-2026-08-14. The committed record now reports `ffmpegThreadRestrictionProven` as `true`
-with the exec-window read reported separately as unconfirmed, and it replaces the
-first head run's record in place.
+change. Issue #58 fixed the observer — a process whose argv the kernel has not published
+yet is excluded from the restriction counts in both directions instead of counted as a
+violation — and the lane was rerun at 2.34.5 on 2026-08-14. The committed record now
+reports `ffmpegThreadRestrictionProven` as `true` and replaces the first head run's
+record in place, carrying that run's details in its `supersedes` block. Same-anchor
+replacement is not the cross-anchor supersession this section rules out: the 2.30.7
+record still stands on its own.
 
 Nothing found contradicts ADR 0025. The `>=2 <3` Uyumluluk Hedefi, the
 three-anchor structure, and the head's exact-digest freeze all still hold, and
