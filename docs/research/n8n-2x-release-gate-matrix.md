@@ -51,11 +51,15 @@ committed as `docs/capacity/n8n-2.34.5-node-0.2.0.json`; the previous head's
 for that image and is not superseded in place. The decision is unchanged from
 the previous head: worker concurrency 10 is unsafe on the measured disposable
 topology, so the supported scope stays at concurrency 1 and no node hard cap
-moves. One recorded field differs: `ffmpegThreadRestrictionProven` is `false` at
-2.34.5 because a single process sample out of 437 reported a yt-dlp command line
-without the FFmpeg thread flag. The node builds that argv unconditionally and the
-same run directly observed a restricted FFmpeg process, so this is tracked as an
-observer-robustness defect in the lane rather than a platform or node change.
+moves. One recorded field differed on the first head run: `ffmpegThreadRestrictionProven`
+was `false` at 2.34.5 because a single process sample out of 437 reported a yt-dlp
+command line without the FFmpeg thread flag. The node builds that argv unconditionally,
+so this was an observer-robustness defect in the lane rather than a platform or node
+change. Issue #58 fixed the observer — a process that reads as unrestricted is re-read
+once and counted only when the second read agrees — and the lane was rerun at 2.34.5 on
+2026-08-14. The committed record now reports `ffmpegThreadRestrictionProven` as `true`
+with the exec-window read reported separately as unconfirmed, and it replaces the
+first head run's record in place.
 
 Nothing found contradicts ADR 0025. The `>=2 <3` Uyumluluk Hedefi, the
 three-anchor structure, and the head's exact-digest freeze all still hold, and

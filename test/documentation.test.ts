@@ -144,7 +144,7 @@ describe('public documentation', () => {
 					'capacity/n8n-2.34.5-node-0.2.0.json',
 					'worker concurrency 1',
 					'greater than 1 second',
-					'greater than 5,485,101,056 bytes',
+					'greater than 4,694,474,752 bytes',
 					'less than 6 GiB',
 				],
 				'## Diagnose': [
