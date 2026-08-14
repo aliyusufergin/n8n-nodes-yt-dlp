@@ -272,6 +272,29 @@ await run(ffmpeg, [
 	'copy',
 	join(fixtureRoot, 'direct.mp4'),
 ]);
+// The capacity lane proves the forced FFmpeg one-thread restriction by sampling the packaged
+// FFmpeg itself, which needs an FFmpeg run that outlives the 100 ms process observer. A merge of
+// the one-second fixtures above is over in a few milliseconds, so the lane re-encodes this longer
+// fixture instead: six hundred frames through one x264 thread keep FFmpeg alive across many
+// samples, and the frame count rather than a byte count decides that, so the evidence does not
+// depend on how fast the host's disk is.
+await run(ffmpeg, [
+	'-hide_banner',
+	'-loglevel',
+	'error',
+	'-f',
+	'lavfi',
+	'-i',
+	'testsrc=size=480x360:rate=30',
+	'-t',
+	'20',
+	'-an',
+	'-c:v',
+	'libx264',
+	'-pix_fmt',
+	'yuv420p',
+	join(fixtureRoot, 'recode.mp4'),
+]);
 await Promise.all([
 	copyFile(join(fixtureRoot, 'direct.mp4'), join(fixtureRoot, 'alpha.mp4')),
 	copyFile(join(fixtureRoot, 'direct.mp4'), join(fixtureRoot, 'bravo.mp4')),
@@ -288,6 +311,7 @@ for (const fileName of [
 	'direct.mp4',
 	'manifest.mpd',
 	'oversized.mp4',
+	'recode.mp4',
 ]) {
 	const body = await readFile(join(fixtureRoot, fileName));
 	fixtureEvidence.push({

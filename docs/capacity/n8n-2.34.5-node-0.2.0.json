@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-08-14T11:40:54.361Z",
+  "recordedAt": "2026-08-14T20:07:15.820Z",
   "rawEvidence": {
     "path": "e2e/n8n-2.27.4/.generated/2.34.5/evidence/n8n-2.34.5.json",
-    "sha256": "22946498f962fc779794de56eb6e3598b080a585abfa852513cd9e7104fac8ae"
+    "sha256": "a7bee28ff470c7c5909b5a62a75d5673f6a11353246bcebb3819322a3f2024d6"
   },
   "supersedes": {
-    "recordedAt": "2026-08-13T20:56:17.461Z",
-    "reason": "The first 2.34.5 run was recorded with a process observer that counted an execve-window read as a thread-restriction violation, which set ffmpegThreadRestrictionProven to false. Issue #58 fixed the observer and this record replaces that run in place, as the same anchor. The superseded run measured ffmpegProcessPeak 1 with ffmpegWithoutThreadRestrictionObserved false; that FFmpeg observation is not reproduced here and is not claimed by this record."
+    "recordedAt": "2026-08-14T11:40:54.361Z",
+    "reason": "The 2026-08-14T11:40 run was recorded with a process observer that named processes by comm, so it could never match a packaged FFmpeg: each tool is launched through the bundled loader, which the kernel reports as ld-linux-x86-64 or ld-musl-x86_64. instead of the tool. That run measured ffmpegProcessPeak 0 and its ffmpegThreadRestrictionProven rested on the yt-dlp command lines alone. Issue #68 fixed the observer to resolve the executable from the argv and added an FFmpeg lower bound to the acceptance flag; this record replaces that run in place, as the same anchor. It supersedes in turn the 2026-08-13T20:56 run described in that record."
   },
   "image": {
     "name": "docker.n8n.io/n8nio/n8n",
@@ -53,57 +53,84 @@
     "individualArtifactHardLimitBytes": 268435456,
     "totalArtifactHardLimitBytes": 536870912,
     "ffmpegThreads": 1,
-    "requestTimeoutMinutes": 60
+    "requestTimeoutMinutes": 60,
+    "ffmpegThreadRestrictionProbe": "one --recode-video mkv request after the load window closes"
   },
   "alertThresholds": {
     "scope": "this exact disposable topology and package chain",
     "eventLoopLagSeconds": 1,
     "hostAvailableMemoryBytes": 2147483648,
     "queueLatencyP95Ms": 30000,
-    "workerContainerMemoryBytes": 4205838336,
+    "workerContainerMemoryBytes": 4354736128,
     "workerTempFreeBytes": 6442450944
   },
   "measurements": {
-    "durationMs": 214380,
-    "successfulRequests": 4,
-    "failedRequests": 6,
-    "failureCodes": {
-      "BINARY_TRANSFER_FAILED": 5,
-      "UNKNOWN": 1
+    "durationMs": 182642,
+    "successfulRequests": 10,
+    "failedRequests": 0,
+    "failureCodes": {},
+    "binaryGrowthBytes": 2684478910,
+    "binaryRowGrowth": 20,
+    "databasePeakBytes": 47791127,
+    "redisUsedMemoryPeakBytes": 2223672,
+    "eventLoopLagPeakSeconds": 1.246756863,
+    "queueLatencyMaximumMs": 1030,
+    "queueLatencyP95Ms": 1030,
+    "hostCpuPercent": 95.97015327425046,
+    "hostMinimumAvailableMemoryBytes": 7043457024,
+    "workerProcessRssPeakBytes": 4525707264,
+    "workerContainerCpuPeakPercent": 302.11,
+    "workerContainerMemoryPeakBytes": 3483218477.056,
+    "workerTemporaryDiskPeakBytes": 3123429376,
+    "workerMinimumTempFreeBytes": 37236809728,
+    "postgresContainerCpuPeakPercent": 151.89,
+    "postgresContainerMemoryPeakBytes": 1673963503.616,
+    "redisContainerCpuPeakPercent": 11.34,
+    "redisContainerMemoryPeakBytes": 18926796.8,
+    "metricsSampling": {
+      "limits": {
+        "maxConsecutiveFailures": 5,
+        "maxTotalFailures": 15
+      },
+      "longestFailureRun": 0,
+      "readingCount": 28,
+      "skippedReadingCount": 0,
+      "skippedReadings": []
     },
-    "binaryGrowthBytes": 2415981279,
-    "binaryRowGrowth": 14,
-    "databasePeakBytes": 44514327,
-    "redisUsedMemoryPeakBytes": 2235848,
-    "eventLoopLagPeakSeconds": 2.860515327,
-    "queueLatencyMaximumMs": 1109,
-    "queueLatencyP95Ms": 1109,
-    "hostCpuPercent": 94.32249512983752,
-    "hostMinimumAvailableMemoryBytes": 6705696768,
-    "workerProcessRssPeakBytes": 3585699840,
-    "workerContainerCpuPeakPercent": 259.21,
-    "workerContainerMemoryPeakBytes": 3364033134.592,
-    "workerTemporaryDiskPeakBytes": 3242029056,
-    "workerMinimumTempFreeBytes": 37189111808,
-    "postgresContainerCpuPeakPercent": 104.63,
-    "postgresContainerMemoryPeakBytes": 1055916032,
-    "redisContainerCpuPeakPercent": 11.58,
-    "redisContainerMemoryPeakBytes": 16148070.4,
-    "ytDlpProcessPeak": 10,
+    "ytDlpProcessPeak": 20,
     "ytDlpWithoutFfmpegThreadRestrictionObserved": false,
     "ytDlpArgvUnwrittenTotal": 0,
-    "ffmpegProcessPeak": 0,
+    "ffmpegProcessPeak": 3,
+    "ffmpegThreadRestrictionObserved": true,
     "ffmpegWithoutThreadRestrictionObserved": false,
+    "ffmpegUnrestrictedCommandLines": [],
+    "ffmpegWithoutMediaInputTotal": 4,
     "ffmpegArgvUnwrittenTotal": 0,
+    "unattributedArgvUnwrittenTotal": 1,
+    "ffmpegThreadRestrictionProbe": {
+      "artifactFileName": "000001-recode.mkv",
+      "executionId": "29",
+      "ffmpegArgvUnwrittenTotal": 1,
+      "ffmpegProcessPeak": 1,
+      "ffmpegThreadRestrictionObserved": true,
+      "ffmpegUnrestrictedCommandLines": [],
+      "ffmpegWithoutMediaInputTotal": 2,
+      "ffmpegWithoutThreadRestrictionObserved": false,
+      "processObservationCount": 47,
+      "unattributedArgvUnwrittenTotal": 0
+    },
     "ffmpegThreadRestrictionProven": true,
-    "sampleCount": 34,
-    "processObservationCount": 543
+    "sampleCount": 28,
+    "processObservationCount": 436
   },
   "processObserver": {
-    "method": "docker top every 100 ms. A packaged yt-dlp or FFmpeg process whose argv the kernel has not published yet is reported as an unwritten-argv read and excluded from the restriction counts in both directions; every process with a written argv is checked on the sample that saw it.",
+    "method": "docker top every 100 ms. Each process is named by the executable its argv runs, not by comm: the Platform Paketi launches every tool through the bundled loader, so comm reports ld-linux-x86-64 for a packaged FFmpeg and ld-musl-x86_64. for a packaged yt-dlp. A loader invocation names its payload after an optional --library-path pair; every other process names its executable in the first token.",
+    "processesAreNotRequests": "One packaged yt-dlp invocation is two processes, the bundled-loader bootloader and the PyInstaller child it forks, both carrying the same argument vector. ytDlpProcessPeak 20 is ten concurrent requests, and is not comparable with records written before issue #68, which counted the child alone.",
     "invariantUnchanged": "The kernel publishes the argument vector in one step, so a sampled row is either the bracketed comm or a complete command line and never half of one, and a real invocation of either program always carries a full argument vector. The node builds --postprocessor-args ffmpeg:-threads 1 into its only yt-dlp spawn unconditionally, so a genuinely unrestricted process is measurable the first time it is sampled and still fails the lane however briefly it runs. Only a process the observer cannot measure at all is excluded, and an unmeasured process is not evidence of a violation.",
-    "unwrittenArgvReadsAreNotPasses": "Unwritten-argv reads are reported as ytDlpArgvUnwrittenTotal and ffmpegArgvUnwrittenTotal and are never folded into ytDlpWithoutFfmpegThreadRestrictionObserved, ffmpegWithoutThreadRestrictionObserved, or ffmpegThreadRestrictionProven.",
-    "ffmpegEvidenceLimit": "This run sampled no packaged FFmpeg process at all (ffmpegProcessPeak 0), so ffmpegThreadRestrictionProven rests on the yt-dlp command lines, which carry the restriction the node passes to FFmpeg, and not on a directly sampled FFmpeg process. The lane's acceptance flag does not require an FFmpeg process to be sampled."
+    "unwrittenArgvReadsAreNotPasses": "Unwritten-argv reads are reported as ytDlpArgvUnwrittenTotal, ffmpegArgvUnwrittenTotal, and unattributedArgvUnwrittenTotal for a loader read that names no tool, and are never folded into ytDlpWithoutFfmpegThreadRestrictionObserved, ffmpegWithoutThreadRestrictionObserved, or ffmpegThreadRestrictionProven.",
+    "invocationsWithoutMediaWork": "The Toolchain Attestation probes the packaged FFmpeg with -version on first use in each main and worker process, and yt-dlp asks the same binary for its bitstream filters. Those processes open no input and do no media work, so ADR 0019 does not reach them: they are reported as ffmpegWithoutMediaInputTotal and excluded from the restriction counts in both directions. An FFmpeg that works on media names its input with -i and is always checked.",
+    "ffmpegThreadRestrictionDirectlyObserved": "This run proves the restriction from FFmpeg itself, not from the yt-dlp command lines. The lane sampled packaged FFmpeg processes working on media in both windows \u2014 ffmpegProcessPeak 3 under load and 1 in the probe, across 47 probe observations \u2014 every one of them carrying -threads 1, and ffmpegUnrestrictedCommandLines is empty. The lane now refuses to prove the restriction without such an observation, so no later run can pass this flag vacuously.",
+    "reliabilityAcrossRuns": "The observation is reliable rather than lucky: two consecutive runs of the fixed lane on this anchor, 2026-08-14T19:16:34.658Z and 2026-08-14T20:07:15.820Z, each sampled a restricted media FFmpeg in the probe window (ffmpegProcessPeak 1 over 47 observations) and three more under load. The probe re-encodes a twenty-second fixture with --recode-video mkv, which cannot be a stream copy, so FFmpeg lives for seconds rather than the milliseconds a merge of the one-second fixtures takes."
   },
   "failureRecovery": {
     "controlledProcessBoundary": {
@@ -135,7 +162,7 @@
     }
   },
   "acceptance": {
-    "allRequestsSucceeded": false,
+    "allRequestsSucceeded": true,
     "binaryGrowthObserved": true,
     "eventLoopHealthy": false,
     "ffmpegThreadsRestricted": true,
