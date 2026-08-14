@@ -125,6 +125,28 @@ first time it is sampled and still fails the lane, however briefly it runs.
 Only a process the observer cannot measure at all is excluded, and an
 unmeasured process is not evidence of a violation.
 
+Refusing violations is not the same as proving the restriction. Every capacity
+run so far recorded `ffmpegProcessPeak: 0`: the load's FFmpeg only merges two
+one-second fixtures, so it is over long before the next 100 ms sample, and the
+boolean rested on the yt-dlp command lines carrying `--postprocessor-args
+ffmpeg:-threads 1` rather than on FFmpeg itself. ADR 0019 bounds FFmpeg's own
+threads, so the verdict now also requires a packaged FFmpeg process that was
+sampled, whose argv was readable, and that carried `-threads 1`. Sampling no
+FFmpeg at all now leaves `ffmpegThreadsRestricted` false instead of passing on
+an inference.
+
+A dedicated request supplies that observation. After the load's measurements
+are taken, the lane re-encodes a twenty-second fixture into another container
+with `--recode-video mkv` — the one postprocessing path that cannot be a stream
+copy — and process-observes it. Six hundred frames through one x264 thread keep
+FFmpeg alive across many samples, so the evidence rests on the frame count
+rather than on how fast the host's disk is, and the recorded capacity envelope
+is unchanged because the load window has already closed. The probe reports its
+own peak, unwritten-argv total, and observation count under
+`measurements.ffmpegThreadRestrictionProbe`, and its observations join the
+load's for the verdict, so an unrestricted process fails the lane wherever it
+was sampled.
+
 Every resource sample reads the worker's `/metrics` endpoint from inside the
 worker container, one second apart plus the latency of the sample's own Docker
 commands. That endpoint returned a single `500` at 2.34.5 immediately after

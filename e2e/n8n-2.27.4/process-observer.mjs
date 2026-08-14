@@ -58,11 +58,12 @@ export function parseWorkerProcessSample(sample) {
 function programCounts(processes, program_) {
 	const matching = processes.filter(({ program: candidate }) => candidate === program_);
 	const measurable = matching.filter(({ argvWritten }) => argvWritten);
+	const restricted = measurable.filter(({ threadRestricted: value }) => value);
 	return {
 		argvUnwrittenCount: matching.length - measurable.length,
 		count: matching.length,
-		unrestrictedCount: measurable.filter(({ threadRestricted: restricted }) => !restricted)
-			.length,
+		restrictedCount: restricted.length,
+		unrestrictedCount: measurable.length - restricted.length,
 	};
 }
 
@@ -84,6 +85,7 @@ export function summarizeWorkerProcesses(processes) {
 	return {
 		ffmpegArgvUnwrittenCount: ffmpeg.argvUnwrittenCount,
 		ffmpegCount: ffmpeg.count,
+		ffmpegRestrictedCount: ffmpeg.restrictedCount,
 		ffmpegUnrestrictedCount: ffmpeg.unrestrictedCount,
 		workerRssBytes: processes
 			.filter(({ n8nWorker }) => n8nWorker)
@@ -91,5 +93,58 @@ export function summarizeWorkerProcesses(processes) {
 		ytDlpArgvUnwrittenCount: ytDlp.argvUnwrittenCount,
 		ytDlpCount: ytDlp.count,
 		ytDlpMissingFfmpegThreadRestrictionCount: ytDlp.unrestrictedCount,
+	};
+}
+
+function total(observations, field) {
+	return observations.reduce((sum, observation) => sum + observation[field], 0);
+}
+
+function peak(observations, field) {
+	return observations.reduce((highest, observation) => Math.max(highest, observation[field]), 0);
+}
+
+/**
+ * Turns a window of worker process observations into the lane's
+ * thread-restriction verdict.
+ *
+ * The verdict is bounded from below on both programs before it can be proven.
+ * `every(unrestricted === 0)` is satisfied for free by a window that sampled
+ * neither program, and it was satisfied for free on the FFmpeg side by every
+ * capacity run so far: the packaged FFmpeg lives only as long as a merge of a
+ * few kilobytes, which no 100 ms sampler catches, so the boolean rested on the
+ * yt-dlp command lines carrying `--postprocessor-args ffmpeg:-threads 1` and
+ * on the inference that FFmpeg then honours them. ADR 0019 claims a bound on
+ * FFmpeg's own threads, so the verdict now requires a packaged FFmpeg process
+ * that was sampled, whose argv was readable, and that carried `-threads 1`.
+ *
+ * The lower bound is a restricted-process count rather than a process count:
+ * an FFmpeg process sampled inside its execve window carries no argv to check,
+ * and admitting it would replace one vacuous pass with another.
+ */
+export function evaluateThreadRestriction(observations) {
+	const ffmpegThreadRestrictionObserved = observations.some(
+		({ ffmpegRestrictedCount }) => ffmpegRestrictedCount > 0,
+	);
+	const ytDlpProcessPeak = peak(observations, 'ytDlpCount');
+	const noViolation = observations.every(
+		({ ffmpegUnrestrictedCount, ytDlpMissingFfmpegThreadRestrictionCount }) =>
+			ffmpegUnrestrictedCount === 0 && ytDlpMissingFfmpegThreadRestrictionCount === 0,
+	);
+	return {
+		ffmpegArgvUnwrittenTotal: total(observations, 'ffmpegArgvUnwrittenCount'),
+		ffmpegProcessPeak: peak(observations, 'ffmpegCount'),
+		ffmpegThreadRestrictionObserved,
+		ffmpegWithoutThreadRestrictionObserved: observations.some(
+			({ ffmpegUnrestrictedCount }) => ffmpegUnrestrictedCount > 0,
+		),
+		observationCount: observations.length,
+		proven: ytDlpProcessPeak > 0 && ffmpegThreadRestrictionObserved && noViolation,
+		ytDlpArgvUnwrittenTotal: total(observations, 'ytDlpArgvUnwrittenCount'),
+		ytDlpProcessPeak,
+		ytDlpWithoutFfmpegThreadRestrictionObserved: observations.some(
+			({ ytDlpMissingFfmpegThreadRestrictionCount }) =>
+				ytDlpMissingFfmpegThreadRestrictionCount > 0,
+		),
 	};
 }

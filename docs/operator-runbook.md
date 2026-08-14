@@ -121,6 +121,13 @@ sampled a packaged FFmpeg process at all (`ffmpegProcessPeak: 0`), so in both th
 the yt-dlp command lines rather than on a directly sampled FFmpeg process. Read the record's
 `processObserver.ffmpegEvidenceLimit` before citing it as FFmpeg evidence.
 
+Both records predate the lower bound the lane now applies, and neither would earn the boolean
+today. Since issue #68 the lane refuses to prove the restriction unless it sampled a packaged
+FFmpeg process whose readable argv carried `-threads 1`, and a dedicated re-encode request supplies
+that observation after the load's measurements are taken. A record written by a later run reports
+that observation under `measurements.ffmpegThreadRestrictionProbe`; a record without that block was
+written under the older rule and is yt-dlp-side evidence only.
+
 An earlier 2.34.5 run recorded `false` because one process observation out of 437 read a yt-dlp
 process mid-`execve`, while `/proc/<pid>/cmdline` was still unwritten and there was no argv to
 check. The observer now marks such a read as an unwritten argv and reports it as

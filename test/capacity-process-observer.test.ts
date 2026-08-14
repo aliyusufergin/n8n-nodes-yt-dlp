@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+	evaluateThreadRestriction,
 	parseWorkerProcessSample,
 	summarizeWorkerProcesses,
 } from '../e2e/n8n-2.27.4/process-observer.mjs';
@@ -9,6 +10,9 @@ const restrictedYtDlpArguments =
 	'/opt/n8n-nodes-yt-dlp/yt-dlp --postprocessor-args ffmpeg:-threads 1 -o /tmp/out.%(ext)s http://fixture:8080/capacity-playlist';
 const unrestrictedYtDlpArguments =
 	'/opt/n8n-nodes-yt-dlp/yt-dlp -o /tmp/out.%(ext)s http://fixture:8080/capacity-playlist';
+const restrictedFfmpegArguments =
+	'/opt/n8n-nodes-yt-dlp/ffmpeg -threads 1 -i a.mp4 out.mkv';
+const unrestrictedFfmpegArguments = '/opt/n8n-nodes-yt-dlp/ffmpeg -i a.mp4 out.mkv';
 
 function topOutput(rows: string[]): string {
 	return [
@@ -89,6 +93,7 @@ describe('capacity lane worker process observer', () => {
 		).toEqual({
 			ffmpegArgvUnwrittenCount: 0,
 			ffmpegCount: 1,
+			ffmpegRestrictedCount: 1,
 			ffmpegUnrestrictedCount: 0,
 			workerRssBytes: (327176 + 100) * 1024,
 			ytDlpArgvUnwrittenCount: 0,
@@ -114,6 +119,7 @@ describe('capacity lane worker process observer', () => {
 		expect(summarize([row(1241, 512, 'ffmpeg', '[ffmpeg]')])).toMatchObject({
 			ffmpegArgvUnwrittenCount: 1,
 			ffmpegCount: 1,
+			ffmpegRestrictedCount: 0,
 			ffmpegUnrestrictedCount: 0,
 		});
 	});
@@ -157,5 +163,103 @@ describe('capacity lane worker process observer', () => {
 		expect(() => parseWorkerProcessSample(topOutput(['not a process line'])),).toThrow(
 			'Cannot parse worker process sample',
 		);
+	});
+});
+
+describe('capacity lane thread-restriction verdict', () => {
+	const restrictedYtDlp = row(1240, 4096, 'yt-dlp', restrictedYtDlpArguments);
+	const restrictedFfmpeg = row(1241, 8192, 'ffmpeg', restrictedFfmpegArguments);
+
+	function evaluate(observations: string[][]) {
+		return evaluateThreadRestriction(observations.map((rows) => summarize(rows)));
+	}
+
+	it('proves the restriction from a sampled FFmpeg process that carries it', () => {
+		expect(evaluate([[restrictedYtDlp], [restrictedYtDlp, restrictedFfmpeg]])).toEqual({
+			ffmpegArgvUnwrittenTotal: 0,
+			ffmpegProcessPeak: 1,
+			ffmpegThreadRestrictionObserved: true,
+			ffmpegWithoutThreadRestrictionObserved: false,
+			observationCount: 2,
+			proven: true,
+			ytDlpArgvUnwrittenTotal: 0,
+			ytDlpProcessPeak: 1,
+			ytDlpWithoutFfmpegThreadRestrictionObserved: false,
+		});
+	});
+
+	it('refuses to prove the restriction when no FFmpeg process was sampled at all', () => {
+		expect(evaluate([[restrictedYtDlp], [restrictedYtDlp]])).toMatchObject({
+			ffmpegProcessPeak: 0,
+			ffmpegThreadRestrictionObserved: false,
+			ffmpegWithoutThreadRestrictionObserved: false,
+			proven: false,
+		});
+	});
+
+	it('refuses to prove the restriction from an FFmpeg process whose argv it could not read', () => {
+		expect(
+			evaluate([[restrictedYtDlp, row(1241, 512, 'ffmpeg', '[ffmpeg]')]]),
+		).toMatchObject({
+			ffmpegArgvUnwrittenTotal: 1,
+			ffmpegProcessPeak: 1,
+			ffmpegThreadRestrictionObserved: false,
+			proven: false,
+		});
+	});
+
+	it('refuses to prove the restriction when no yt-dlp process was sampled at all', () => {
+		expect(evaluate([[restrictedFfmpeg]])).toMatchObject({
+			ffmpegThreadRestrictionObserved: true,
+			proven: false,
+			ytDlpProcessPeak: 0,
+		});
+	});
+
+	it('fails the verdict on a single unrestricted FFmpeg observation', () => {
+		expect(
+			evaluate([
+				[restrictedYtDlp, restrictedFfmpeg],
+				[restrictedYtDlp, row(1242, 8192, 'ffmpeg', unrestrictedFfmpegArguments)],
+			]),
+		).toMatchObject({
+			ffmpegThreadRestrictionObserved: true,
+			ffmpegWithoutThreadRestrictionObserved: true,
+			proven: false,
+		});
+	});
+
+	it('fails the verdict on a single yt-dlp observation missing the restriction', () => {
+		expect(
+			evaluate([
+				[restrictedYtDlp, restrictedFfmpeg],
+				[row(1243, 4096, 'yt-dlp', unrestrictedYtDlpArguments)],
+			]),
+		).toMatchObject({
+			proven: false,
+			ytDlpWithoutFfmpegThreadRestrictionObserved: true,
+		});
+	});
+
+	it('keeps an unwritten-argv read out of the verdict in either direction', () => {
+		expect(
+			evaluate([
+				[restrictedYtDlp, restrictedFfmpeg],
+				[row(1244, 512, 'yt-dlp', '[yt-dlp]'), row(1245, 512, 'ffmpeg', '[ffmpeg]')],
+			]),
+		).toMatchObject({
+			ffmpegArgvUnwrittenTotal: 1,
+			proven: true,
+			ytDlpArgvUnwrittenTotal: 1,
+		});
+	});
+
+	it('refuses to prove the restriction from no observation at all', () => {
+		expect(evaluateThreadRestriction([])).toMatchObject({
+			ffmpegProcessPeak: 0,
+			observationCount: 0,
+			proven: false,
+			ytDlpProcessPeak: 0,
+		});
 	});
 });

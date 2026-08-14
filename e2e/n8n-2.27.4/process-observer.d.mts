@@ -10,6 +10,7 @@ export interface WorkerProcess {
 export interface WorkerProcessObservation {
 	ffmpegArgvUnwrittenCount: number;
 	ffmpegCount: number;
+	ffmpegRestrictedCount: number;
 	ffmpegUnrestrictedCount: number;
 	workerRssBytes: number;
 	ytDlpArgvUnwrittenCount: number;
@@ -17,6 +18,22 @@ export interface WorkerProcessObservation {
 	ytDlpMissingFfmpegThreadRestrictionCount: number;
 }
 
+export interface ThreadRestrictionVerdict {
+	ffmpegArgvUnwrittenTotal: number;
+	ffmpegProcessPeak: number;
+	ffmpegThreadRestrictionObserved: boolean;
+	ffmpegWithoutThreadRestrictionObserved: boolean;
+	observationCount: number;
+	proven: boolean;
+	ytDlpArgvUnwrittenTotal: number;
+	ytDlpProcessPeak: number;
+	ytDlpWithoutFfmpegThreadRestrictionObserved: boolean;
+}
+
 export function parseWorkerProcessSample(sample: string): WorkerProcess[];
 
 export function summarizeWorkerProcesses(processes: WorkerProcess[]): WorkerProcessObservation;
+
+export function evaluateThreadRestriction(
+	observations: WorkerProcessObservation[],
+): ThreadRestrictionVerdict;

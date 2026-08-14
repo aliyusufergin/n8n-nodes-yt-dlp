@@ -93,6 +93,9 @@
     "sampleCount": 32,
     "processObservationCount": 395
   },
+  "processObserver": {
+    "ffmpegEvidenceLimit": "This run sampled no packaged FFmpeg process at all (ffmpegProcessPeak 0), so ffmpegThreadRestrictionProven rests on the yt-dlp command lines, which carry the restriction the node passes to FFmpeg, and not on a directly sampled FFmpeg process. The lane's acceptance flag did not require an FFmpeg process to be sampled when this run was recorded; since issue #68 it does, and this run would not earn the boolean under the current lane. What is still indirect here is the FFmpeg claim itself: only the argv the node passes to yt-dlp was observed, never FFmpeg honouring it."
+  },
   "failureRecovery": {
     "controlledProcessBoundary": {
       "requestTimeout": "terminated",

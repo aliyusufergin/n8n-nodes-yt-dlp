@@ -12,6 +12,7 @@ import {
 	settleMetricsRead,
 } from './metrics-observer.mjs';
 import {
+	evaluateThreadRestriction,
 	parseWorkerProcessSample,
 	summarizeWorkerProcesses,
 } from './process-observer.mjs';
@@ -894,6 +895,22 @@ async function capacitySample(serviceIds, metricsTolerance) {
 	};
 }
 
+/**
+ * Describes the worker process observer for one window.
+ *
+ * Every window the lane judges the thread restriction over samples at the same
+ * interval, so the load window and the FFmpeg probe window state it once here:
+ * the two windows' observation counts are read side by side in the evidence,
+ * and an interval that drifted between them would make that comparison a lie.
+ */
+function workerProcessObserver(workerId, collection) {
+	return {
+		collection,
+		intervalMs: 100,
+		snapshot: async () => await workerProcessSnapshot(workerId),
+	};
+}
+
 async function collectCapacitySamples(serviceIds, operation) {
 	const samples = [];
 	const processObservations = [];
@@ -904,11 +921,7 @@ async function collectCapacitySamples(serviceIds, operation) {
 			intervalMs: 1_000,
 			snapshot: async () => await capacitySample(serviceIds, metricsTolerance),
 		},
-		{
-			collection: processObservations,
-			intervalMs: 100,
-			snapshot: async () => await workerProcessSnapshot(serviceIds.worker),
-		},
+		workerProcessObserver(serviceIds.worker, processObservations),
 	]);
 	return {
 		metricsSampling: metricsTolerance.summary(),
@@ -916,6 +929,58 @@ async function collectCapacitySamples(serviceIds, operation) {
 		result,
 		samples,
 	};
+}
+
+async function collectProcessObservations(workerId, operation) {
+	const observations = [];
+	const result = await collectUntilComplete(operation, [
+		workerProcessObserver(workerId, observations),
+	]);
+	return { observations, result };
+}
+
+/**
+ * Samples the packaged FFmpeg itself while it runs under the forced one-thread
+ * restriction.
+ *
+ * The capacity load merges two one-second fixtures, so its FFmpeg lives for a
+ * few milliseconds and no run of the lane has sampled it. This request instead
+ * re-encodes a twenty-second fixture into another container, which is the one
+ * postprocessing path that cannot be a stream copy: six hundred frames through
+ * one x264 thread keep FFmpeg alive across many process observations. The
+ * request runs after the load's own measurements are taken, so it costs the
+ * recorded capacity envelope nothing.
+ *
+ * A probe that samples no FFmpeg leaves `ffmpegThreadsRestricted` false rather
+ * than throwing. The lane's evidence is worth more than a fast failure: a
+ * thrown probe would discard a completed load run, and an unproven restriction
+ * is exactly what the acceptance flag exists to report.
+ */
+async function runFfmpegThreadRestrictionProbe(client, serviceIds) {
+	const { observations, result } = await collectProcessObservations(
+		serviceIds.worker,
+		async () =>
+			await createAndRunManual(client, {
+				argumentsValue: '--recode-video mkv',
+				name: 'E2E FFmpeg thread restriction probe',
+				roundTrip: false,
+				sourceUrl: 'http://fixture:8080/recode.mp4',
+			}),
+	);
+	assert(
+		result.execution.status === 'success',
+		'The FFmpeg thread-restriction probe execution failed.',
+	);
+	assert(
+		result.items.length === 1,
+		'The FFmpeg thread-restriction probe returned the wrong item count.',
+	);
+	const artifactFileName = result.items[0].json.fileName;
+	assert(
+		typeof artifactFileName === 'string' && artifactFileName.endsWith('.mkv'),
+		'The FFmpeg thread-restriction probe did not re-encode its Artifact.',
+	);
+	return { artifactFileName, executionId: result.executionId, observations };
 }
 
 async function workspaceNames(service = 'worker') {
@@ -1025,6 +1090,7 @@ function summarizeCapacity(
 	samples,
 	metricsSampling,
 	processObservations,
+	ffmpegProbe,
 	executions,
 	binaryBefore,
 	binaryAfter,
@@ -1051,6 +1117,18 @@ function summarizeCapacity(
 	const minimumWorkerTempFreeBytes = Math.min(
 		...samples.map(({ temporaryDisk }) => temporaryDisk.freeBytes),
 	);
+	// The restriction is judged over every process the lane observed, in both the load window and
+	// the probe window: an unrestricted process fails the verdict wherever it was sampled, and the
+	// FFmpeg the verdict rests on is the one the probe holds still long enough to read. Only
+	// `ffmpegThreadRestrictionProven` is that combined verdict; every other process measurement
+	// stays scoped to the window it describes, so the load window's numbers keep comparing to the
+	// records written before the probe existed.
+	const loadThreadRestriction = evaluateThreadRestriction(processObservations);
+	const probeThreadRestriction = evaluateThreadRestriction(ffmpegProbe.observations);
+	const threadRestriction = evaluateThreadRestriction([
+		...processObservations,
+		...ffmpegProbe.observations,
+	]);
 	const queueLatencyMs = executions.map(({ queueLatencyMs: latency }) => latency);
 	const eventLoopLagPeakSeconds = Math.max(...eventLoopValues);
 	const firstHost = samples[0].host;
@@ -1073,16 +1151,7 @@ function summarizeCapacity(
 		allRequestsSucceeded: executions.every(({ status }) => status === 'success'),
 		binaryGrowthObserved: binaryAfter.bytes - binaryBefore.bytes >= 256 * 1024 ** 2,
 		eventLoopHealthy: eventLoopLagPeakSeconds <= thresholds.eventLoopLagSeconds,
-		ffmpegThreadsRestricted:
-			processObservations.some(({ ytDlpCount }) => ytDlpCount > 0) &&
-			processObservations.every(
-				({
-					ffmpegUnrestrictedCount,
-					ytDlpMissingFfmpegThreadRestrictionCount,
-				}) =>
-					ffmpegUnrestrictedCount === 0 &&
-					ytDlpMissingFfmpegThreadRestrictionCount === 0,
-			),
+		ffmpegThreadsRestricted: threadRestriction.proven,
 		hostMemoryHeadroom:
 			minimumHostAvailableMemoryBytes >= thresholds.hostAvailableMemoryBytes,
 		queueLatencyBounded: percentile(queueLatencyMs, 95) <= thresholds.queueLatencyP95Ms,
@@ -1127,17 +1196,24 @@ function summarizeCapacity(
 						return counts;
 					}, new Map()),
 			),
-			ffmpegArgvUnwrittenTotal: processObservations.reduce(
-				(total, { ffmpegArgvUnwrittenCount }) => total + ffmpegArgvUnwrittenCount,
-				0,
-			),
-			ffmpegProcessPeak: Math.max(
-				...processObservations.map(({ ffmpegCount }) => ffmpegCount),
-			),
+			ffmpegArgvUnwrittenTotal: loadThreadRestriction.ffmpegArgvUnwrittenTotal,
+			ffmpegProcessPeak: loadThreadRestriction.ffmpegProcessPeak,
+			ffmpegThreadRestrictionObserved:
+				loadThreadRestriction.ffmpegThreadRestrictionObserved,
+			ffmpegThreadRestrictionProbe: {
+				artifactFileName: ffmpegProbe.artifactFileName,
+				executionId: ffmpegProbe.executionId,
+				ffmpegArgvUnwrittenTotal: probeThreadRestriction.ffmpegArgvUnwrittenTotal,
+				ffmpegProcessPeak: probeThreadRestriction.ffmpegProcessPeak,
+				ffmpegThreadRestrictionObserved:
+					probeThreadRestriction.ffmpegThreadRestrictionObserved,
+				ffmpegWithoutThreadRestrictionObserved:
+					probeThreadRestriction.ffmpegWithoutThreadRestrictionObserved,
+				processObservationCount: probeThreadRestriction.observationCount,
+			},
 			ffmpegThreadRestrictionProven: acceptance.ffmpegThreadsRestricted,
-			ffmpegWithoutThreadRestrictionObserved: processObservations.some(
-				({ ffmpegUnrestrictedCount }) => ffmpegUnrestrictedCount > 0,
-			),
+			ffmpegWithoutThreadRestrictionObserved:
+				loadThreadRestriction.ffmpegWithoutThreadRestrictionObserved,
 			hostCpuPercent,
 			hostHarnessRssPeakBytes: Math.max(...samples.map(({ host }) => host.harnessRssBytes)),
 			hostTotalMemoryBytes: firstHost.totalMemoryBytes,
@@ -1155,17 +1231,10 @@ function summarizeCapacity(
 			workerTemporaryDiskPeakBytes: Math.max(
 				...samples.map(({ temporaryDisk }) => temporaryDisk.usedBytes),
 			),
-			ytDlpArgvUnwrittenTotal: processObservations.reduce(
-				(total, { ytDlpArgvUnwrittenCount }) => total + ytDlpArgvUnwrittenCount,
-				0,
-			),
-			ytDlpProcessPeak: Math.max(
-				...processObservations.map(({ ytDlpCount }) => ytDlpCount),
-			),
-			ytDlpWithoutFfmpegThreadRestrictionObserved: processObservations.some(
-				({ ytDlpMissingFfmpegThreadRestrictionCount }) =>
-					ytDlpMissingFfmpegThreadRestrictionCount > 0,
-			),
+			ytDlpArgvUnwrittenTotal: loadThreadRestriction.ytDlpArgvUnwrittenTotal,
+			ytDlpProcessPeak: loadThreadRestriction.ytDlpProcessPeak,
+			ytDlpWithoutFfmpegThreadRestrictionObserved:
+				loadThreadRestriction.ytDlpWithoutFfmpegThreadRestrictionObserved,
 		},
 	};
 }
@@ -1250,10 +1319,12 @@ async function runCapacityLane(client) {
 		},
 	);
 	const binaryAfter = await binaryStorageSnapshot();
+	const ffmpegProbe = await runFfmpegThreadRestrictionProbe(client, serviceIds);
 	const summary = summarizeCapacity(
 		samples,
 		metricsSampling,
 		processObservations,
+		ffmpegProbe,
 		executions,
 		binaryBefore,
 		binaryAfter,
@@ -1267,6 +1338,14 @@ async function runCapacityLane(client) {
 			executions.map(async ({ executionId }) => await binaryRowCount(executionId)),
 		);
 		return remaining.every((count) => count === 0) ? true : undefined;
+	});
+	// The probe's own execution is deleted separately, after the load's pruning evidence is taken:
+	// its Artifact is not part of the load whose binary growth and pruning the lane measures, and
+	// folding it into that delete call would put a row the measurement never counted into the
+	// pruning proof.
+	await client.request('/executions/delete', {
+		body: { ids: [ffmpegProbe.executionId] },
+		method: 'POST',
 	});
 	const staleSweep = await runUncatchableRecovery(client, 'stale sweep', false);
 	const targetedRecreation = await runUncatchableRecovery(
@@ -1285,6 +1364,7 @@ async function runCapacityLane(client) {
 		durationMs: Date.now() - startedAt,
 		failureRecovery: { staleSweep, targetedRecreation },
 		outcome: 'pass',
+		rawFfmpegProbeObservations: ffmpegProbe.observations,
 		rawProcessObservations: processObservations,
 		rawSamples: samples,
 		schemaVersion: 1,
