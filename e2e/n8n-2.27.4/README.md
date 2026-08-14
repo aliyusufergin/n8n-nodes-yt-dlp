@@ -125,6 +125,35 @@ first time it is sampled and still fails the lane, however briefly it runs.
 Only a process the observer cannot measure at all is excluded, and an
 unmeasured process is not evidence of a violation.
 
+Every resource sample reads the worker's `/metrics` endpoint from inside the
+worker container, one second apart plus the latency of the sample's own Docker
+commands. That endpoint returned a single `500` at 2.34.5 immediately after
+`capacity:start` and threw away a whole 25-minute run before any evidence
+existed. A single failed reading now costs its sample the `metrics` key alone:
+the sample's container, host, process, storage, and temp-disk measurements come
+from other sources and are kept, the status code and response body are reported
+on the lane output as `capacity:metrics-reading-skipped`, and sampling
+continues. The bounded evidence records every skipped reading, the longest
+consecutive failure run, and the enforced budget under
+`measurements.metricsSampling`.
+
+This does not weaken the measurement. Nothing that decides the lane is
+discarded: the host-memory, temp-disk, container, and worker-process extrema of
+a skipped reading's own second are still sampled, which matters because the
+endpoint is likeliest to fail exactly when the load is heaviest. Skipping is
+bounded by both a consecutive budget of five readings and a whole-run budget of
+fifteen, so the sixth consecutive or the sixteenth total failed reading fails
+the lane rather than thinning the event-loop series indefinitely. A reading
+that returns successfully but exposes no event-loop measurement counts as a
+failed reading under the same budgets. Only a failure the endpoint itself
+reported is tolerated — a served error status, an endpoint not yet listening,
+or a reading without an event-loop measurement; a reading that fails because
+the command or the worker container failed still fails the lane at once, so a
+worker dying under load stays a headline result. The summary additionally
+refuses to judge a run that retained no sample or no event-loop lag
+measurement, so a degraded endpoint cannot silently produce an empty
+measurement instead of a verdict.
+
 Two slow requests are separately interrupted with SIGKILL. The first proves
 that an aged, owner-verified workspace is removed by the next execution's stale
 sweep without replacing the worker container. The second proves that targeted
