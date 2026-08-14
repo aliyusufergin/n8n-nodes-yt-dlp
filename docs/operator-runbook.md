@@ -90,10 +90,13 @@ n8n operations. Do not use an internal binary deletion API.
 ## Frozen-head v0.2.0 capacity decision
 
 The [n8n 2.34.5 / node 0.2.0 capacity record](capacity/n8n-2.34.5-node-0.2.0.json)
-classifies worker concurrency 10 as unsafe on its exact four-CPU, 16 GB disposable topology. Six
-of ten concurrent worst-allowed requests failed and event-loop lag crossed the one-second gate.
-Keep the v0.2.0 supported scope at worker concurrency 1 until a lower-concurrency disposable lane
-passes. Do not raise the node Resource Envelope hard caps.
+classifies worker concurrency 10 as unsafe on its exact four-CPU, 16 GB disposable topology. All
+ten concurrent worst-allowed requests completed in the run that holds the record, but event-loop
+lag peaked at 1.25 seconds and crossed the one-second gate, which alone decides the lane. Earlier
+runs of the same anchor additionally lost five or six of the ten requests to
+`BINARY_TRANSFER_FAILED`, so a fully successful run is within this topology's spread and is not a
+change of verdict. Keep the v0.2.0 supported scope at worker concurrency 1 until a
+lower-concurrency disposable lane passes. Do not raise the node Resource Envelope hard caps.
 
 The previous frozen head kept its own record, [n8n 2.30.7 / node
 0.2.0](capacity/n8n-2.30.7-node-0.2.0.json). It reached the same decision from five of ten failed
@@ -106,42 +109,43 @@ For that exact measured topology, alert when:
 | --- | ---: |
 | Event-loop maximum lag | greater than 1 second |
 | Queue-latency p95 | greater than 30 seconds |
-| Worker container memory | greater than 4,205,838,336 bytes |
+| Worker container memory | greater than 4,354,736,128 bytes |
 | Host available memory | less than 2 GiB |
 | Worker temp free space | less than 6 GiB |
 
 On n8n 2.30.7 the corresponding worker-container-memory threshold was 4,627,365,888 bytes. Use the
 row from the record matching your anchor, not this table, if you run the previous head.
 
-Both records set `ffmpegThreadRestrictionProven` to `true`. The node builds its only yt-dlp spawn
-with `--postprocessor-args ffmpeg:-threads 1` unconditionally, so the restriction is proven by
-construction; the lane's job is only to catch a process that contradicts that. The 2.34.5 record
-observed no unrestricted process across 543 process observations in 34 samples. Neither record
-sampled a packaged FFmpeg process at all (`ffmpegProcessPeak: 0`), so in both the boolean rests on
-the yt-dlp command lines rather than on a directly sampled FFmpeg process. Read the record's
-`processObserver.ffmpegEvidenceLimit` before citing it as FFmpeg evidence.
+Both records set `ffmpegThreadRestrictionProven` to `true`, but only the 2.34.5 record proves it
+from FFmpeg itself. Issue #68 found why no earlier run ever sampled FFmpeg: the observer named
+processes by `comm`, and a packaged tool never reports its own name there. Each tool is launched
+through the bundled loader, so a packaged FFmpeg reports `ld-linux-x86-64` and a packaged yt-dlp
+reports `ld-musl-x86_64.`; yt-dlp was counted only through the child its PyInstaller bootloader
+forks. The observer now resolves the executable from the argv, and the lane refuses to prove the
+restriction unless it sampled a packaged FFmpeg process that worked on media and whose readable
+argv carried `-threads 1`.
 
-Both records predate the lower bound the lane now applies, and neither would earn the boolean
-today. Issue #68 also found why no run ever sampled FFmpeg: the observer named processes by `comm`,
-and a packaged tool never reports its own name there. Each tool is launched through the bundled
-loader, so FFmpeg reports `ld-linux-x86-64` and yt-dlp reports `ld-musl-x86_64.`; yt-dlp was
-counted only through the child its PyInstaller bootloader forks. The observer now resolves the
-executable from the argv, the lane refuses to prove the restriction unless it sampled a packaged
-FFmpeg process that worked on media and whose readable argv carried `-threads 1`, and a dedicated
-re-encode request supplies
-that observation after the load's measurements are taken. A record written by a later run reports
-it under `measurements.ffmpegThreadRestrictionProbe`; a record without that block was written under
-the older rule and is yt-dlp-side evidence only. Do not compare `ytDlpProcessPeak` across that
-change either: it now counts the bootloader and its child, so it is about twice the request count.
-An FFmpeg that only reports its version does no media work and is counted apart, as
-`ffmpegWithoutMediaInputTotal`; the node's own attestation probe is the usual source of those.
+The 2.34.5 record now carries that observation: three such FFmpeg processes under load and one in
+the dedicated `--recode-video` probe that runs after the load's measurements are taken, every one
+of them restricted, with `ffmpegUnrestrictedCommandLines` empty across 436 process observations in
+28 samples. Two consecutive runs of the fixed lane produced it, so the observation is reliable
+rather than lucky; `processObserver.reliabilityAcrossRuns` records both.
+
+The 2.30.7 record has no `measurements.ffmpegThreadRestrictionProbe` block, which is how you tell a
+record written under the older rule: its boolean is yt-dlp-side evidence only, and it would not
+earn the flag today. Read its `processObserver.ffmpegEvidenceLimit` before citing it as FFmpeg
+evidence. Do not compare `ytDlpProcessPeak` across that change either: it now counts the yt-dlp
+bootloader and its child, so 20 is ten concurrent requests. An FFmpeg that only reports its version
+does no media work and is counted apart as `ffmpegWithoutMediaInputTotal`; the node's own
+attestation probe is the usual source of those.
 
 An earlier 2.34.5 run recorded `false` because one process observation out of 437 read a yt-dlp
 process mid-`execve`, while `/proc/<pid>/cmdline` was still unwritten and there was no argv to
 check. The observer now marks such a read as an unwritten argv and reports it as
-`ytDlpArgvUnwrittenTotal` or `ffmpegArgvUnwrittenTotal`, excluded from the restriction counts in
-both directions. That run is superseded in place and its details are kept in the current record's
-`supersedes` block. The invariant is unchanged: the kernel publishes a process's argument vector
+`ytDlpArgvUnwrittenTotal`, `ffmpegArgvUnwrittenTotal`, or `unattributedArgvUnwrittenTotal` when the
+read names a loader rather than a tool, excluded from the restriction counts in both directions.
+That run is superseded in place, as is the one after it, and the chain is kept in the current
+record's `supersedes` block. The invariant is unchanged: the kernel publishes a process's argument vector
 in one step, so a real invocation is always measurable on the sample that saw it, and a genuinely
 unrestricted process still fails the lane however briefly it runs. Do not relax the node's FFmpeg
 thread restriction on the strength of either record.
