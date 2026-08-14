@@ -185,6 +185,15 @@ probe reports its own peak, unwritten-argv totals, and observation count under
 load's for the verdict, so an unrestricted process fails the lane wherever it
 was sampled.
 
+The probe's own request is judged rather than asserted. It runs directly after
+a load window that may have just measured a request the worker never finished,
+which is exactly when the probe is likeliest to fail, and a thrown probe would
+discard the whole run's evidence at that moment. A probe that does not produce
+its re-encoded Artifact records what it reached — the execution status and, if
+the run itself failed, the reason — leaves `ffmpegProbeCompleted` false, and so
+still drops `safeAtConcurrency10` exactly as the assertion used to fail the
+run.
+
 Every resource sample reads the worker's `/metrics` endpoint from inside the
 worker container, one second apart plus the latency of the sample's own Docker
 commands. That endpoint returned a single `500` at 2.34.5 immediately after
@@ -213,6 +222,49 @@ worker dying under load stays a headline result. The summary additionally
 refuses to judge a run that retained no sample or no event-loop lag
 measurement, so a degraded endpoint cannot silently produce an empty
 measurement instead of a verdict.
+
+Each of the ten concurrent requests is waited for under a fifteen-minute
+request time limit. A completed request of this load finishes in seconds and
+the whole disposable run is budgeted at about 25 minutes, so a request still
+running after fifteen minutes is a hung request, not a slow one, and waiting
+longer only buys a longer run with the same result. Exceeding the limit is
+therefore a measurement rather than an exception: at 2.34.5 a single execution
+that never finished rejected the whole load window and threw away 300 process
+observations, a fifteen-minute sample series, and both recovery lanes before
+any evidence existed. The exceeded request is now recorded with status
+`timed_out`, which fails `allRequestsSucceeded` and so drops
+`safeAtConcurrency10` exactly as any other unsuccessful request does, and the
+run continues to the FFmpeg probe, the pruning proof, and both recovery lanes.
+
+The limit is a measurement only where the instance confirms it. The waiting
+poll swallows the error of each attempt it makes, so the expiry alone cannot
+tell a hung execution from an instance that stopped answering; one read decides
+which happened. An execution the instance still reports as unfinished is the
+measurement, an execution that finished in the moment the wait gave up is
+recorded as the completed request it is rather than as a hang, and a read the
+instance cannot serve fails the lane — an outage is never filed as ten hung
+requests.
+
+An exceeded request is counted apart from a failed one. It reported no error
+code — the execution was still running when the wait ended — so it stays out of
+`measurements.failureCodes`, where counting it as `UNKNOWN` would make a hang
+indistinguishable from the `BINARY_TRANSFER_FAILED` class the lane exists to
+catch, and is reported under `measurements.requestTimeLimit` with the enforced
+limit, the count, and each execution's ID. Each is then stopped through the
+same REST stop endpoint the editor's stop button calls, so the measurements
+taken after the load window read an idle worker, and the terminal status that
+stop reached is recorded as `stoppedStatus`; a request that would not stop is
+recorded as `unstopped` rather than failing the run, and counted on the probe's
+own measurements as `unstoppedRequestCount`, because a request still running
+through the probe window is the one thing that keeps that window from being the
+worker's own. Its rows are outside the pruning proof — a request that was still
+writing when its wait ended proves nothing about pruning — so the proof reports
+the `provenRequestCount` it covered, those rows are deleted after it, best
+effort, and what that delete left behind is counted as
+`timedOutRequestRowsRemaining` rather than folded into the proof's
+`unreferencedRowsAfterPruning: 0`. Tolerating the limit cannot manufacture a
+pass: a run in which every request exceeded it measured no completed request
+and fails the lane instead of being summarized into a verdict.
 
 Two slow requests are separately interrupted with SIGKILL. The first proves
 that an aged, owner-verified workspace is removed by the next execution's stale

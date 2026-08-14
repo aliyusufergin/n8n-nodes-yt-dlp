@@ -7,6 +7,14 @@ import { promisify } from 'node:util';
 import { parse as parseFlatted } from 'flatted';
 
 import {
+	failureCodeCounts,
+	queueLatencies,
+	requestTimeLimitMs,
+	settleRequestWait,
+	summarizeRequestTimeLimit,
+	timedOutRequestRecord,
+} from './capacity-load.mjs';
+import {
 	createMetricsSampleTolerance,
 	parseWorkerMetrics,
 	settleMetricsRead,
@@ -931,14 +939,6 @@ async function collectCapacitySamples(serviceIds, operation) {
 	};
 }
 
-async function collectProcessObservations(workerId, operation) {
-	const observations = [];
-	const result = await collectUntilComplete(operation, [
-		workerProcessObserver(workerId, observations),
-	]);
-	return { observations, result };
-}
-
 /**
  * Samples the packaged FFmpeg itself while it runs under the forced one-thread
  * restriction.
@@ -955,32 +955,55 @@ async function collectProcessObservations(workerId, operation) {
  * than throwing. The lane's evidence is worth more than a fast failure: a
  * thrown probe would discard a completed load run, and an unproven restriction
  * is exactly what the acceptance flag exists to report.
+ *
+ * A probe whose own execution fails is reported the same way, for the same
+ * reason. The probe runs immediately after a load window that may have just
+ * measured a request the worker never finished, which is precisely when the
+ * probe is likeliest to fail — throwing there would discard the sample series
+ * and process observations the load lane exists to produce. What the probe
+ * reached is recorded on its measurements instead, and an unproven restriction
+ * still drops the capacity decision.
  */
 async function runFfmpegThreadRestrictionProbe(client, serviceIds) {
-	const { observations, result } = await collectProcessObservations(
-		serviceIds.worker,
-		async () =>
-			await createAndRunManual(client, {
-				argumentsValue: '--recode-video mkv',
-				name: 'E2E FFmpeg thread restriction probe',
-				roundTrip: false,
-				sourceUrl: 'http://fixture:8080/recode.mp4',
-			}),
-	);
-	assert(
-		result.execution.status === 'success',
-		'The FFmpeg thread-restriction probe execution failed.',
-	);
-	assert(
-		result.items.length === 1,
-		'The FFmpeg thread-restriction probe returned the wrong item count.',
-	);
-	const artifactFileName = result.items[0].json.fileName;
-	assert(
-		typeof artifactFileName === 'string' && artifactFileName.endsWith('.mkv'),
-		'The FFmpeg thread-restriction probe did not re-encode its Artifact.',
-	);
-	return { artifactFileName, executionId: result.executionId, observations };
+	const observations = [];
+	let probe;
+	let failureReason;
+	try {
+		probe = await collectUntilComplete(
+			async () =>
+				await createAndRunManual(client, {
+					argumentsValue: '--recode-video mkv',
+					name: 'E2E FFmpeg thread restriction probe',
+					roundTrip: false,
+					sourceUrl: 'http://fixture:8080/recode.mp4',
+				}),
+			[workerProcessObserver(serviceIds.worker, observations)],
+		);
+	} catch (error) {
+		failureReason = error instanceof Error ? error.message : String(error);
+	}
+	const artifactFileName = probe?.items.length === 1 ? probe.items[0].json.fileName : undefined;
+	const recodedArtifactObserved =
+		probe?.execution.status === 'success' &&
+		typeof artifactFileName === 'string' &&
+		artifactFileName.endsWith('.mkv');
+	if (!recodedArtifactObserved) {
+		report('capacity:ffmpeg-probe-unproven', {
+			artifactFileName,
+			executionId: probe?.executionId,
+			executionStatus: probe?.execution.status,
+			failureReason,
+			itemCount: probe?.items.length,
+		});
+	}
+	return {
+		artifactFileName,
+		executionId: probe?.executionId,
+		executionStatus: probe?.execution.status,
+		failureReason,
+		observations,
+		recodedArtifactObserved,
+	};
 }
 
 async function workspaceNames(service = 'worker') {
@@ -1129,7 +1152,12 @@ function summarizeCapacity(
 		...processObservations,
 		...ffmpegProbe.observations,
 	]);
-	const queueLatencyMs = executions.map(({ queueLatencyMs: latency }) => latency);
+	const requestTimeLimit = summarizeRequestTimeLimit(executions, requestTimeLimitMs);
+	const queueLatencyMs = queueLatencies(executions);
+	assert(
+		queueLatencyMs.length > 0,
+		'The capacity lane retained no queue-latency measurement to judge.',
+	);
 	const eventLoopLagPeakSeconds = Math.max(...eventLoopValues);
 	const firstHost = samples[0].host;
 	const lastHost = samples.at(-1).host;
@@ -1151,6 +1179,10 @@ function summarizeCapacity(
 		allRequestsSucceeded: executions.every(({ status }) => status === 'success'),
 		binaryGrowthObserved: binaryAfter.bytes - binaryBefore.bytes >= 256 * 1024 ** 2,
 		eventLoopHealthy: eventLoopLagPeakSeconds <= thresholds.eventLoopLagSeconds,
+		// The probe's own request used to be asserted, so a probe that never re-encoded its Artifact
+		// failed the run and discarded the load's evidence with it. It is now judged like every other
+		// measurement: an unproven probe drops the capacity decision and keeps the run's evidence.
+		ffmpegProbeCompleted: ffmpegProbe.recodedArtifactObserved,
 		ffmpegThreadsRestricted: threadRestriction.proven,
 		hostMemoryHeadroom:
 			minimumHostAvailableMemoryBytes >= thresholds.hostAvailableMemoryBytes,
@@ -1187,15 +1219,7 @@ function summarizeCapacity(
 			),
 			databasePeakBytes: Math.max(...samples.map(({ storage }) => storage.databaseBytes)),
 			eventLoopLagPeakSeconds,
-			failureCodes: Object.fromEntries(
-				executions
-					.filter(({ status }) => status !== 'success')
-					.reduce((counts, execution) => {
-						const code = execution.errorCode ?? 'UNKNOWN';
-						counts.set(code, (counts.get(code) ?? 0) + 1);
-						return counts;
-					}, new Map()),
-			),
+			failureCodes: failureCodeCounts(executions),
 			ffmpegArgvUnwrittenTotal: loadThreadRestriction.ffmpegArgvUnwrittenTotal,
 			ffmpegProcessPeak: loadThreadRestriction.ffmpegProcessPeak,
 			ffmpegThreadRestrictionObserved:
@@ -1203,6 +1227,8 @@ function summarizeCapacity(
 			ffmpegThreadRestrictionProbe: {
 				artifactFileName: ffmpegProbe.artifactFileName,
 				executionId: ffmpegProbe.executionId,
+				executionStatus: ffmpegProbe.executionStatus,
+				failureReason: ffmpegProbe.failureReason,
 				ffmpegArgvUnwrittenTotal: probeThreadRestriction.ffmpegArgvUnwrittenTotal,
 				ffmpegProcessPeak: probeThreadRestriction.ffmpegProcessPeak,
 				ffmpegThreadRestrictionObserved:
@@ -1213,8 +1239,15 @@ function summarizeCapacity(
 				ffmpegWithoutThreadRestrictionObserved:
 					probeThreadRestriction.ffmpegWithoutThreadRestrictionObserved,
 				processObservationCount: probeThreadRestriction.observationCount,
+				recodedArtifactObserved: ffmpegProbe.recodedArtifactObserved,
 				unattributedArgvUnwrittenTotal:
 					probeThreadRestriction.unattributedArgvUnwrittenTotal,
+				// The probe window is only the worker's own if every request the load window measured
+				// has ended. A request the lane could not stop is still running through it, so the
+				// count is reported here rather than leaving the window's numbers looking clean.
+				unstoppedRequestCount: executions.filter(
+					({ stoppedStatus, timedOut }) => timedOut === true && stoppedStatus === 'unstopped',
+				).length,
 			},
 			ffmpegThreadRestrictionProven: acceptance.ffmpegThreadsRestricted,
 			ffmpegUnrestrictedCommandLines: loadThreadRestriction.ffmpegUnrestrictedCommandLines,
@@ -1233,6 +1266,7 @@ function summarizeCapacity(
 			redisUsedMemoryPeakBytes: Math.max(
 				...samples.map(({ storage }) => storage.redisUsedMemoryBytes),
 			),
+			requestTimeLimit,
 			sampleCount: samples.length,
 			unattributedArgvUnwrittenTotal: loadThreadRestriction.unattributedArgvUnwrittenTotal,
 			workerProcessRssPeakBytes,
@@ -1245,6 +1279,40 @@ function summarizeCapacity(
 				loadThreadRestriction.ytDlpWithoutFfmpegThreadRestrictionObserved,
 		},
 	};
+}
+
+/**
+ * Closes the load window on the requests that exceeded the time limit.
+ *
+ * A request the lane stopped waiting for is still running on the worker, and
+ * everything the lane measures after the load window — the FFmpeg probe's
+ * process observations, the binary pruning proof, both recovery lanes — reads a
+ * worker that is supposed to be idle. Each exceeded request is therefore
+ * stopped through the same REST stop endpoint the editor's stop button calls,
+ * and the terminal status that stop reached is recorded against the request.
+ *
+ * A stop that fails is reported and recorded as `unstopped` rather than thrown:
+ * the run's remaining measurements are worth more than a fast failure, and a
+ * request that neither finished nor stopped is exactly the kind of result the
+ * evidence should carry.
+ */
+async function stopTimedOutRequests(client, requests) {
+	return await Promise.all(
+		requests.map(async (request) => {
+			if (request.timedOut !== true) return request;
+			try {
+				await client.request(`/executions/${request.executionId}/stop`, { method: 'POST' });
+				const stopped = await client.waitForExecution(request.executionId, 120_000);
+				return { ...request, stoppedStatus: stopped.status };
+			} catch (error) {
+				report('capacity:request-stop-failed', {
+					executionId: request.executionId,
+					reason: error instanceof Error ? error.message : String(error),
+				});
+				return request;
+			}
+		}),
+	);
 }
 
 async function runCapacityLane(client) {
@@ -1281,7 +1349,7 @@ async function runCapacityLane(client) {
 	const {
 		metricsSampling,
 		processObservations,
-		result: executions,
+		result: loadRequests,
 		samples,
 	} = await collectCapacitySamples(
 		serviceIds,
@@ -1297,7 +1365,20 @@ async function runCapacityLane(client) {
 			);
 			return await Promise.all(
 				submitted.map(async ({ executionId, submittedAt }) => {
-					const execution = await client.waitForExecution(executionId, 900_000);
+					const settled = await settleRequestWait(
+						executionId,
+						requestTimeLimitMs,
+						async () => await client.waitForExecution(executionId, requestTimeLimitMs),
+						async () => await client.execution(executionId),
+					);
+					if (settled.execution === undefined) {
+						report('capacity:request-time-limit-exceeded', {
+							executionId,
+							waitedMs: settled.waitedMs,
+						});
+						return timedOutRequestRecord(executionId, settled.waitedMs);
+					}
+					const execution = settled.execution;
 					const executionStartedAt = Date.parse(execution.startedAt);
 					assert(
 						Number.isFinite(executionStartedAt),
@@ -1326,6 +1407,7 @@ async function runCapacityLane(client) {
 			);
 		},
 	);
+	const executions = await stopTimedOutRequests(client, loadRequests);
 	const binaryAfter = await binaryStorageSnapshot();
 	const ffmpegProbe = await runFfmpegThreadRestrictionProbe(client, serviceIds);
 	const summary = summarizeCapacity(
@@ -1337,24 +1419,50 @@ async function runCapacityLane(client) {
 		binaryBefore,
 		binaryAfter,
 	);
+	// The pruning proof is taken over the requests that finished on their own. A request the lane
+	// stopped waiting for was still writing binary rows when its wait ended, so polling its rows to
+	// zero would prove nothing about pruning and could hang the proof itself; its rows are deleted
+	// after the proof, best effort, and the proof reports how many requests it covered.
+	const prunedRequests = executions.filter(({ timedOut }) => timedOut !== true);
 	await client.request('/executions/delete', {
-		body: { ids: executions.map(({ executionId }) => executionId) },
+		body: { ids: prunedRequests.map(({ executionId }) => executionId) },
 		method: 'POST',
 	});
 	await poll('capacity binary pruning', async () => {
 		const remaining = await Promise.all(
-			executions.map(async ({ executionId }) => await binaryRowCount(executionId)),
+			prunedRequests.map(async ({ executionId }) => await binaryRowCount(executionId)),
 		);
 		return remaining.every((count) => count === 0) ? true : undefined;
 	});
+	const timedOutIds = executions
+		.filter(({ timedOut }) => timedOut === true)
+		.map(({ executionId }) => executionId);
+	if (timedOutIds.length > 0) {
+		try {
+			await client.request('/executions/delete', { body: { ids: timedOutIds }, method: 'POST' });
+		} catch (error) {
+			report('capacity:request-delete-failed', {
+				executionIds: timedOutIds,
+				reason: error instanceof Error ? error.message : String(error),
+			});
+		}
+	}
+	// What that best-effort delete actually left behind is counted rather than assumed: the proof's
+	// `unreferencedRowsAfterPruning: 0` describes the requests it covered, so the rows of a request
+	// the lane never proved are reported separately instead of being folded into that zero.
+	const timedOutRowsRemaining = (
+		await Promise.all(timedOutIds.map(async (executionId) => await binaryRowCount(executionId)))
+	).reduce((total, count) => total + count, 0);
 	// The probe's own execution is deleted separately, after the load's pruning evidence is taken:
 	// its Artifact is not part of the load whose binary growth and pruning the lane measures, and
 	// folding it into that delete call would put a row the measurement never counted into the
-	// pruning proof.
-	await client.request('/executions/delete', {
-		body: { ids: [ffmpegProbe.executionId] },
-		method: 'POST',
-	});
+	// pruning proof. A probe that never reached an execution has nothing to delete.
+	if (ffmpegProbe.executionId !== undefined) {
+		await client.request('/executions/delete', {
+			body: { ids: [ffmpegProbe.executionId] },
+			method: 'POST',
+		});
+	}
 	const staleSweep = await runUncatchableRecovery(client, 'stale sweep', false);
 	const targetedRecreation = await runUncatchableRecovery(
 		client,
@@ -1366,6 +1474,8 @@ async function runCapacityLane(client) {
 		binaryPruning: {
 			hardDeleteApi: 'public REST /executions/delete',
 			internalDeletionApiUsed: false,
+			provenRequestCount: prunedRequests.length,
+			timedOutRequestRowsRemaining: timedOutRowsRemaining,
 			unreferencedRowsAfterPruning: 0,
 		},
 		completedRequests: executions,
