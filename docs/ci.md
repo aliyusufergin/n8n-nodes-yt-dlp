@@ -1,5 +1,7 @@
 # Pull request verification gate
 
+ADR 0035 records the decision behind this gate.
+
 `.github/workflows/pr-verification.yml` is the only automatic check on `main`. It runs on every
 `pull_request` event and executes, in one `verify` job on `ubuntu-24.04` with Node 24.16.0:
 
@@ -39,29 +41,40 @@ gh api repos/aliyusufergin/n8n-nodes-yt-dlp/branches/main/protection --jq \
 - `required_status_checks.checks` — `verify`
 - `strict: false` — a PR does not have to be rebased onto the newest `main` before merging; with a
   five-minute suite the re-run cost outweighs the narrow race it would close.
-- `enforce_admins: false` — the repository owner keeps a manual escape hatch. Everything else merges
-  only on green.
+- `enforce_admins: false` — an explicit owner decision (ADR 0035): the repository owner keeps a
+  manual escape hatch, so the gate makes an accidental merge onto red impossible without claiming to
+  stop a deliberate one. Everything else merges only on green.
 
 `publish.yml` and `recover-bootstrap.yml` stay `workflow_dispatch`-only and are unaffected.
 
-## Recorded proof that the gate blocks
+## Proof that the gate blocks
 
-A green check proves the workflow runs; it does not prove the gate stops anything. Both states were
-observed under the settings above:
+A green check proves the workflow runs; it does not prove the gate stops a merge. Both were observed
+under the settings above:
 
-| Pull request | `verify` | `mergeStateStatus` |
-| --- | --- | --- |
-| #63 (clean) | success | `CLEAN` |
-| #64 (head commit red on purpose) | failure | `BLOCKED` |
+| Pull request | `verify` | `mergeStateStatus` | merge API |
+| --- | --- | --- | --- |
+| #63 (clean) | success | `CLEAN` | not attempted |
+| #64 (head commit red on purpose) | failure | `BLOCKED` | not attempted |
+| #65 (head commit red on purpose) | failure | `BLOCKED` | refused, HTTP 405 |
 
-`mergeable` was `MERGEABLE` in both cases, so the block came from the required check, not from a
-conflict or a missing base. #64 failed all three commands in a single run — the `!cancelled()`
-guard is what makes typecheck, lint, and test each report instead of only the first one. It was
-closed without merging.
+`mergeable` was `MERGEABLE` throughout, so the block came from the required check, not from a
+conflict or a missing base. #64 failed all three commands in one run — the `!cancelled()` guard is
+what makes typecheck, lint, and test each report instead of only the first. On #65 the merge API was
+called directly, with `enforce_admins` temporarily on so the owner's bypass could not mask the
+result:
 
-## Re-verifying that the gate actually blocks
+```text
+PUT /repos/aliyusufergin/n8n-nodes-yt-dlp/pulls/65/merge
+HTTP/2.0 405 Method Not Allowed
+{"message":"Required status check \"verify\" is failing."}
+```
 
-A green check proves the workflow runs; it does not prove the gate blocks. To re-prove the block,
-open a throwaway PR whose head commit breaks one command on purpose (for example an unused import
-that fails `npm run lint`), then confirm the PR reports `verify` as failing and that
-`gh pr merge` is refused with a required-check error. Close the PR without merging.
+`main` stayed on the same commit. Both throwaway pull requests were closed unmerged and
+`enforce_admins` was restored to `false`.
+
+To re-prove this later, open a throwaway PR whose head commit breaks one command on purpose (an
+unused binding fails `npm run lint`; `expect(1).toBe(2)` fails `npm test`), turn `enforce_admins` on,
+call the merge API, and read the refusal. Restore `enforce_admins` and close the PR without merging.
+Do not attempt the merge with `enforce_admins` off: admin bypass would merge the red commit for
+real.

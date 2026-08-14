@@ -1,5 +1,8 @@
 # Release Candidate Chain
 
+Everything below is release-only. The cheap per-pull-request gate — `typecheck`, `lint`, `test` —
+lives in `docs/ci.md` and never touches these workflows.
+
 `.github/workflows/publish.yml` is the normal publication path for v0.2.0. Run it from the exact
 release commit. The `candidate` job performs a clean npm install and build, packs the Platform
 Package, Platform Selector, and main package once in dependency order, then records every tarball

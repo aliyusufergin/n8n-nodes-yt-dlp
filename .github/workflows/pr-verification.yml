@@ -27,7 +27,8 @@ jobs:
           cache: npm
           node-version: ${{ env.NODE_VERSION }}
       - run: npm ci
-      - run: npm run typecheck
+      - name: typecheck
+        run: npm run typecheck
       - name: lint
         if: ${{ !cancelled() }}
         run: npm run lint
