@@ -7,9 +7,15 @@ import { promisify } from 'node:util';
 import { parse as parseFlatted } from 'flatted';
 
 import {
+	createMetricsSampleTolerance,
+	parseWorkerMetrics,
+	settleMetricsRead,
+} from './metrics-observer.mjs';
+import {
 	parseWorkerProcessSample,
 	summarizeWorkerProcesses,
 } from './process-observer.mjs';
+import { collectUntilComplete } from './sample-loop.mjs';
 
 const execFileAsync = promisify(execFile);
 const repositoryRoot = resolve(process.argv[2] ?? '.');
@@ -101,8 +107,8 @@ function assert(condition, message) {
 	if (!condition) throw new Error(message);
 }
 
-function report(phase) {
-	process.stdout.write(`${JSON.stringify({ phase })}\n`);
+function report(phase, detail = {}) {
+	process.stdout.write(`${JSON.stringify({ phase, ...detail })}\n`);
 }
 
 async function poll(description, operation, options = {}) {
@@ -741,8 +747,11 @@ async function workerMetricSnapshot() {
 	const script = `
 fetch('http://127.0.0.1:5678/metrics')
   .then(async (response) => {
-    if (!response.ok) throw new Error('metrics status ' + response.status);
-    process.stdout.write(await response.text());
+    const body = await response.text();
+    if (!response.ok) {
+      throw new Error('metrics status ' + response.status + ': ' + body.slice(0, 500));
+    }
+    process.stdout.write(body);
   })
   .catch((error) => {
     process.stderr.write(error.message);
@@ -750,19 +759,7 @@ fetch('http://127.0.0.1:5678/metrics')
   });
 `;
 	const { stdout } = await compose(['exec', '-T', 'worker', 'node', '-e', script]);
-	const metrics = {};
-	for (const line of stdout.split('\n')) {
-		if (line.startsWith('#')) continue;
-		const match = /^([a-zA-Z_:][a-zA-Z0-9_:]*)(?:\{[^}]*\})?\s+([+\-\d.eE]+)$/u.exec(line);
-		if (!match || !/(eventloop|process_resident_memory|queue|redis)/iu.test(match[1])) continue;
-		const value = Number(match[2]);
-		if (Number.isFinite(value)) metrics[match[1]] = Math.max(metrics[match[1]] ?? value, value);
-	}
-	assert(
-		Object.keys(metrics).some((name) => /eventloop/iu.test(name)),
-		'Worker metrics exposed no event-loop health measurement.',
-	);
-	return metrics;
+	return parseWorkerMetrics(stdout);
 }
 
 async function workerProcessSnapshot(workerId) {
@@ -860,20 +857,37 @@ async function hostSnapshot() {
 	};
 }
 
-async function capacitySample(serviceIds) {
-	const [containers, host, metrics, processes, storage, temporaryDisk] = await Promise.all([
+/**
+ * Takes one capacity sample.
+ *
+ * A failed metrics reading costs the sample its `metrics` only: every other
+ * measurement in the sample was taken from a different source and is still
+ * exact, and the endpoint is likeliest to fail exactly when the run is under
+ * the pressure whose container, host, and disk extrema decide the lane. The
+ * failed reading is recorded against the run's metrics tolerance, which fails
+ * the lane once the failure stops being transient.
+ */
+async function capacitySample(serviceIds, metricsTolerance) {
+	const at = new Date().toISOString();
+	const [containers, host, metricsRead, processes, storage, temporaryDisk] = await Promise.all([
 		containerResourceSnapshot(serviceIds),
 		hostSnapshot(),
-		workerMetricSnapshot(),
+		settleMetricsRead(workerMetricSnapshot),
 		workerProcessSnapshot(serviceIds.worker),
 		storageSnapshot(),
 		workerTemporaryDiskSnapshot(),
 	]);
+	if (metricsRead.reason === undefined) {
+		metricsTolerance.recordSuccess();
+	} else {
+		report('capacity:metrics-reading-skipped', { at, reason: metricsRead.reason });
+		metricsTolerance.recordFailure({ at, reason: metricsRead.reason });
+	}
 	return {
-		at: new Date().toISOString(),
+		at,
 		containers,
 		host,
-		metrics,
+		metrics: metricsRead.metrics,
 		processes,
 		storage,
 		temporaryDisk,
@@ -883,30 +897,25 @@ async function capacitySample(serviceIds) {
 async function collectCapacitySamples(serviceIds, operation) {
 	const samples = [];
 	const processObservations = [];
-	let complete = false;
-	const sampleUntilComplete = async (collection, snapshot, intervalMs) => {
-		while (!complete) {
-			collection.push(await snapshot());
-			await new Promise((resolveWait) => setTimeout(resolveWait, intervalMs));
-		}
-		collection.push(await snapshot());
-	};
-	const sampler = sampleUntilComplete(samples, () => capacitySample(serviceIds), 1_000);
-	const processObserver = sampleUntilComplete(
+	const metricsTolerance = createMetricsSampleTolerance();
+	const result = await collectUntilComplete(operation, [
+		{
+			collection: samples,
+			intervalMs: 1_000,
+			snapshot: async () => await capacitySample(serviceIds, metricsTolerance),
+		},
+		{
+			collection: processObservations,
+			intervalMs: 100,
+			snapshot: async () => await workerProcessSnapshot(serviceIds.worker),
+		},
+	]);
+	return {
+		metricsSampling: metricsTolerance.summary(),
 		processObservations,
-		() => workerProcessSnapshot(serviceIds.worker),
-		100,
-	);
-	try {
-		const result = await operation();
-		complete = true;
-		await Promise.all([sampler, processObserver]);
-		return { processObservations, result, samples };
-	} catch (error) {
-		complete = true;
-		await Promise.all([sampler.catch(() => {}), processObserver.catch(() => {})]);
-		throw error;
-	}
+		result,
+		samples,
+	};
 }
 
 async function workspaceNames(service = 'worker') {
@@ -1014,15 +1023,21 @@ async function runUncatchableRecovery(client, label, recreate) {
 
 function summarizeCapacity(
 	samples,
+	metricsSampling,
 	processObservations,
 	executions,
 	binaryBefore,
 	binaryAfter,
 ) {
+	assert(samples.length > 0, 'The capacity lane retained no resource sample.');
 	const eventLoopValues = samples.flatMap(({ metrics }) =>
-		Object.entries(metrics)
+		Object.entries(metrics ?? {})
 			.filter(([name]) => /eventloop.*(?:max|p99|lag_seconds$)/iu.test(name))
 			.map(([, value]) => value),
+	);
+	assert(
+		eventLoopValues.length > 0,
+		'The capacity lane retained no event-loop lag measurement to judge.',
 	);
 	const workerMemoryPeakBytes = Math.max(
 		...samples.map(({ containers }) => containers.worker.memoryBytes),
@@ -1126,6 +1141,7 @@ function summarizeCapacity(
 			hostCpuPercent,
 			hostHarnessRssPeakBytes: Math.max(...samples.map(({ host }) => host.harnessRssBytes)),
 			hostTotalMemoryBytes: firstHost.totalMemoryBytes,
+			metricsSampling,
 			minimumHostAvailableMemoryBytes,
 			minimumWorkerTempFreeBytes,
 			processObservationCount: processObservations.length,
@@ -1185,7 +1201,12 @@ async function runCapacityLane(client) {
 		),
 	);
 	const startedAt = Date.now();
-	const { processObservations, result: executions, samples } = await collectCapacitySamples(
+	const {
+		metricsSampling,
+		processObservations,
+		result: executions,
+		samples,
+	} = await collectCapacitySamples(
 		serviceIds,
 		async () => {
 			const submitted = await Promise.all(
@@ -1231,6 +1252,7 @@ async function runCapacityLane(client) {
 	const binaryAfter = await binaryStorageSnapshot();
 	const summary = summarizeCapacity(
 		samples,
+		metricsSampling,
 		processObservations,
 		executions,
 		binaryBefore,
