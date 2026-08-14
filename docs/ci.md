@@ -44,6 +44,21 @@ gh api repos/aliyusufergin/n8n-nodes-yt-dlp/branches/main/protection --jq \
 
 `publish.yml` and `recover-bootstrap.yml` stay `workflow_dispatch`-only and are unaffected.
 
+## Recorded proof that the gate blocks
+
+A green check proves the workflow runs; it does not prove the gate stops anything. Both states were
+observed under the settings above:
+
+| Pull request | `verify` | `mergeStateStatus` |
+| --- | --- | --- |
+| #63 (clean) | success | `CLEAN` |
+| #64 (head commit red on purpose) | failure | `BLOCKED` |
+
+`mergeable` was `MERGEABLE` in both cases, so the block came from the required check, not from a
+conflict or a missing base. #64 failed all three commands in a single run — the `!cancelled()`
+guard is what makes typecheck, lint, and test each report instead of only the first one. It was
+closed without merging.
+
 ## Re-verifying that the gate actually blocks
 
 A green check proves the workflow runs; it does not prove the gate blocks. To re-prove the block,
