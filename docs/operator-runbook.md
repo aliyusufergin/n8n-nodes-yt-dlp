@@ -122,11 +122,19 @@ the yt-dlp command lines rather than on a directly sampled FFmpeg process. Read 
 `processObserver.ffmpegEvidenceLimit` before citing it as FFmpeg evidence.
 
 Both records predate the lower bound the lane now applies, and neither would earn the boolean
-today. Since issue #68 the lane refuses to prove the restriction unless it sampled a packaged
-FFmpeg process whose readable argv carried `-threads 1`, and a dedicated re-encode request supplies
+today. Issue #68 also found why no run ever sampled FFmpeg: the observer named processes by `comm`,
+and a packaged tool never reports its own name there. Each tool is launched through the bundled
+loader, so FFmpeg reports `ld-linux-x86-64` and yt-dlp reports `ld-musl-x86_64.`; yt-dlp was
+counted only through the child its PyInstaller bootloader forks. The observer now resolves the
+executable from the argv, the lane refuses to prove the restriction unless it sampled a packaged
+FFmpeg process that worked on media and whose readable argv carried `-threads 1`, and a dedicated
+re-encode request supplies
 that observation after the load's measurements are taken. A record written by a later run reports
-that observation under `measurements.ffmpegThreadRestrictionProbe`; a record without that block was
-written under the older rule and is yt-dlp-side evidence only.
+it under `measurements.ffmpegThreadRestrictionProbe`; a record without that block was written under
+the older rule and is yt-dlp-side evidence only. Do not compare `ytDlpProcessPeak` across that
+change either: it now counts the bootloader and its child, so it is about twice the request count.
+An FFmpeg that only reports its version does no media work and is counted apart, as
+`ffmpegWithoutMediaInputTotal`; the node's own attestation probe is the usual source of those.
 
 An earlier 2.34.5 run recorded `false` because one process observation out of 437 read a yt-dlp
 process mid-`execve`, while `/proc/<pid>/cmdline` was still unwritten and there was no argv to

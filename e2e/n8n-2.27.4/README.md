@@ -126,23 +126,61 @@ Only a process the observer cannot measure at all is excluded, and an
 unmeasured process is not evidence of a violation.
 
 Refusing violations is not the same as proving the restriction. Every capacity
-run so far recorded `ffmpegProcessPeak: 0`: the load's FFmpeg only merges two
-one-second fixtures, so it is over long before the next 100 ms sample, and the
-boolean rested on the yt-dlp command lines carrying `--postprocessor-args
-ffmpeg:-threads 1` rather than on FFmpeg itself. ADR 0019 bounds FFmpeg's own
-threads, so the verdict now also requires a packaged FFmpeg process that was
-sampled, whose argv was readable, and that carried `-threads 1`. Sampling no
-FFmpeg at all now leaves `ffmpegThreadsRestricted` false instead of passing on
-an inference.
+run recorded `ffmpegProcessPeak: 0`, and the cause was the observer, not the
+sampling rate: it named processes by `comm`, which never says `ffmpeg` here.
+The Platform Paketi ships each tool as a launcher at `bin/<tool>` that execs
+the bundled loader with the real payload, so the kernel takes the name from the
+loader — a packaged FFmpeg reports `ld-linux-x86-64` and a packaged yt-dlp
+reports `ld-musl-x86_64.`. yt-dlp was visible only by accident, through the
+child its PyInstaller bootloader forks, which does report `yt-dlp`. The single
+FFmpeg observation an earlier run recorded was the launcher caught inside its
+own execve window, not FFmpeg. Observed with `docker top` inside the pinned
+image, the postprocessor row is:
 
-A dedicated request supplies that observation. After the load's measurements
-are taken, the lane re-encodes a twenty-second fixture into another container
-with `--recode-video mkv` — the one postprocessing path that cannot be a stream
-copy — and process-observes it. Six hundred frames through one x264 thread keep
-FFmpeg alive across many samples, so the evidence rests on the frame count
-rather than on how fast the host's disk is, and the recorded capacity envelope
-is unchanged because the load window has already closed. The probe reports its
-own peak, unwritten-argv total, and observation count under
+```text
+ld-linux-x86-64  …/runtime/glibc/ld-linux-x86-64.so.2 --library-path …/runtime/glibc …/bin/ffmpeg.gnu … -threads 1 …
+```
+
+The observer now resolves the executable from the argv instead: a bundled
+loader names the payload it is about to run, after an optional `--library-path`
+pair, and every other process names its executable in the first token. Reading
+the executable rather than scanning the command line also keeps a yt-dlp
+process from being read as FFmpeg because its own argv carries
+`--ffmpeg-location`. Two consequences are worth reading in the evidence. One
+packaged invocation is more than one process — the yt-dlp bootloader and its
+PyInstaller child both count — so `ytDlpProcessPeak` is about twice the request
+count and is not comparable with records written before this change. And a
+loader read whose argv the kernel had not published yet cannot be attributed to
+either tool, so it is reported as `unattributedArgvUnwrittenTotal` rather than
+folded into a program's counts or dropped silently.
+
+Not every packaged FFmpeg process does media work. The Toolchain Attestation
+probes the binary with `-version` on first use in each main and worker process,
+and yt-dlp asks it which bitstream filters it carries; both print and exit
+without touching media, so ADR 0019's thread bound does not reach them and
+counting them as violations would fail the lane on the node's own attestation.
+An FFmpeg that works on media always names its input with `-i`, so a process
+with no input is excluded from the restriction counts in both directions and
+reported as `ffmpegWithoutMediaInputTotal` instead of being dropped.
+
+ADR 0019 bounds FFmpeg's own threads, so the verdict now also requires a
+packaged FFmpeg process that was sampled, whose argv was readable, that worked
+on media, and that carried `-threads 1`. Sampling no such FFmpeg leaves
+`ffmpegThreadsRestricted` false instead of passing on an inference, and a failed
+verdict reports the offending command lines under
+`ffmpegUnrestrictedCommandLines` rather than only a count — every argument
+vector the node builds is secret-free, because secrets reach yt-dlp through its
+stdin config.
+
+A dedicated request makes that observation reliable rather than lucky. After
+the load's measurements are taken, the lane re-encodes a twenty-second fixture
+into another container with `--recode-video mkv` — the one postprocessing path
+that cannot be a stream copy — and process-observes it. Six hundred frames
+through one x264 thread keep FFmpeg alive for seconds rather than the tens of
+milliseconds a merge of the one-second fixtures takes, so the evidence rests on
+the frame count rather than on how fast the host's disk is, and the recorded
+capacity envelope is unchanged because the load window has already closed. The
+probe reports its own peak, unwritten-argv totals, and observation count under
 `measurements.ffmpegThreadRestrictionProbe`, and its observations join the
 load's for the verdict, so an unrestricted process fails the lane wherever it
 was sampled.

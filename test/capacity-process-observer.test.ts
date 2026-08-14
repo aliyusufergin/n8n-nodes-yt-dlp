@@ -10,9 +10,16 @@ const restrictedYtDlpArguments =
 	'/opt/n8n-nodes-yt-dlp/yt-dlp --postprocessor-args ffmpeg:-threads 1 -o /tmp/out.%(ext)s http://fixture:8080/capacity-playlist';
 const unrestrictedYtDlpArguments =
 	'/opt/n8n-nodes-yt-dlp/yt-dlp -o /tmp/out.%(ext)s http://fixture:8080/capacity-playlist';
-const restrictedFfmpegArguments =
-	'/opt/n8n-nodes-yt-dlp/ffmpeg -threads 1 -i a.mp4 out.mkv';
-const unrestrictedFfmpegArguments = '/opt/n8n-nodes-yt-dlp/ffmpeg -i a.mp4 out.mkv';
+// The Platform Paketi launches every tool through the bundled loader, so these are the argument
+// vectors and `comm` values a packaged process really reports, captured from `docker top` inside
+// the pinned n8n image.
+const packageRoot = '/home/node/.n8n/nodes/node_modules/n8n-nodes-yt-dlp-linux-x64';
+const glibcLoader = `${packageRoot}/runtime/glibc/ld-linux-x86-64.so.2 --library-path ${packageRoot}/runtime/glibc`;
+const muslLoader = `${packageRoot}/runtime/musl/ld-musl-x86_64.so.1 --library-path ${packageRoot}/runtime/musl`;
+const restrictedFfmpegArguments = `${glibcLoader} ${packageRoot}/bin/ffmpeg.gnu -y -i file:/tmp/out.mp4 -map 0 -dn -ignore_unknown -threads 1 file:/tmp/out.mkv`;
+const unrestrictedFfmpegArguments = `${glibcLoader} ${packageRoot}/bin/ffmpeg.gnu -y -i file:/tmp/out.mp4 -map 0 -dn -ignore_unknown file:/tmp/out.mkv`;
+const loaderYtDlpArguments = `${muslLoader} ${packageRoot}/bin/yt-dlp.musl --postprocessor-args ffmpeg:-threads 1 --ffmpeg-location ${packageRoot}/bin/ffmpeg http://fixture:8080/recode.mp4`;
+const pyInstallerYtDlpArguments = `${packageRoot}/runtime/musl/ld-musl-x86_64.so.1 ${packageRoot}/bin/yt-dlp.musl --postprocessor-args ffmpeg:-threads 1 --ffmpeg-location ${packageRoot}/bin/ffmpeg http://fixture:8080/recode.mp4`;
 
 function topOutput(rows: string[]): string {
 	return [
@@ -39,17 +46,11 @@ describe('capacity lane worker process observer', () => {
 			]),
 		);
 
-		expect(processes).toEqual([
+		expect(processes).toMatchObject([
+			{ argvWritten: true, n8nWorker: true, pid: 7, program: 'other', rssBytes: 327176 * 1024 },
 			{
 				argvWritten: true,
-				n8nWorker: true,
-				pid: 7,
-				program: 'other',
-				rssBytes: 327176 * 1024,
-				threadRestricted: false,
-			},
-			{
-				argvWritten: true,
+				mediaInput: true,
 				n8nWorker: false,
 				pid: 1240,
 				program: 'yt-dlp',
@@ -58,6 +59,7 @@ describe('capacity lane worker process observer', () => {
 			},
 			{
 				argvWritten: true,
+				mediaInput: true,
 				n8nWorker: false,
 				pid: 1241,
 				program: 'ffmpeg',
@@ -94,7 +96,10 @@ describe('capacity lane worker process observer', () => {
 			ffmpegArgvUnwrittenCount: 0,
 			ffmpegCount: 1,
 			ffmpegRestrictedCount: 1,
+			ffmpegUnrestrictedCommandLines: [],
 			ffmpegUnrestrictedCount: 0,
+			ffmpegWithoutMediaInputCount: 0,
+			unattributedArgvUnwrittenCount: 0,
 			workerRssBytes: (327176 + 100) * 1024,
 			ytDlpArgvUnwrittenCount: 0,
 			ytDlpCount: 2,
@@ -153,6 +158,85 @@ describe('capacity lane worker process observer', () => {
 		});
 	});
 
+	it('reads a packaged FFmpeg through the bundled loader that hides it from comm', () => {
+		expect(
+			summarize([row(1241, 82136, 'ld-linux-x86-64', restrictedFfmpegArguments)]),
+		).toMatchObject({
+			ffmpegArgvUnwrittenCount: 0,
+			ffmpegCount: 1,
+			ffmpegRestrictedCount: 1,
+			ffmpegUnrestrictedCount: 0,
+		});
+	});
+
+	it('counts a loader-launched FFmpeg without the restriction as a violation', () => {
+		expect(
+			summarize([row(1241, 82136, 'ld-linux-x86-64', unrestrictedFfmpegArguments)]),
+		).toMatchObject({ ffmpegCount: 1, ffmpegRestrictedCount: 0, ffmpegUnrestrictedCount: 1 });
+	});
+
+	it('counts both processes of one packaged yt-dlp invocation', () => {
+		expect(
+			summarize([
+				row(1240, 928, 'ld-musl-x86_64.', loaderYtDlpArguments),
+				row(1241, 69220, 'yt-dlp', pyInstallerYtDlpArguments),
+			]),
+		).toMatchObject({
+			ffmpegCount: 0,
+			ytDlpCount: 2,
+			ytDlpMissingFfmpegThreadRestrictionCount: 0,
+		});
+	});
+
+	it('does not read a yt-dlp process as FFmpeg because its argv points at FFmpeg', () => {
+		expect(summarize([row(1240, 928, 'ld-musl-x86_64.', loaderYtDlpArguments)])).toMatchObject({
+			ffmpegCount: 0,
+			ytDlpCount: 1,
+		});
+	});
+
+	it('reports a loader read with no argv as unattributed rather than as a pass', () => {
+		expect(
+			summarize([
+				row(1241, 512, 'ld-linux-x86-64', '[ld-linux-x86-64]'),
+				row(1242, 512, 'ld-musl-x86_64.', '[ld-musl-x86_64.]'),
+			]),
+		).toMatchObject({
+			ffmpegCount: 0,
+			unattributedArgvUnwrittenCount: 2,
+			ytDlpCount: 0,
+		});
+	});
+
+	it('still attributes a launcher caught inside its own execve window', () => {
+		expect(summarize([row(1241, 512, 'ffmpeg', '[ffmpeg]')])).toMatchObject({
+			ffmpegArgvUnwrittenCount: 1,
+			ffmpegCount: 1,
+			unattributedArgvUnwrittenCount: 0,
+		});
+	});
+
+	it('excludes an FFmpeg invocation that opens no media input from the restriction counts', () => {
+		expect(
+			summarize([row(1241, 8192, 'ld-linux-x86-64', `${glibcLoader} ${packageRoot}/bin/ffmpeg.gnu -version`)]),
+		).toMatchObject({
+			ffmpegCount: 1,
+			ffmpegRestrictedCount: 0,
+			ffmpegUnrestrictedCount: 0,
+			ffmpegWithoutMediaInputCount: 1,
+		});
+	});
+
+	it('records the command line of an FFmpeg process that works on media without the restriction', () => {
+		expect(
+			summarize([row(1241, 82136, 'ld-linux-x86-64', unrestrictedFfmpegArguments)]),
+		).toMatchObject({
+			ffmpegUnrestrictedCommandLines: [unrestrictedFfmpegArguments],
+			ffmpegUnrestrictedCount: 1,
+			ffmpegWithoutMediaInputCount: 0,
+		});
+	});
+
 	it('does not treat an unrelated worker process as a packaged program', () => {
 		expect(
 			summarize([row(9, 2048, 'node', '/usr/local/bin/node /usr/local/bin/n8n worker')]),
@@ -179,12 +263,44 @@ describe('capacity lane thread-restriction verdict', () => {
 			ffmpegArgvUnwrittenTotal: 0,
 			ffmpegProcessPeak: 1,
 			ffmpegThreadRestrictionObserved: true,
+			ffmpegUnrestrictedCommandLines: [],
+			ffmpegWithoutMediaInputTotal: 0,
 			ffmpegWithoutThreadRestrictionObserved: false,
 			observationCount: 2,
 			proven: true,
+			unattributedArgvUnwrittenTotal: 0,
 			ytDlpArgvUnwrittenTotal: 0,
 			ytDlpProcessPeak: 1,
 			ytDlpWithoutFfmpegThreadRestrictionObserved: false,
+		});
+	});
+
+	it('refuses to prove the restriction from an FFmpeg that only reported its version', () => {
+		expect(
+			evaluate([
+				[
+					restrictedYtDlp,
+					row(1241, 8192, 'ld-linux-x86-64', `${glibcLoader} ${packageRoot}/bin/ffmpeg.gnu -version`),
+				],
+			]),
+		).toMatchObject({
+			ffmpegProcessPeak: 1,
+			ffmpegThreadRestrictionObserved: false,
+			ffmpegWithoutMediaInputTotal: 1,
+			ffmpegWithoutThreadRestrictionObserved: false,
+			proven: false,
+		});
+	});
+
+	it('surfaces the command lines behind a failed verdict', () => {
+		expect(
+			evaluate([
+				[restrictedYtDlp, restrictedFfmpeg],
+				[restrictedYtDlp, row(1242, 8192, 'ld-linux-x86-64', unrestrictedFfmpegArguments)],
+			]),
+		).toMatchObject({
+			ffmpegUnrestrictedCommandLines: [unrestrictedFfmpegArguments],
+			proven: false,
 		});
 	});
 

@@ -1207,11 +1207,18 @@ function summarizeCapacity(
 				ffmpegProcessPeak: probeThreadRestriction.ffmpegProcessPeak,
 				ffmpegThreadRestrictionObserved:
 					probeThreadRestriction.ffmpegThreadRestrictionObserved,
+				ffmpegUnrestrictedCommandLines:
+					probeThreadRestriction.ffmpegUnrestrictedCommandLines,
+				ffmpegWithoutMediaInputTotal: probeThreadRestriction.ffmpegWithoutMediaInputTotal,
 				ffmpegWithoutThreadRestrictionObserved:
 					probeThreadRestriction.ffmpegWithoutThreadRestrictionObserved,
 				processObservationCount: probeThreadRestriction.observationCount,
+				unattributedArgvUnwrittenTotal:
+					probeThreadRestriction.unattributedArgvUnwrittenTotal,
 			},
 			ffmpegThreadRestrictionProven: acceptance.ffmpegThreadsRestricted,
+			ffmpegUnrestrictedCommandLines: loadThreadRestriction.ffmpegUnrestrictedCommandLines,
+			ffmpegWithoutMediaInputTotal: loadThreadRestriction.ffmpegWithoutMediaInputTotal,
 			ffmpegWithoutThreadRestrictionObserved:
 				loadThreadRestriction.ffmpegWithoutThreadRestrictionObserved,
 			hostCpuPercent,
@@ -1227,6 +1234,7 @@ function summarizeCapacity(
 				...samples.map(({ storage }) => storage.redisUsedMemoryBytes),
 			),
 			sampleCount: samples.length,
+			unattributedArgvUnwrittenTotal: loadThreadRestriction.unattributedArgvUnwrittenTotal,
 			workerProcessRssPeakBytes,
 			workerTemporaryDiskPeakBytes: Math.max(
 				...samples.map(({ temporaryDisk }) => temporaryDisk.usedBytes),
