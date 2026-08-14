@@ -6,6 +6,11 @@ import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { parse as parseFlatted } from 'flatted';
 
+import {
+	parseWorkerProcessSample,
+	summarizeWorkerProcesses,
+} from './process-observer.mjs';
+
 const execFileAsync = promisify(execFile);
 const repositoryRoot = resolve(process.argv[2] ?? '.');
 const suiteRoot = join(repositoryRoot, 'e2e/n8n-2.27.4');
@@ -767,57 +772,7 @@ async function workerProcessSnapshot(workerId) {
 		'-eo',
 		'pid,ppid,rss,comm,args',
 	]);
-	const processes = stdout
-		.trim()
-		.split('\n')
-		.slice(1)
-		.map((line) => {
-			const match = /^\s*\d+\s+\d+\s+(\d+)\s+(\S+)\s+(.*)$/u.exec(line);
-			assert(match, `Cannot parse worker process sample: ${line}`);
-			const command = match[2];
-			const argumentsText = match[3].trim();
-			const arguments_ = argumentsText.split(/\s+/u);
-			const ffmpeg = /^ffmpeg(?:\.gnu)?$/u.test(command);
-			const ytDlp = /^yt-dlp(?:\.musl)?$/u.test(command);
-			return {
-				ffmpeg,
-				ffmpegThreadsOne:
-					ffmpeg &&
-					arguments_.some(
-						(argument, index) =>
-							argument === '-threads' && arguments_[index + 1] === '1',
-					),
-				n8nWorker: arguments_.some(
-					(argument, index) =>
-						argument.endsWith('/n8n') && arguments_[index + 1] === 'worker',
-				),
-				rssBytes: Number(match[1]) * 1024,
-				ytDlp,
-				ytDlpFfmpegThreadsOne:
-					ytDlp &&
-					/(?:^|\s)--postprocessor-args\s+ffmpeg:-threads\s+1(?:\s|$)/u.test(
-						argumentsText,
-					),
-			};
-		});
-	const ffmpegProcesses = processes.filter(({ ffmpeg }) => ffmpeg);
-	const ytDlpProcesses = processes.filter(({ ytDlp }) => ytDlp);
-	return {
-		ffmpegCount: ffmpegProcesses.length,
-		ffmpegThreadsOne:
-			ffmpegProcesses.length > 0 &&
-			ffmpegProcesses.every(({ ffmpegThreadsOne }) => ffmpegThreadsOne),
-		ffmpegUnrestrictedCount: ffmpegProcesses.filter(
-			({ ffmpegThreadsOne }) => !ffmpegThreadsOne,
-		).length,
-		workerRssBytes: processes
-			.filter(({ n8nWorker }) => n8nWorker)
-			.reduce((total, process_) => total + process_.rssBytes, 0),
-		ytDlpCount: ytDlpProcesses.length,
-		ytDlpMissingFfmpegThreadRestrictionCount: ytDlpProcesses.filter(
-			({ ytDlpFfmpegThreadsOne }) => !ytDlpFfmpegThreadsOne,
-		).length,
-	};
+	return summarizeWorkerProcesses(parseWorkerProcessSample(stdout));
 }
 
 async function workerTemporaryDiskSnapshot() {
@@ -1157,9 +1112,14 @@ function summarizeCapacity(
 						return counts;
 					}, new Map()),
 			),
+			ffmpegArgvUnwrittenTotal: processObservations.reduce(
+				(total, { ffmpegArgvUnwrittenCount }) => total + ffmpegArgvUnwrittenCount,
+				0,
+			),
 			ffmpegProcessPeak: Math.max(
 				...processObservations.map(({ ffmpegCount }) => ffmpegCount),
 			),
+			ffmpegThreadRestrictionProven: acceptance.ffmpegThreadsRestricted,
 			ffmpegWithoutThreadRestrictionObserved: processObservations.some(
 				({ ffmpegUnrestrictedCount }) => ffmpegUnrestrictedCount > 0,
 			),
@@ -1168,14 +1128,20 @@ function summarizeCapacity(
 			hostTotalMemoryBytes: firstHost.totalMemoryBytes,
 			minimumHostAvailableMemoryBytes,
 			minimumWorkerTempFreeBytes,
+			processObservationCount: processObservations.length,
 			queueLatencyMaximumMs: Math.max(...queueLatencyMs),
 			queueLatencyP95Ms: percentile(queueLatencyMs, 95),
 			redisUsedMemoryPeakBytes: Math.max(
 				...samples.map(({ storage }) => storage.redisUsedMemoryBytes),
 			),
+			sampleCount: samples.length,
 			workerProcessRssPeakBytes,
 			workerTemporaryDiskPeakBytes: Math.max(
 				...samples.map(({ temporaryDisk }) => temporaryDisk.usedBytes),
+			),
+			ytDlpArgvUnwrittenTotal: processObservations.reduce(
+				(total, { ytDlpArgvUnwrittenCount }) => total + ytDlpArgvUnwrittenCount,
+				0,
 			),
 			ytDlpProcessPeak: Math.max(
 				...processObservations.map(({ ytDlpCount }) => ytDlpCount),

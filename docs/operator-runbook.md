@@ -90,7 +90,7 @@ n8n operations. Do not use an internal binary deletion API.
 ## Frozen-head v0.2.0 capacity decision
 
 The [n8n 2.34.5 / node 0.2.0 capacity record](capacity/n8n-2.34.5-node-0.2.0.json)
-classifies worker concurrency 10 as unsafe on its exact four-CPU, 16 GB disposable topology. Seven
+classifies worker concurrency 10 as unsafe on its exact four-CPU, 16 GB disposable topology. Six
 of ten concurrent worst-allowed requests failed and event-loop lag crossed the one-second gate.
 Keep the v0.2.0 supported scope at worker concurrency 1 until a lower-concurrency disposable lane
 passes. Do not raise the node Resource Envelope hard caps.
@@ -106,26 +106,30 @@ For that exact measured topology, alert when:
 | --- | ---: |
 | Event-loop maximum lag | greater than 1 second |
 | Queue-latency p95 | greater than 30 seconds |
-| Worker container memory | greater than 5,485,101,056 bytes |
+| Worker container memory | greater than 4,205,838,336 bytes |
 | Host available memory | less than 2 GiB |
 | Worker temp free space | less than 6 GiB |
 
 On n8n 2.30.7 the corresponding worker-container-memory threshold was 4,627,365,888 bytes. Use the
 row from the record matching your anchor, not this table, if you run the previous head.
 
-The 2.34.5 record sets `ffmpegThreadRestrictionProven` to `false`, while the 2.30.7 record sets it
-to `true`. Neither boolean is strong evidence on its own, and the flip is not a configuration
-change. The node builds its only yt-dlp spawn with `--postprocessor-args ffmpeg:-threads 1`
-unconditionally, so the restriction is proven by construction. On the measurement side the 2.34.5
-run is the stronger of the two: it recorded `ffmpegProcessPeak: 1` with
-`ffmpegWithoutThreadRestrictionObserved: false`, meaning a packaged FFmpeg process was actually
-observed and it carried `-threads 1`. The 2.30.7 run recorded `ffmpegProcessPeak: 0`, so its
-`true` was reached without ever observing an FFmpeg process. The 2.34.5 boolean is `false` only
-because `ytDlpWithoutFfmpegThreadRestrictionObserved` is `true`: the lane requires every process
-sample to be clean, and the per-sample counts behind that flag live in the record's
-`rawEvidence.path`, which is a disposable, git-ignored lane output rather than committed evidence.
-Treat the recorded boolean as **doğrulanmadı** at 2.34.5 until issue #58 makes the observer
-deterministic. Do not relax the node's FFmpeg thread restriction on the strength of either record.
+Both records set `ffmpegThreadRestrictionProven` to `true`. The node builds its only yt-dlp spawn
+with `--postprocessor-args ffmpeg:-threads 1` unconditionally, so the restriction is proven by
+construction; the lane's job is only to catch a process that contradicts that. The 2.34.5 record
+observed no unrestricted process across 543 process observations in 34 samples. Neither record
+sampled a packaged FFmpeg process at all (`ffmpegProcessPeak: 0`), so in both the boolean rests on
+the yt-dlp command lines rather than on a directly sampled FFmpeg process. Read the record's
+`processObserver.ffmpegEvidenceLimit` before citing it as FFmpeg evidence.
+
+An earlier 2.34.5 run recorded `false` because one process observation out of 437 read a yt-dlp
+process mid-`execve`, while `/proc/<pid>/cmdline` was still unwritten and there was no argv to
+check. The observer now marks such a read as an unwritten argv and reports it as
+`ytDlpArgvUnwrittenTotal` or `ffmpegArgvUnwrittenTotal`, excluded from the restriction counts in
+both directions. That run is superseded in place and its details are kept in the current record's
+`supersedes` block. The invariant is unchanged: the kernel publishes a process's argument vector
+in one step, so a real invocation is always measurable on the sample that saw it, and a genuinely
+unrestricted process still fails the lane however briefly it runs. Do not relax the node's FFmpeg
+thread restriction on the strength of either record.
 
 These are versioned release gates for the recorded image, package bytes, four-CPU/16 GB host,
 Postgres 16, Redis 7, database binary storage, and capacity workload. They are not universal

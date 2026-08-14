@@ -1,9 +1,13 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-08-13T20:56:17.461Z",
+  "recordedAt": "2026-08-14T11:40:54.361Z",
   "rawEvidence": {
     "path": "e2e/n8n-2.27.4/.generated/2.34.5/evidence/n8n-2.34.5.json",
-    "sha256": "7307b9cc9121b37637bced9bd5d5622e0c95109259ad7fbc99a01c1c63695b81"
+    "sha256": "22946498f962fc779794de56eb6e3598b080a585abfa852513cd9e7104fac8ae"
+  },
+  "supersedes": {
+    "recordedAt": "2026-08-13T20:56:17.461Z",
+    "reason": "The first 2.34.5 run was recorded with a process observer that counted an execve-window read as a thread-restriction violation, which set ffmpegThreadRestrictionProven to false. Issue #58 fixed the observer and this record replaces that run in place, as the same anchor. The superseded run measured ffmpegProcessPeak 1 with ffmpegWithoutThreadRestrictionObserved false; that FFmpeg observation is not reproduced here and is not claimed by this record."
   },
   "image": {
     "name": "docker.n8n.io/n8nio/n8n",
@@ -28,8 +32,8 @@
     {
       "name": "n8n-nodes-yt-dlp",
       "version": "0.2.0",
-      "sha256": "48849e72c5947a0e5dcd0ab15f1df4a1d39e5342c75a41cf45b3e7726a8b3898",
-      "sizeBytes": 102467
+      "sha256": "53f4d6b57735c687700279e9dfa515a38f22303fde8ed66e242f95e311a5f2d7",
+      "sizeBytes": 102628
     }
   ],
   "topology": {
@@ -56,41 +60,50 @@
     "eventLoopLagSeconds": 1,
     "hostAvailableMemoryBytes": 2147483648,
     "queueLatencyP95Ms": 30000,
-    "workerContainerMemoryBytes": 5485101056,
+    "workerContainerMemoryBytes": 4205838336,
     "workerTempFreeBytes": 6442450944
   },
   "measurements": {
-    "durationMs": 196815,
-    "successfulRequests": 3,
-    "failedRequests": 7,
+    "durationMs": 214380,
+    "successfulRequests": 4,
+    "failedRequests": 6,
     "failureCodes": {
-      "BINARY_TRANSFER_FAILED": 7
+      "BINARY_TRANSFER_FAILED": 5,
+      "UNKNOWN": 1
     },
-    "binaryGrowthBytes": 1342214585,
-    "binaryRowGrowth": 8,
-    "databasePeakBytes": 31693847,
-    "redisUsedMemoryPeakBytes": 2239528,
-    "eventLoopLagPeakSeconds": 1.724907519,
-    "queueLatencyMaximumMs": 1558,
-    "queueLatencyP95Ms": 1558,
-    "hostCpuPercent": 93.4316958037811,
-    "hostMinimumAvailableMemoryBytes": 7923290112,
-    "workerProcessRssPeakBytes": 4601495552,
-    "workerContainerCpuPeakPercent": 272.94,
-    "workerContainerMemoryPeakBytes": 4387309092.864,
-    "workerTemporaryDiskPeakBytes": 3236093952,
-    "workerMinimumTempFreeBytes": 38728138752,
-    "postgresContainerCpuPeakPercent": 122.91,
-    "postgresContainerMemoryPeakBytes": 1399085596.672,
-    "redisContainerCpuPeakPercent": 12.66,
-    "redisContainerMemoryPeakBytes": 15518924.8,
+    "binaryGrowthBytes": 2415981279,
+    "binaryRowGrowth": 14,
+    "databasePeakBytes": 44514327,
+    "redisUsedMemoryPeakBytes": 2235848,
+    "eventLoopLagPeakSeconds": 2.860515327,
+    "queueLatencyMaximumMs": 1109,
+    "queueLatencyP95Ms": 1109,
+    "hostCpuPercent": 94.32249512983752,
+    "hostMinimumAvailableMemoryBytes": 6705696768,
+    "workerProcessRssPeakBytes": 3585699840,
+    "workerContainerCpuPeakPercent": 259.21,
+    "workerContainerMemoryPeakBytes": 3364033134.592,
+    "workerTemporaryDiskPeakBytes": 3242029056,
+    "workerMinimumTempFreeBytes": 37189111808,
+    "postgresContainerCpuPeakPercent": 104.63,
+    "postgresContainerMemoryPeakBytes": 1055916032,
+    "redisContainerCpuPeakPercent": 11.58,
+    "redisContainerMemoryPeakBytes": 16148070.4,
     "ytDlpProcessPeak": 10,
-    "ytDlpWithoutFfmpegThreadRestrictionObserved": true,
-    "ffmpegProcessPeak": 1,
+    "ytDlpWithoutFfmpegThreadRestrictionObserved": false,
+    "ytDlpArgvUnwrittenTotal": 0,
+    "ffmpegProcessPeak": 0,
     "ffmpegWithoutThreadRestrictionObserved": false,
-    "ffmpegThreadRestrictionProven": false,
-    "sampleCount": 28,
-    "processObservationCount": 437
+    "ffmpegArgvUnwrittenTotal": 0,
+    "ffmpegThreadRestrictionProven": true,
+    "sampleCount": 34,
+    "processObservationCount": 543
+  },
+  "processObserver": {
+    "method": "docker top every 100 ms. A packaged yt-dlp or FFmpeg process whose argv the kernel has not published yet is reported as an unwritten-argv read and excluded from the restriction counts in both directions; every process with a written argv is checked on the sample that saw it.",
+    "invariantUnchanged": "The kernel publishes the argument vector in one step, so a sampled row is either the bracketed comm or a complete command line and never half of one, and a real invocation of either program always carries a full argument vector. The node builds --postprocessor-args ffmpeg:-threads 1 into its only yt-dlp spawn unconditionally, so a genuinely unrestricted process is measurable the first time it is sampled and still fails the lane however briefly it runs. Only a process the observer cannot measure at all is excluded, and an unmeasured process is not evidence of a violation.",
+    "unwrittenArgvReadsAreNotPasses": "Unwritten-argv reads are reported as ytDlpArgvUnwrittenTotal and ffmpegArgvUnwrittenTotal and are never folded into ytDlpWithoutFfmpegThreadRestrictionObserved, ffmpegWithoutThreadRestrictionObserved, or ffmpegThreadRestrictionProven.",
+    "ffmpegEvidenceLimit": "This run sampled no packaged FFmpeg process at all (ffmpegProcessPeak 0), so ffmpegThreadRestrictionProven rests on the yt-dlp command lines, which carry the restriction the node passes to FFmpeg, and not on a directly sampled FFmpeg process. The lane's acceptance flag does not require an FFmpeg process to be sampled."
   },
   "failureRecovery": {
     "controlledProcessBoundary": {
@@ -125,7 +138,7 @@
     "allRequestsSucceeded": false,
     "binaryGrowthObserved": true,
     "eventLoopHealthy": false,
-    "ffmpegThreadsRestricted": false,
+    "ffmpegThreadsRestricted": true,
     "hostMemoryHeadroom": true,
     "queueLatencyBounded": true,
     "tempDiskHeadroom": true

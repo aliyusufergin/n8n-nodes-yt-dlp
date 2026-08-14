@@ -106,6 +106,25 @@ event-loop metrics, queue latency, logical binary growth, Postgres size, and
 Redis memory. It then hard-deletes the executions through n8n's public REST
 surface and verifies pruning without an internal deletion API.
 
+The lane's process observer reads `docker top` every 100 ms and requires every
+packaged yt-dlp and FFmpeg process to carry the forced one-thread restriction.
+A process sampled inside its execve window already reports its new `comm` while
+`/proc/<pid>/cmdline` is still unwritten, which `ps` renders as the bracketed
+comm. That read carries no argv to check, and counting it produced a false
+violation at 2.34.5. The observer now marks such a row as an unwritten argv and
+reports it as `ytDlpArgvUnwrittenTotal` or `ffmpegArgvUnwrittenTotal`, never as
+a violation and never as a pass — it is excluded from the restriction counts in
+both directions.
+
+This does not relax the invariant. The kernel publishes the argument vector in
+one step, so a sampled row is either bracketed or complete and never half a
+command line; a real invocation of either program always carries a full
+argument vector. The restriction is an unconditional argv the node builds on
+its only spawn path, so a genuinely unrestricted process is measurable the
+first time it is sampled and still fails the lane, however briefly it runs.
+Only a process the observer cannot measure at all is excluded, and an
+unmeasured process is not evidence of a violation.
+
 Two slow requests are separately interrupted with SIGKILL. The first proves
 that an aged, owner-verified workspace is removed by the next execution's stale
 sweep without replacing the worker container. The second proves that targeted
