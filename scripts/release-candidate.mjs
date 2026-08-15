@@ -1172,17 +1172,23 @@ async function main() {
 				allowInitialLatest: true,
 			});
 			break;
-		case 'materialize-registry':
-			if (arguments_.length !== 4) {
+		case 'materialize-registry': {
+			// Only the bootstrap may read back npm's automatic first-publish `latest`. Every release
+			// after it leaves `latest` on the previous version, so the allowance is opt-in: assuming
+			// it would let a candidate that `latest` already names pass the gate unnoticed.
+			const bootstrapLatest = arguments_.at(-1) === '--bootstrap-latest';
+			const positional = bootstrapLatest ? arguments_.slice(0, -1) : arguments_;
+			if (positional.length !== 4) {
 				fail(
-					'Usage: materialize-registry <candidate-directory> <registry-url> <output-directory> <output.json>',
+					'Usage: materialize-registry <candidate-directory> <registry-url> <output-directory> <output.json> [--bootstrap-latest]',
 				);
 			}
-			await verifyRegistry(arguments_[0], arguments_[1], arguments_[3], {
-				allowInitialLatest: true,
-				materializeDirectory: arguments_[2],
+			await verifyRegistry(positional[0], positional[1], positional[3], {
+				allowInitialLatest: bootstrapLatest,
+				materializeDirectory: positional[2],
 			});
 			break;
+		}
 		case 'audit-registry':
 			if (arguments_.length !== 3) {
 				fail('Usage: audit-registry <candidate.json> <registry-url> <output.json>');

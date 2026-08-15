@@ -810,6 +810,46 @@ describe('immutable Release Candidate Chain', () => {
 			}
 		}, 60_000);
 
+		// Only the bootstrap accepts npm's automatic first-publish `latest`. Every release after it
+		// leaves `latest` on the previous version, so `materialize-registry` must refuse a candidate
+		// that `latest` already names unless it is told this is the bootstrap. The gate that decides
+		// that runs before the chain is re-hashed, so this reaches it without a real signature.
+		const materializeRegistry = async (bootstrapLatest: boolean) =>
+			await execFileAsync(
+				process.execPath,
+				[
+					'scripts/release-candidate.mjs',
+					'materialize-registry',
+					candidateRoot,
+					registry,
+					join(candidateRoot, `materialized-${bootstrapLatest}`),
+					join(candidateRoot, `materialized-${bootstrapLatest}.json`),
+					...(bootstrapLatest ? ['--bootstrap-latest'] : []),
+				],
+				{ cwd: repositoryRoot, env: { ...process.env, RUNNER_REGION: 'test-region' } },
+			);
+
+		it('refuses a released candidate that latest already identifies', async () => {
+			latestVersion = manifest.version;
+			publishedVersions = [manifest.version];
+
+			await expect(materializeRegistry(false)).rejects.toMatchObject({
+				stderr: expect.stringContaining(
+					`latest unexpectedly identifies ${manifest.version}`,
+				),
+			});
+		}, 60_000);
+
+		it('accepts the published state a release after the bootstrap leaves behind', async () => {
+			latestVersion = '0.1.0';
+			publishedVersions = ['0.1.0', manifest.version];
+
+			// The dist-tag gate passes, so the run proceeds to the chain it cannot verify here.
+			await expect(materializeRegistry(false)).rejects.not.toMatchObject({
+				stderr: expect.stringContaining('latest unexpectedly identifies'),
+			});
+		}, 60_000);
+
 		it('rejects registry provenance that is not candidate-bound', async () => {
 			provenanceCommit = '0'.repeat(40);
 			await expect(verifyProvenanceWithTestSignature()).rejects.toMatchObject({
