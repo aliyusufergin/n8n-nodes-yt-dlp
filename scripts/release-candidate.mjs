@@ -753,7 +753,12 @@ async function assertRegistryDistTagState(candidate, registry, allowInitialLates
 		if (allowInitialLatest && !exactInitialPublication) {
 			fail(`${packageEvidence.name} bootstrap registry state is not an exact initial publication.`);
 		}
-		if (!allowInitialLatest && packument['dist-tags']?.latest === candidate.version) {
+		// npm forces `latest` onto a package's first published version, so a candidate that is the
+		// only version may legitimately hold it. Any other candidate holding `latest` was promoted,
+		// which no read-back may treat as staged state. This reads the registry rather than the
+		// publish mode because the bootstrap's forced `latest` outlives the run that caused it: the
+		// `verify-existing` run that follows a bootstrap reads the same state from a different mode.
+		if (packument['dist-tags']?.latest === candidate.version && !exactInitialPublication) {
 			fail(`${packageEvidence.name} latest unexpectedly identifies ${candidate.version}.`);
 		}
 	}
@@ -1172,23 +1177,19 @@ async function main() {
 				allowInitialLatest: true,
 			});
 			break;
-		case 'materialize-registry': {
-			// Only the bootstrap may read back npm's automatic first-publish `latest`. Every release
-			// after it leaves `latest` on the previous version, so the allowance is opt-in: assuming
-			// it would let a candidate that `latest` already names pass the gate unnoticed.
-			const bootstrapLatest = arguments_.at(-1) === '--bootstrap-latest';
-			const positional = bootstrapLatest ? arguments_.slice(0, -1) : arguments_;
-			if (positional.length !== 4) {
+		case 'materialize-registry':
+			if (arguments_.length !== 4) {
 				fail(
-					'Usage: materialize-registry <candidate-directory> <registry-url> <output-directory> <output.json> [--bootstrap-latest]',
+					'Usage: materialize-registry <candidate-directory> <registry-url> <output-directory> <output.json>',
 				);
 			}
-			await verifyRegistry(positional[0], positional[1], positional[3], {
-				allowInitialLatest: bootstrapLatest,
-				materializeDirectory: positional[2],
+			// No bootstrap allowance to pass: `assertRegistryDistTagState` decides from the published
+			// versions whether this candidate's `latest` is npm's forced first-publish tag or a
+			// promotion, which is the same answer in every publish mode.
+			await verifyRegistry(arguments_[0], arguments_[1], arguments_[3], {
+				materializeDirectory: arguments_[2],
 			});
 			break;
-		}
 		case 'audit-registry':
 			if (arguments_.length !== 3) {
 				fail('Usage: audit-registry <candidate.json> <registry-url> <output.json>');

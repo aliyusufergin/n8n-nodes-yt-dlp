@@ -10,8 +10,11 @@ digest, file digest/mode, package metadata, Toolchain Lock identity, Correspondi
 and rollback policy in `release-candidate.json`. GitHub build provenance and the checked
 `build-provenance.json` bind the same three package subjects.
 
-The publishing run stops after public registry read-back and credential retirement. A later
-`verify-existing` run performs every disposable E2E job for the published-byte ticket. Its
+A `bootstrap` run stops after public registry read-back and credential retirement; a `stage` run
+stops earlier still, right after `publish-next`, having done neither — `registry-readback` is gated
+on `publish_mode != 'stage'`, and the staged packages are not public until a maintainer approves
+each one with 2FA. A later `verify-existing` run performs every disposable E2E job for the
+published-byte ticket. Its
 `candidate` job downloads the exact `release-candidate-0.2.1` artifact from the run that built it,
 named by `PUBLISHED_CANDIDATE_RUN_ID`, and requires the manifest SHA-256 in
 `PUBLISHED_CANDIDATE_SHA256`. For 0.2.1 those are stage run `31880525687` and

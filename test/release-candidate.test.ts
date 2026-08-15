@@ -26,6 +26,9 @@ const requiredLanes = [
 	'acceptance-stack',
 ] as const;
 const npmPublishEnvelopeLimitBytes = 250 * 1024 * 1024;
+// What a `materialize-registry` run reaches once the dist-tag gate has let it through: the fixture
+// registry serves no real Sigstore material, so verification stops at the provenance bundle.
+const DIST_TAG_GATE_PASSED = 'Registry provenance Sigstore signature verification failed.';
 const imagesByLane: Partial<Record<(typeof requiredLanes)[number], string[]>> = {
 	'acceptance-stack': [
 		'docker.n8n.io/n8nio/n8n@sha256:d91033b4fac2f7b75c5c4007e10824c66147f7d7a3cccb488720e97452ee7dc7',
@@ -781,6 +784,9 @@ describe('immutable Release Candidate Chain', () => {
 			});
 			nextVersion = manifest.version;
 			latestVersion = manifest.version;
+			// An earlier published version is what makes this a promotion rather than npm's forced
+			// tag on a first publication, which a read-back is required to accept.
+			publishedVersions = ['0.1.0', manifest.version];
 			await expect(verifyWithTestSignature()).rejects.toMatchObject({
 				stderr: expect.stringContaining('latest unexpectedly identifies 0.2.1'),
 			});
@@ -814,39 +820,50 @@ describe('immutable Release Candidate Chain', () => {
 		// leaves `latest` on the previous version, so `materialize-registry` must refuse a candidate
 		// that `latest` already names unless it is told this is the bootstrap. The gate that decides
 		// that runs before the chain is re-hashed, so this reaches it without a real signature.
-		const materializeRegistry = async (bootstrapLatest: boolean) =>
-			await execFileAsync(
+		let materializeCount = 0;
+		const materializeRegistry = async () => {
+			const label = `materialized-${(materializeCount += 1)}`;
+			return await execFileAsync(
 				process.execPath,
 				[
 					'scripts/release-candidate.mjs',
 					'materialize-registry',
 					candidateRoot,
 					registry,
-					join(candidateRoot, `materialized-${bootstrapLatest}`),
-					join(candidateRoot, `materialized-${bootstrapLatest}.json`),
-					...(bootstrapLatest ? ['--bootstrap-latest'] : []),
+					join(candidateRoot, label),
+					join(candidateRoot, `${label}.json`),
 				],
 				{ cwd: repositoryRoot, env: { ...process.env, RUNNER_REGION: 'test-region' } },
 			);
+		};
 
-		it('refuses a released candidate that latest already identifies', async () => {
+		it('refuses a candidate that latest identifies alongside an earlier release', async () => {
 			latestVersion = manifest.version;
-			publishedVersions = [manifest.version];
+			publishedVersions = ['0.1.0', manifest.version];
 
-			await expect(materializeRegistry(false)).rejects.toMatchObject({
-				stderr: expect.stringContaining(
-					`latest unexpectedly identifies ${manifest.version}`,
-				),
+			await expect(materializeRegistry()).rejects.toMatchObject({
+				stderr: expect.stringContaining(`latest unexpectedly identifies ${manifest.version}`),
 			});
 		}, 60_000);
 
-		it('accepts the published state a release after the bootstrap leaves behind', async () => {
+		// The two states below are the ones a read-back must accept, and they are asserted by the
+		// error they reach rather than by the absence of one: a negative match would also pass for
+		// the dist-tag rejection this pair exists to rule out.
+		it("accepts npm's forced latest on a first publication", async () => {
+			latestVersion = manifest.version;
+			publishedVersions = [manifest.version];
+
+			await expect(materializeRegistry()).rejects.toMatchObject({
+				stderr: expect.stringContaining(DIST_TAG_GATE_PASSED),
+			});
+		}, 60_000);
+
+		it('accepts the state a release after the first publication leaves behind', async () => {
 			latestVersion = '0.1.0';
 			publishedVersions = ['0.1.0', manifest.version];
 
-			// The dist-tag gate passes, so the run proceeds to the chain it cannot verify here.
-			await expect(materializeRegistry(false)).rejects.not.toMatchObject({
-				stderr: expect.stringContaining('latest unexpectedly identifies'),
+			await expect(materializeRegistry()).rejects.toMatchObject({
+				stderr: expect.stringContaining(DIST_TAG_GATE_PASSED),
 			});
 		}, 60_000);
 

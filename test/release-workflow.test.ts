@@ -121,11 +121,6 @@ describe('release workflow', () => {
 
 		const readback = job(workflow, 'registry-readback');
 		expect(readback).toContain('materialize-registry');
-		// npm's automatic first-publish `latest` is readable back only for the bootstrap; a later
-		// release leaves `latest` on the previous version and must not be allowed to claim it.
-		expect(readback).toContain(
-			"${{ inputs.publish_mode == 'bootstrap' && '--bootstrap-latest' || '' }}",
-		);
 		expect(readback).toContain('name: published-candidate-0.2.1');
 
 		for (const jobName of [

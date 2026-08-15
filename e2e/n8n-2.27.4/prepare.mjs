@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { chmod, copyFile, mkdir, readFile, rm, truncate, writeFile } from 'node:fs/promises';
+import { chmod, copyFile, mkdir, open, readFile, rm, truncate, writeFile } from 'node:fs/promises';
 import { basename, join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 
@@ -205,10 +205,20 @@ const ffmpeg = join(repositoryRoot, 'packages/linux-x64/bin/ffmpeg');
 // The fixtures are built with the packaged FFmpeg from the checkout, not from the candidate. An
 // unhydrated LFS checkout leaves a pointer file here, and running it fails as a shell script with
 // `line 1: version: command not found`, which names neither FFmpeg nor LFS. Say what is wrong.
-if ((await readFile(ffmpeg)).subarray(0, 24).toString('utf8').startsWith('version https://git-lfs')) {
-	throw new Error(
-		'packages/linux-x64/bin/ffmpeg is a Git LFS pointer. Check the repository out with LFS before preparing fixtures.',
-	);
+// Read only the signature: the capacity lane measures host memory headroom, and pulling tens of
+// megabytes of packaged FFmpeg into a Buffer to look at its first line would be part of what it
+// measures.
+const ffmpegHandle = await open(ffmpeg);
+try {
+	const signature = Buffer.alloc(23);
+	await ffmpegHandle.read(signature, 0, signature.byteLength, 0);
+	if (signature.toString('utf8') === 'version https://git-lfs') {
+		throw new Error(
+			'packages/linux-x64/bin/ffmpeg is a Git LFS pointer. Check the repository out with LFS before preparing fixtures.',
+		);
+	}
+} finally {
+	await ffmpegHandle.close();
 }
 const videoPath = join(fixtureRoot, 'video.mp4');
 const audioPath = join(fixtureRoot, 'audio.m4a');
