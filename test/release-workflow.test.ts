@@ -150,6 +150,22 @@ describe('release workflow', () => {
 		expect(job(workflow, 'hermetic')).toContain('lfs: true');
 	});
 
+	// The hermetic container denies egress, drops every capability, keeps its own root read-only, and
+	// runs as the runner's own uid. That uid has no entry in the image's passwd database, so
+	// `os.userInfo()` fails and the release build cannot start; and without a reaping init the
+	// process-group timeout test sees killed descendants linger as unreaped zombies and reports the
+	// group as surviving SIGKILL. Both are properties of the container, not of the candidate, so the
+	// isolation flags below are part of the gate's contract.
+	it('gives the hermetic container a reaping init, a passwd entry, and a writable home', async () => {
+		const workflow = await readFile('.github/workflows/publish.yml', 'utf8');
+		const hermetic = job(workflow, 'hermetic');
+		expect(hermetic).toContain('--init');
+		expect(hermetic).toContain('target=/etc/passwd,readonly');
+		expect(hermetic).toContain('--env HOME=/tmp');
+		// /tmp is the only writable filesystem, and a measured run peaks at 2.43 GiB in it.
+		expect(hermetic).toContain('--tmpfs /tmp:rw,nosuid,nodev,exec,size=6g');
+	});
+
 	it('retains bounded live-canary evidence when the canary blocks release', async () => {
 		const workflow = await readFile('.github/workflows/publish.yml', 'utf8');
 		expect(job(workflow, 'live-canary')).toMatch(

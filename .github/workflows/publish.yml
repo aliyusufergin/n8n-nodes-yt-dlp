@@ -468,16 +468,38 @@ jobs:
       - run: docker pull "$HERMETIC_IMAGE"
       - name: run candidate-bound suite with egress denied
         run: |
+          # The container runs as the runner's own uid so the bind-mounted workspace keeps its
+          # ownership, but that uid is absent from the image's passwd database, and `os.userInfo()`
+          # then fails with uv_os_get_passwd ENOENT before the release build can start. Naming that
+          # uid in a passwd file is the smallest fix that keeps the unprivileged user. The image's
+          # own entries are kept so that a lookup of root or node still resolves, and the runner's
+          # entry is written first because getpwuid takes the first match: were the runner to share
+          # a uid with an image entry, that entry's unwritable home would reintroduce this failure.
+          {
+            printf 'hermetic:x:%s:%s:hermetic:/tmp:/bin/sh\n' "$(id -u)" "$(id -g)"
+            docker run --rm "$HERMETIC_IMAGE" cat /etc/passwd
+          } > "$RUNNER_TEMP/hermetic-passwd"
+          # --init gives the container a reaping PID 1. Without it the killed descendants of the
+          # process-group timeout test are reparented to npm, which never reaps them, so the
+          # supervisor still sees the group and reports that it survived SIGKILL.
+          #
+          # --read-only covers the container's own root, so /tmp is its writable scratch space and
+          # holds the candidate tarballs, the extracted packages, the temporary workspaces, and the
+          # npm cache at once. A measured run peaks at 2.43 GiB there, so the tmpfs is sized well
+          # above that; below the peak the suite fails late with ENOSPC.
           docker run --rm \
+            --init \
             --network none \
             --read-only \
             --cap-drop ALL \
             --security-opt no-new-privileges \
-            --tmpfs /tmp:rw,nosuid,nodev,exec,size=2g \
+            --tmpfs /tmp:rw,nosuid,nodev,exec,size=6g \
             --user "$(id -u):$(id -g)" \
             --env E2E_RELEASE_CANDIDATE_ROOT=/workspace/.release-candidate \
+            --env HOME=/tmp \
             --env RUNNER_REGION="$RUNNER_REGION" \
             --env npm_config_cache=/tmp/npm-cache \
+            --mount "type=bind,source=$RUNNER_TEMP/hermetic-passwd,target=/etc/passwd,readonly" \
             --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspace" \
             --workdir /workspace \
             "$HERMETIC_IMAGE" \
