@@ -89,14 +89,18 @@ n8n operations. Do not use an internal binary deletion API.
 
 ## Frozen-head v0.2.1 capacity decision
 
-The [n8n 2.34.5 / node 0.2.0 capacity record](capacity/n8n-2.34.5-node-0.2.0.json)
-classifies worker concurrency 10 as unsafe on its exact four-CPU, 16 GB disposable topology. All
-ten concurrent worst-allowed requests completed in the run that holds the record, but event-loop
-lag peaked at 1.25 seconds and crossed the one-second gate, which alone decides the lane. Earlier
-runs of the same anchor additionally lost five or six of the ten requests to
-`BINARY_TRANSFER_FAILED`, so a fully successful run is within this topology's spread and is not a
-change of verdict. Keep the v0.2.1 supported scope at worker concurrency 1 until a
-lower-concurrency disposable lane passes. Do not raise the node Resource Envelope hard caps.
+The [n8n 2.34.5 / node 0.2.1 capacity record](capacity/n8n-2.34.5-node-0.2.1.json)
+classifies worker concurrency 10 as unsafe on its exact four-CPU, 16 GB disposable topology. Two of
+the ten concurrent worst-allowed requests completed; seven were lost to `BINARY_TRANSFER_FAILED`
+and one to an unclassified failure, and event-loop lag peaked at 2.68 seconds against a one-second
+gate. Keep the v0.2.1 supported scope at worker concurrency 1 until a lower-concurrency disposable
+lane passes. Do not raise the node Resource Envelope hard caps.
+
+The verdict is stable across the spread rather than resting on one run. The same anchor's node
+0.2.0 record, [n8n 2.34.5 / node 0.2.0](capacity/n8n-2.34.5-node-0.2.0.json), completed all ten
+requests and still failed the lane on a 1.25-second lag peak; runs before it lost five or six.
+Request loss at this concurrency varies widely on this topology and is not by itself the deciding
+signal — the lag gate is.
 
 The previous frozen head kept its own record, [n8n 2.30.7 / node
 0.2.0](capacity/n8n-2.30.7-node-0.2.0.json). It reached the same decision from five of ten failed
@@ -109,12 +113,13 @@ For that exact measured topology, alert when:
 | --- | ---: |
 | Event-loop maximum lag | greater than 1 second |
 | Queue-latency p95 | greater than 30 seconds |
-| Worker container memory | greater than 4,354,736,128 bytes |
+| Worker container memory | greater than 4,368,367,616 bytes |
 | Host available memory | less than 2 GiB |
 | Worker temp free space | less than 6 GiB |
 
-On n8n 2.30.7 the corresponding worker-container-memory threshold was 4,627,365,888 bytes. Use the
-row from the record matching your anchor, not this table, if you run the previous head.
+On n8n 2.30.7 the corresponding worker-container-memory threshold was 4,627,365,888 bytes, and on
+this anchor under node 0.2.0 it was 4,354,736,128. These are measured per run, so use the row from
+the record matching the anchor and node version you run, not this table.
 
 Both records set `ffmpegThreadRestrictionProven` to `true`, but only the 2.34.5 record proves it
 from FFmpeg itself. Issue #68 found why no earlier run ever sampled FFmpeg: the observer named

@@ -106,7 +106,7 @@ describe('public documentation', () => {
 				],
 				'## License and Corresponding Source': [
 					'[Toolchain Lock](packages/linux-x64/TOOLCHAIN.lock.json)',
-					'`c944fb08ee3125c7cb30b9772f8a23f5ff57957911ea4179db8be80f4ffedc8e`',
+					'`04acc71c79e71b8455a2660503c30f4cb9e84d8a127fcb71eb7763de47448a9a`',
 					'`3dcd8963e229e3b34fb9d0d969377e59e25a01146fd128282ad599200034e882`',
 					'./toolchain/rebuild.sh /absolute/output/directory',
 				],
@@ -141,10 +141,10 @@ describe('public documentation', () => {
 					'backend writes are not a transaction',
 				],
 				'## Frozen-head v0.2.1 capacity decision': [
-					'capacity/n8n-2.34.5-node-0.2.0.json',
+					'capacity/n8n-2.34.5-node-0.2.1.json',
 					'worker concurrency 1',
 					'greater than 1 second',
-					'greater than 4,354,736,128 bytes',
+					'greater than 4,368,367,616 bytes',
 					'less than 6 GiB',
 				],
 				'## Diagnose': [

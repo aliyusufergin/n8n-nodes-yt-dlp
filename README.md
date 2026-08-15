@@ -345,19 +345,20 @@ and verbatim `packages/linux-x64/LICENSES/` inventory.
 The [Toolchain Lock](packages/linux-x64/TOOLCHAIN.lock.json) freezes upstream tags/commits, asset
 names, SHA-256 values, licenses, runtime-image identities, and source-bundle identities. The
 issue-18 disposable capacity record for the current frozen head, [n8n 2.34.5 / node
-0.2.0](docs/capacity/n8n-2.34.5-node-0.2.0.json), measured these exact packed bytes:
+0.2.1](docs/capacity/n8n-2.34.5-node-0.2.1.json), measured these exact packed bytes:
 
 | Package tarball | SHA-256 |
 | --- | --- |
-| `n8n-nodes-yt-dlp-linux-x64@0.2.0` | `c944fb08ee3125c7cb30b9772f8a23f5ff57957911ea4179db8be80f4ffedc8e` |
-| `n8n-nodes-yt-dlp-platform@0.2.0` | `1298b8e0c7762a40741c557936712f27484cc89d78fef16ec851b99c8a49c28c` |
-| `n8n-nodes-yt-dlp@0.2.0` | `48849e72c5947a0e5dcd0ab15f1df4a1d39e5342c75a41cf45b3e7726a8b3898` |
+| `n8n-nodes-yt-dlp-linux-x64@0.2.1` | `04acc71c79e71b8455a2660503c30f4cb9e84d8a127fcb71eb7763de47448a9a` |
+| `n8n-nodes-yt-dlp-platform@0.2.1` | `cd116ec01875822a374de872702a4c8a47ab26cafef9b6b698bb454e9368c3a5` |
+| `n8n-nodes-yt-dlp@0.2.1` | `d227b8abcaddf5abef269c7b1ea15da2e39492a8d715ea95b8b572a7f61d8df7` |
 
-Those are local release-gate tarball digests, not proof that registry bytes have been published.
-They record the 0.2.0 bytes that run measured; 0.2.1 repacks the node changes made since, so the
-digests move. The previous frozen head's
-record, [n8n 2.30.7 / node 0.2.0](docs/capacity/n8n-2.30.7-node-0.2.0.json), measured a different
-and now superseded set. Read digests from the capacity record matching your n8n anchor.
+That run installed the tarballs the registry read-back had fetched from public npm, so these are
+the published `next` bytes rather than a local pack. Digests move with every release: the same
+anchor's node 0.2.0 record, [n8n 2.34.5 / node
+0.2.0](docs/capacity/n8n-2.34.5-node-0.2.0.json), holds a different set, as does the previous
+frozen head, [n8n 2.30.7 / node 0.2.0](docs/capacity/n8n-2.30.7-node-0.2.0.json). Read digests from
+the capacity record matching both your n8n anchor and your node version.
 Registry metadata, provenance, and tarball digests must be read back and matched before promotion.
 
 The immutable FFmpeg Corresponding Source Bundle is
