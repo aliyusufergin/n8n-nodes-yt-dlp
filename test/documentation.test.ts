@@ -38,9 +38,9 @@ describe('public documentation', () => {
 				],
 				'## Install, update, and rollback': [
 					'**Settings → Community Nodes**',
-					'n8n-nodes-yt-dlp@0.2.0',
-					'n8n-nodes-yt-dlp-platform@0.2.0',
-					'n8n-nodes-yt-dlp-linux-x64@0.2.0',
+					'n8n-nodes-yt-dlp@0.2.1',
+					'n8n-nodes-yt-dlp-platform@0.2.1',
+					'n8n-nodes-yt-dlp-linux-x64@0.2.1',
 					'No custom n8n image',
 					'For an operator rollback',
 				],
@@ -140,7 +140,7 @@ describe('public documentation', () => {
 					'Redis',
 					'backend writes are not a transaction',
 				],
-				'## Frozen-head v0.2.0 capacity decision': [
+				'## Frozen-head v0.2.1 capacity decision': [
 					'capacity/n8n-2.34.5-node-0.2.0.json',
 					'worker concurrency 1',
 					'greater than 1 second',

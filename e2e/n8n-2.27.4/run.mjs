@@ -57,7 +57,11 @@ const composePath = join(suiteRoot, 'compose.yaml');
 const n8nPort = Number(process.env.E2E_N8N_PORT ?? 15678);
 const fixturePort = Number(process.env.E2E_FIXTURE_PORT ?? 18080);
 const n8nBaseUrl = `http://127.0.0.1:${n8nPort}`;
-const packageVersion = '0.2.0';
+// The lane installs the version this repository releases, so a release bump does not need every
+// lane script edited in lockstep.
+const packageVersion = JSON.parse(
+	await readFile(join(repositoryRoot, 'package.json'), 'utf8'),
+).version;
 const n8nImage = {
 	digest: n8nImageReference.split('@')[1],
 	indexDigest: n8nIndexDigest,

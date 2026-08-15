@@ -192,7 +192,7 @@ describe('immutable Release Candidate Chain', () => {
 	it('builds and attests the exact three-package chain for registry read-back', async () => {
 		expect(manifest).toMatchObject({
 			schemaVersion: 1,
-			version: '0.2.0',
+			version: '0.2.1',
 			rollback: {
 				strategy: 'dist-tags-deprecation-new-patch',
 				unpublish: false,
@@ -218,7 +218,7 @@ describe('immutable Release Candidate Chain', () => {
 			'n8n-nodes-yt-dlp',
 		]);
 		for (const packageEvidence of manifest.packages) {
-			expect(packageEvidence.version).toBe('0.2.0');
+			expect(packageEvidence.version).toBe('0.2.1');
 			const tarball = await readFile(join(candidateRoot, 'tarballs', packageEvidence.tarball));
 			expect(packageEvidence.sha256).toBe(sha256(tarball));
 			expect(packageEvidence.sizeBytes).toBe(tarball.byteLength);
@@ -233,7 +233,7 @@ describe('immutable Release Candidate Chain', () => {
 				false,
 			);
 			expect(manifest.expectedRegistry.packages[packageEvidence.name]).toMatchObject({
-				version: '0.2.0',
+				version: '0.2.1',
 				tarball: packageEvidence.tarball,
 				sha256: packageEvidence.sha256,
 				integrity: expect.stringMatching(/^sha512-/u),
@@ -279,7 +279,7 @@ describe('immutable Release Candidate Chain', () => {
 		const candidateBytes = await readFile(join(candidateRoot, 'release-candidate.json'));
 		const candidateSha256 = sha256(candidateBytes);
 		const evidenceRoot = join(candidateRoot, 'passing-evidence');
-		const outputPath = join(candidateRoot, 'release-evidence-0.2.0.json');
+		const outputPath = join(candidateRoot, 'release-evidence-0.2.1.json');
 		await writeGateEvidence(evidenceRoot, candidateSha256);
 
 		await execFileAsync(
@@ -303,7 +303,7 @@ describe('immutable Release Candidate Chain', () => {
 		};
 		expect(evidence).toMatchObject({
 			schemaVersion: 1,
-			version: '0.2.0',
+			version: '0.2.1',
 			candidateSha256,
 		});
 		expect(evidence.gates.map(({ lane, outcome }) => ({ lane, outcome }))).toEqual(
@@ -354,7 +354,7 @@ describe('immutable Release Candidate Chain', () => {
 					'finalize-evidence',
 					join(candidateRoot, 'release-candidate.json'),
 					evidenceRoot,
-					join(candidateRoot, 'release-evidence-0.2.0.json'),
+					join(candidateRoot, 'release-evidence-0.2.1.json'),
 				],
 				{ cwd: repositoryRoot },
 			),
@@ -388,7 +388,7 @@ describe('immutable Release Candidate Chain', () => {
 					'finalize-evidence',
 					join(candidateRoot, 'release-candidate.json'),
 					evidenceRoot,
-					join(candidateRoot, 'release-evidence-0.2.0.json'),
+					join(candidateRoot, 'release-evidence-0.2.1.json'),
 				],
 				{ cwd: repositoryRoot },
 			);
@@ -774,14 +774,15 @@ describe('immutable Release Candidate Chain', () => {
 		}, 60_000);
 
 		it('rejects dist-tags that do not stage the candidate under next alone', async () => {
-			nextVersion = '0.2.1';
+			// A version this package will never publish, so the mismatch survives a release bump.
+			nextVersion = '9.9.9';
 			await expect(verifyWithTestSignature()).rejects.toMatchObject({
-				stderr: expect.stringContaining('next does not identify 0.2.0'),
+				stderr: expect.stringContaining('next does not identify 0.2.1'),
 			});
 			nextVersion = manifest.version;
 			latestVersion = manifest.version;
 			await expect(verifyWithTestSignature()).rejects.toMatchObject({
-				stderr: expect.stringContaining('latest unexpectedly identifies 0.2.0'),
+				stderr: expect.stringContaining('latest unexpectedly identifies 0.2.1'),
 			});
 		}, 60_000);
 

@@ -290,6 +290,6 @@
     }
   ],
   "packageName": "n8n-nodes-yt-dlp-linux-x64",
-  "packageVersion": "0.2.0",
+  "packageVersion": "0.2.1",
   "schemaVersion": 1
 }

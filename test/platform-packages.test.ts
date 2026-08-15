@@ -389,9 +389,9 @@ describe('published Platform Gate packages', () => {
 		expect(lock).toMatchObject({
 			schemaVersion: 1,
 			packageName: 'n8n-nodes-yt-dlp-linux-x64',
-			packageVersion: '0.2.0',
+			packageVersion: '0.2.1',
 			policy: {
-				lockstepPackageVersion: '0.2.0',
+				lockstepPackageVersion: '0.2.1',
 				mutableAssets: false,
 				runtimeDownloads: false,
 				runtimeSelfUpdate: false,
@@ -659,20 +659,20 @@ describe('published Platform Gate packages', () => {
 		const platform = platformPackage?.metadata;
 
 		expect(main).toMatchObject({
-			version: '0.2.0',
+			version: '0.2.1',
 			os: ['linux'],
 			cpu: ['x64'],
-			dependencies: { 'n8n-nodes-yt-dlp-platform': '0.2.0' },
+			dependencies: { 'n8n-nodes-yt-dlp-platform': '0.2.1' },
 		});
 		expect(main?.optionalDependencies).toBeUndefined();
 		expect(selector).toMatchObject({
-			version: '0.2.0',
+			version: '0.2.1',
 			os: ['linux'],
 			cpu: ['x64'],
-			optionalDependencies: { 'n8n-nodes-yt-dlp-linux-x64': '0.2.0' },
+			optionalDependencies: { 'n8n-nodes-yt-dlp-linux-x64': '0.2.1' },
 		});
 		expect(platform).toMatchObject({
-			version: '0.2.0',
+			version: '0.2.1',
 			os: ['linux'],
 			cpu: ['x64'],
 			license: 'SEE LICENSE IN LICENSES.md',
@@ -803,10 +803,10 @@ describe('published Platform Gate packages', () => {
 		const platformDirectory = join(selectorDirectory, 'node_modules', 'n8n-nodes-yt-dlp-linux-x64');
 		expect(
 			JSON.parse(await readFile(join(selectorDirectory, 'package.json'), 'utf8')),
-		).toMatchObject({ name: 'n8n-nodes-yt-dlp-platform', version: '0.2.0' });
+		).toMatchObject({ name: 'n8n-nodes-yt-dlp-platform', version: '0.2.1' });
 		expect(
 			JSON.parse(await readFile(join(platformDirectory, 'package.json'), 'utf8')),
-		).toMatchObject({ name: 'n8n-nodes-yt-dlp-linux-x64', version: '0.2.0' });
+		).toMatchObject({ name: 'n8n-nodes-yt-dlp-linux-x64', version: '0.2.1' });
 		expect(await readdir(join(selectorDirectory, 'node_modules'))).toEqual([
 			'n8n-nodes-yt-dlp-linux-x64',
 		]);

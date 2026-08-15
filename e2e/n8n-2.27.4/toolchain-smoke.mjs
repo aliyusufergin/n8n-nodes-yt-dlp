@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 
@@ -13,14 +14,20 @@ if (!image || !/^docker\.n8n\.io\/n8nio\/n8n@sha256:[a-f0-9]{64}$/u.test(image))
 	throw new Error('An exact official n8n image digest is required.');
 }
 
+// The prepared registry names its tarballs after the version being released, so the smoke test
+// follows the repository rather than a constant that a release bump would silently invalidate.
+const { version: packageVersion } = JSON.parse(
+	await readFile(join(repositoryRoot, 'package.json'), 'utf8'),
+);
+
 const script = `
 	set -eu
 	mkdir /tmp/toolchain-smoke
 	cd /tmp/toolchain-smoke
 	npm init -y >/dev/null
 	npm install \
-		/tarballs/n8n-nodes-yt-dlp-linux-x64-0.2.0.tgz \
-		/tarballs/n8n-nodes-yt-dlp-platform-0.2.0.tgz \
+		/tarballs/n8n-nodes-yt-dlp-linux-x64-${packageVersion}.tgz \
+		/tarballs/n8n-nodes-yt-dlp-platform-${packageVersion}.tgz \
 		--ignore-scripts \
 		--no-audit \
 		--no-fund \

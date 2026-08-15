@@ -4,6 +4,11 @@ import { join, resolve } from 'node:path';
 
 const packageRoot = resolve(process.argv[2] ?? 'packages/linux-x64');
 const manifestPath = join(packageRoot, 'execution-manifest.json');
+// The manifest states the version of the package it attests, so it follows that package rather
+// than a constant here; otherwise every release needs this script edited in lockstep.
+const { version: packageVersion } = JSON.parse(
+	await readFile(join(packageRoot, 'package.json'), 'utf8'),
+);
 const previousManifest = JSON.parse(await readFile(manifestPath, 'utf8'));
 const expectedProbeOutput = new Map(
 	previousManifest.files
@@ -81,7 +86,7 @@ const manifestContents = `${JSON.stringify(
 	{
 		files: manifestFiles,
 		packageName: 'n8n-nodes-yt-dlp-linux-x64',
-		packageVersion: '0.2.0',
+		packageVersion,
 		schemaVersion: 1,
 	},
 	null,

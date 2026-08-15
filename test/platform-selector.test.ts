@@ -130,7 +130,8 @@ describe('Platform Selector', () => {
 			async ({ platformDirectory }: SelectorFixture) => {
 				const packagePath = join(platformDirectory, 'package.json');
 				const metadata = JSON.parse(await readFile(packagePath, 'utf8')) as Record<string, unknown>;
-				metadata.version = '0.2.1';
+				// A version this package will never publish, so the mismatch survives a release bump.
+				metadata.version = '9.9.9';
 				await writeFile(packagePath, `${JSON.stringify(metadata)}\n`);
 			},
 		],

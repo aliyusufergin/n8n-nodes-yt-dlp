@@ -226,9 +226,9 @@ describe('yt-dlp node adapter', () => {
 			finalBytes: 123,
 			inputIndex: 0,
 			outcome: 'success',
-			packageVersion: '0.2.0',
+			packageVersion: '0.2.1',
 			schemaVersion: 1,
-			toolchainVersion: '0.2.0',
+			toolchainVersion: '0.2.1',
 		});
 		expect(context.logger.info).toHaveBeenCalledOnce();
 		expect(context.logger.info).toHaveBeenCalledWith('yt-dlp execution summary', {
@@ -237,9 +237,9 @@ describe('yt-dlp node adapter', () => {
 			executionId: 'execution-id',
 			finalBytes: 123,
 			outcome: 'success',
-			packageVersion: '0.2.0',
+			packageVersion: '0.2.1',
 			schemaVersion: 1,
-			toolchainVersion: '0.2.0',
+			toolchainVersion: '0.2.1',
 		});
 		expect(context.logger.warn).not.toHaveBeenCalled();
 		expect(context.logger.error).not.toHaveBeenCalled();
@@ -328,9 +328,9 @@ describe('yt-dlp node adapter', () => {
 			finalBytes: 0,
 			inputIndex: 0,
 			outcome: 'failure',
-			packageVersion: '0.2.0',
+			packageVersion: '0.2.1',
 			schemaVersion: 1,
-			toolchainVersion: '0.2.0',
+			toolchainVersion: '0.2.1',
 		});
 		expect(context.logger.info).toHaveBeenCalledWith(
 			'yt-dlp execution summary',
@@ -367,9 +367,9 @@ describe('yt-dlp node adapter', () => {
 			finalBytes: 0,
 			inputIndex: 0,
 			outcome: 'global_failure',
-			packageVersion: '0.2.0',
+			packageVersion: '0.2.1',
 			schemaVersion: 1,
-			toolchainVersion: '0.2.0',
+			toolchainVersion: '0.2.1',
 		});
 		expect(context.logger.info).toHaveBeenCalledOnce();
 		expect(context.logger.warn).not.toHaveBeenCalled();

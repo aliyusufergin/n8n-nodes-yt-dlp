@@ -12,7 +12,11 @@ const tarballRoot = join(registryRoot, 'tarballs');
 const certificateRoot = join(registryRoot, 'certs');
 const fixtureRoot = join(generatedRoot, 'fixtures');
 const evidenceRoot = join(generatedRoot, 'evidence');
-const packageVersion = '0.2.0';
+// The prepared registry publishes the version this repository releases, so a release bump does not
+// need every lane script edited in lockstep.
+const packageVersion = JSON.parse(
+	await readFile(join(repositoryRoot, 'package.json'), 'utf8'),
+).version;
 const candidateRoot = process.env.E2E_RELEASE_CANDIDATE_ROOT
 	? resolve(process.env.E2E_RELEASE_CANDIDATE_ROOT)
 	: undefined;

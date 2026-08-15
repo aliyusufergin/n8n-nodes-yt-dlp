@@ -7,9 +7,9 @@ const { lstat, open, readFile, realpath } = require('node:fs/promises');
 const { dirname, isAbsolute, join, relative } = require('node:path');
 
 const PLATFORM_PACKAGE_NAME = 'n8n-nodes-yt-dlp-linux-x64';
-const PLATFORM_PACKAGE_VERSION = '0.2.0';
+const PLATFORM_PACKAGE_VERSION = '0.2.1';
 const EXECUTION_MANIFEST_DIGEST =
-	'dacef6a3403711b72f3222b9be3238ee84b731a85a1e73cb59ce329404b0e884';
+	'fc47c1cfb04dc2b9308bff1399ab0af3bf8c0ce7e016d0b25e888ec5118c06a5';
 const EXECUTION_MANIFEST_NAME = 'execution-manifest.json';
 const EXPECTED_FILES = [
 	{ name: 'ytDlp', executable: true, probe: true },
