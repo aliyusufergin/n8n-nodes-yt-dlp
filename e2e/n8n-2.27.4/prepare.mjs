@@ -202,6 +202,14 @@ await run('openssl', [
 await chmod(join(certificateRoot, 'registry.key'), 0o600);
 
 const ffmpeg = join(repositoryRoot, 'packages/linux-x64/bin/ffmpeg');
+// The fixtures are built with the packaged FFmpeg from the checkout, not from the candidate. An
+// unhydrated LFS checkout leaves a pointer file here, and running it fails as a shell script with
+// `line 1: version: command not found`, which names neither FFmpeg nor LFS. Say what is wrong.
+if ((await readFile(ffmpeg)).subarray(0, 24).toString('utf8').startsWith('version https://git-lfs')) {
+	throw new Error(
+		'packages/linux-x64/bin/ffmpeg is a Git LFS pointer. Check the repository out with LFS before preparing fixtures.',
+	);
+}
 const videoPath = join(fixtureRoot, 'video.mp4');
 const audioPath = join(fixtureRoot, 'audio.m4a');
 await run(ffmpeg, [
