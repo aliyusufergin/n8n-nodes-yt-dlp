@@ -28,11 +28,12 @@ env:
   HERMETIC_IMAGE: node@sha256:8d3442d5f074940723be6eece34e992eb147ba1f59c73888e8f257918dea2e78
   NODE_VERSION: 24.16.0
   NPM_VERSION: 11.16.0
-  # Still the 0.2.0 bootstrap run. `verify-existing` cannot run for 0.2.1 until both are replaced
-  # with the run id and manifest SHA-256 of the 0.2.1 candidate. A stale pair fails the checksum
-  # check in the candidate job rather than verifying the wrong bytes.
-  PUBLISHED_CANDIDATE_RUN_ID: 30467323585
-  PUBLISHED_CANDIDATE_SHA256: 23b019830d524fe9a0cce7a50e78c5e505355a8df1f41c53167ce7884e3012db
+  # The 0.2.1 stage run that built and published the candidate. `verify-existing` downloads its
+  # `release-candidate-0.2.1` artifact and requires this manifest SHA-256, so the pair must be
+  # replaced whenever a new candidate is published; a stale pair fails the checksum check in the
+  # candidate job rather than verifying the wrong bytes.
+  PUBLISHED_CANDIDATE_RUN_ID: 31880525687
+  PUBLISHED_CANDIDATE_SHA256: 036a5ae8d9fed314cc1ef465cc3e86ce52eb2562e468974528cd96792573eb47
   RELEASE_WORKFLOW_REF: ${{ github.ref }}
   RUNNER_REGION: ${{ vars.RUNNER_REGION }}
   VERSION: 0.2.1
