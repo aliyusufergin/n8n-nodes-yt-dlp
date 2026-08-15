@@ -28,7 +28,8 @@ env:
   HERMETIC_IMAGE: node@sha256:8d3442d5f074940723be6eece34e992eb147ba1f59c73888e8f257918dea2e78
   NODE_VERSION: 24.16.0
   NPM_VERSION: 11.16.0
-  # The 0.2.1 stage run that built and published the candidate. `verify-existing` downloads its
+  # The 0.2.1 stage run that built the candidate and staged it; a maintainer's 2FA approval, not
+  # the run, published it. `verify-existing` downloads its
   # `release-candidate-0.2.1` artifact and requires this manifest SHA-256, so the pair must be
   # replaced whenever a new candidate is published; a stale pair fails the checksum check in the
   # candidate job rather than verifying the wrong bytes.
@@ -397,14 +398,11 @@ jobs:
           name: release-candidate-0.2.1
           path: .release-candidate
       - run: |
-          # Only the bootstrap reads back npm's automatic first-publish `latest`. Later releases
-          # leave `latest` on the previous version, so the allowance stays off unless asked for.
           node scripts/release-candidate.mjs materialize-registry \
             .release-candidate \
             https://registry.npmjs.org \
             "$RUNNER_TEMP/published-candidate" \
-            registry-readback.json \
-            ${{ inputs.publish_mode == 'bootstrap' && '--bootstrap-latest' || '' }}
+            registry-readback.json
       - uses: actions/upload-artifact@v7
         with:
           name: published-candidate-0.2.1

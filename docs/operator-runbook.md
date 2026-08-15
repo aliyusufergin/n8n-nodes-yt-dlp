@@ -121,7 +121,7 @@ On n8n 2.30.7 the corresponding worker-container-memory threshold was 4,627,365,
 this anchor under node 0.2.0 it was 4,354,736,128. These are measured per run, so use the row from
 the record matching the anchor and node version you run, not this table.
 
-Both records set `ffmpegThreadRestrictionProven` to `true`, but only the 2.34.5 record proves it
+Every record sets `ffmpegThreadRestrictionProven` to `true`, but only the 2.34.5 records prove it
 from FFmpeg itself. Issue #68 found why no earlier run ever sampled FFmpeg: the observer named
 processes by `comm`, and a packaged tool never reports its own name there. Each tool is launched
 through the bundled loader, so a packaged FFmpeg reports `ld-linux-x86-64` and a packaged yt-dlp
@@ -130,11 +130,12 @@ forks. The observer now resolves the executable from the argv, and the lane refu
 restriction unless it sampled a packaged FFmpeg process that worked on media and whose readable
 argv carried `-threads 1`.
 
-The 2.34.5 record now carries that observation: three such FFmpeg processes under load and one in
-the dedicated `--recode-video` probe that runs after the load's measurements are taken, every one
-of them restricted, with `ffmpegUnrestrictedCommandLines` empty across 436 process observations in
-28 samples. Two consecutive runs of the fixed lane produced it, so the observation is reliable
-rather than lucky; `processObserver.reliabilityAcrossRuns` records both.
+The 0.2.1 record carries that observation: three such FFmpeg processes under load and one in the
+dedicated `--recode-video` probe that runs after the load's measurements are taken, every one of
+them restricted, with `ffmpegUnrestrictedCommandLines` empty across 297 process observations in 21
+samples. The 0.2.0 record on this anchor reached the same result independently, from 436
+observations in 28 samples, so the observation survives a change of node version rather than
+resting on a single run.
 
 The 2.30.7 record has no `measurements.ffmpegThreadRestrictionProbe` block, which is how you tell a
 record written under the older rule: its boolean is yt-dlp-side evidence only, and it would not
