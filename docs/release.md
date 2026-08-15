@@ -14,9 +14,10 @@ The publishing run stops after public registry read-back and credential retireme
 `verify-existing` run performs every disposable E2E job for the published-byte ticket. Its
 `candidate` job downloads the exact `release-candidate-0.2.1` artifact from the run that built it,
 named by `PUBLISHED_CANDIDATE_RUN_ID`, and requires the manifest SHA-256 in
-`PUBLISHED_CANDIDATE_SHA256`. Both still carry the 0.2.0 bootstrap values and must be replaced with
-the 0.2.1 candidate run before `verify-existing` can run; a stale pair fails the checksum check
-instead of verifying the wrong bytes. Registry read-back then
+`PUBLISHED_CANDIDATE_SHA256`. For 0.2.1 those are stage run `31880525687` and
+`036a5ae8d9fed314cc1ef465cc3e86ce52eb2562e468974528cd96792573eb47`. Replace both whenever a new
+candidate is published; a stale pair fails the checksum check instead of verifying the wrong bytes.
+Registry read-back then
 verifies all three public `next` identities, metadata, provenance, integrity, and tarball SHA-256
 values while writing the fetched bytes to `published-candidate-0.2.1`. Every post-publication gate
 downloads that public-byte artifact; the checkout and original candidate tarballs are never used as
