@@ -162,6 +162,9 @@ describe('release workflow', () => {
 		const workflow = await readFile('.github/workflows/publish.yml', 'utf8');
 		for (const status of ['three-anchor', 'multiworker', 'capacity']) {
 			expect(job(workflow, status), `${status} LFS checkout`).toContain('lfs: true');
+			// The checkout will not rewrite paths it considers unchanged, so a runner whose
+			// workspace persists keeps the pointer files an earlier checkout left behind.
+			expect(job(workflow, status), `${status} LFS hydration`).toContain('git lfs pull');
 		}
 	});
 

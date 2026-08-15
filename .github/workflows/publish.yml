@@ -150,6 +150,10 @@ jobs:
           lfs: true
       # The regional runner keeps its own ~/.npm between jobs, so the action-level npm cache is
       # left off here: its post step would upload gigabytes over a home connection every job.
+      # actions/checkout fetches LFS objects but will not rewrite paths it considers unchanged,
+      # so a runner whose workspace persists keeps whatever pointer files an earlier checkout
+      # left there. The lanes execute these binaries, so they hydrate them explicitly.
+      - run: git lfs pull
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -190,6 +194,10 @@ jobs:
           lfs: true
       # The regional runner keeps its own ~/.npm between jobs, so the action-level npm cache is
       # left off here: its post step would upload gigabytes over a home connection every job.
+      # actions/checkout fetches LFS objects but will not rewrite paths it considers unchanged,
+      # so a runner whose workspace persists keeps whatever pointer files an earlier checkout
+      # left there. The lanes execute these binaries, so they hydrate them explicitly.
+      - run: git lfs pull
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -230,6 +238,10 @@ jobs:
           lfs: true
       # The regional runner keeps its own ~/.npm between jobs, so the action-level npm cache is
       # left off here: its post step would upload gigabytes over a home connection every job.
+      # actions/checkout fetches LFS objects but will not rewrite paths it considers unchanged,
+      # so a runner whose workspace persists keeps whatever pointer files an earlier checkout
+      # left there. The lanes execute these binaries, so they hydrate them explicitly.
+      - run: git lfs pull
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
