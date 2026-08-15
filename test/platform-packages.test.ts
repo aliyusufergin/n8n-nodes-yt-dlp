@@ -33,6 +33,11 @@ async function runDenoStdin(executablePath: string, source: string): Promise<str
 			],
 			{
 				env: {
+					// `deno run` resolves a global cache directory before it evaluates anything, and it
+					// gives up when neither DENO_DIR nor a home directory is available. The deliberately
+					// minimal environment below carries no HOME, and a hermetic container runs as a uid
+					// with no passwd entry to fall back on, so the cache directory is named outright.
+					DENO_DIR: denoCacheDirectory,
 					DENO_NO_UPDATE_CHECK: '1',
 					LANG: 'C',
 					LC_ALL: 'C',
@@ -108,6 +113,7 @@ interface ToolchainLock {
 	schemaVersion: number;
 }
 
+let denoCacheDirectory: string;
 let fixtureDirectory: string;
 let packages: PackedPackage[];
 
@@ -155,7 +161,8 @@ async function extractCandidatePackages(
 beforeAll(async () => {
 	fixtureDirectory = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-platform-packages-'));
 	const tarballDirectory = join(fixtureDirectory, 'tarballs');
-	await mkdir(tarballDirectory);
+	denoCacheDirectory = join(fixtureDirectory, 'deno-cache');
+	await Promise.all([mkdir(tarballDirectory), mkdir(denoCacheDirectory)]);
 	packages =
 		process.env.E2E_RELEASE_CANDIDATE_ROOT === undefined
 			? await Promise.all(

@@ -39,6 +39,20 @@ the pinned Linux x64 Node image with Docker networking disabled, all capabilitie
 read-only container root, and no-new-privileges. Its evidence records that exact image digest and
 `network: none`; an ordinary hosted-runner test cannot satisfy this lane.
 
+That isolation removes three things the suite needs, so the lane restores each one without widening
+it. The container runs as the runner's own uid to keep the bind-mounted workspace ownership intact,
+and the image's passwd database does not name that uid, so the lane mounts a read-only passwd file
+that adds it ahead of the image's own entries; otherwise `os.userInfo()` fails and the release build
+never starts. `HOME` is the
+writable `/tmp` tmpfs, and the packaged Deno is given an explicit `DENO_DIR`, because Deno resolves
+its global cache directory before it evaluates anything and there is no home directory to infer one
+from. The container gets a reaping PID 1 through `--init`; without it the descendants killed by the
+process-group timeout test are reparented to `npm`, which never reaps them, and the supervisor reads
+the resulting zombies as a group that survived SIGKILL. The read-only root leaves the `/tmp` tmpfs as
+the container's scratch space, carrying the candidate tarballs, the extracted packages, the temporary
+workspaces, and the npm cache at the same time; a measured run peaks at 2.43 GiB there, and a smaller
+tmpfs fails the lane late with `ENOSPC` rather than on the candidate.
+
 The live canary uses the frozen yt-dlp upstream test identity `YE7VzlLtp-4`, disables media
 downloads and remote components, and must record actual packaged-Deno challenge execution. Its
 evidence is bound to the public registry read-back and records the exact packaged yt-dlp, FFmpeg,
