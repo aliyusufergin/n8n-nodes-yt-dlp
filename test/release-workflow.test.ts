@@ -155,6 +155,16 @@ describe('release workflow', () => {
 		expect(job(workflow, 'hermetic')).toContain('lfs: true');
 	});
 
+	// The n8n lanes build their media fixtures with the packaged FFmpeg from the checkout, not from
+	// the candidate artifact, so an unhydrated checkout hands them an LFS pointer to execute and the
+	// lane dies on `line 1: version: command not found`.
+	it('hydrates packaged toolchain binaries before the n8n lanes run', async () => {
+		const workflow = await readFile('.github/workflows/publish.yml', 'utf8');
+		for (const status of ['three-anchor', 'multiworker', 'capacity']) {
+			expect(job(workflow, status), `${status} LFS checkout`).toContain('lfs: true');
+		}
+	});
+
 	// The hermetic container denies egress, drops every capability, keeps its own root read-only, and
 	// runs as the runner's own uid. That uid has no entry in the image's passwd database, so
 	// `os.userInfo()` fails and the release build cannot start; and without a reaping init the
@@ -170,6 +180,16 @@ describe('release workflow', () => {
 		// The read-only root leaves /tmp as the container's scratch space, and a measured run peaks
 		// at 2.43 GiB in it.
 		expect(hermetic).toContain('--tmpfs /tmp:rw,nosuid,nodev,exec,size=6g');
+	});
+
+	// A hosted runner's address range is refused by YouTube before the extractor is reached, so the
+	// lane would record a toolchain failure for bytes that work. It runs from the configured region
+	// instead, which is what its recorded `RUNNER_REGION` claims.
+	it('runs the live canary from the configured region', async () => {
+		const workflow = await readFile('.github/workflows/publish.yml', 'utf8');
+		expect(job(workflow, 'live-canary')).toContain(
+			'runs-on: [self-hosted, linux, x64, release-e2e]',
+		);
 	});
 
 	it('retains bounded live-canary evidence when the canary blocks release', async () => {

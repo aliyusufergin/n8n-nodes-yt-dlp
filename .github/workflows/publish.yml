@@ -146,6 +146,8 @@ jobs:
     runs-on: [self-hosted, linux, x64, release-e2e]
     steps:
       - uses: actions/checkout@v7
+        with:
+          lfs: true
       - uses: actions/setup-node@v7
         with:
           cache: npm
@@ -183,6 +185,8 @@ jobs:
     runs-on: [self-hosted, linux, x64, release-e2e]
     steps:
       - uses: actions/checkout@v7
+        with:
+          lfs: true
       - uses: actions/setup-node@v7
         with:
           cache: npm
@@ -220,6 +224,8 @@ jobs:
     runs-on: [self-hosted, linux, x64, release-capacity]
     steps:
       - uses: actions/checkout@v7
+        with:
+          lfs: true
       - uses: actions/setup-node@v7
         with:
           cache: npm
@@ -290,7 +296,12 @@ jobs:
       needs.registry-readback.result == 'success'
     needs:
       - registry-readback
-    runs-on: ubuntu-24.04
+    # The canary asks whether the packaged extractor and challenge provider still work against live
+    # YouTube from a recorded region. A hosted runner answers a different question: its address
+    # range is refused before the extractor is reached, which reads as a toolchain failure. The same
+    # published bytes that fail there pass from the configured region, so the lane runs on the
+    # regional runner and `RUNNER_REGION` describes where the result actually came from.
+    runs-on: [self-hosted, linux, x64, release-e2e]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
