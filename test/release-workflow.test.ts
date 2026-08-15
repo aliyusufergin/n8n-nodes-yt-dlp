@@ -182,6 +182,16 @@ describe('release workflow', () => {
 		expect(hermetic).toContain('--tmpfs /tmp:rw,nosuid,nodev,exec,size=6g');
 	});
 
+	// The regional runner keeps its own ~/.npm between jobs, so the action cache buys nothing there
+	// and its post step uploads gigabytes over a home connection instead — slowly enough to hold the
+	// single runner and stall every lane queued behind it.
+	it('does not upload an npm cache from the regional runner', async () => {
+		const workflow = await readFile('.github/workflows/publish.yml', 'utf8');
+		for (const status of ['three-anchor', 'multiworker', 'capacity', 'live-canary']) {
+			expect(job(workflow, status), `${status} npm cache`).not.toContain('cache: npm');
+		}
+	});
+
 	// A hosted runner's address range is refused by YouTube before the extractor is reached, so the
 	// lane would record a toolchain failure for bytes that work. It runs from the configured region
 	// instead, which is what its recorded `RUNNER_REGION` claims.
