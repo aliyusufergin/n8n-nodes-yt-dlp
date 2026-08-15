@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-yt-dlp",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"description": "A safe, predictable yt-dlp community node for n8n",
 	"license": "MIT",
 	"homepage": "https://github.com/aliyusufergin/n8n-nodes-yt-dlp",
@@ -57,7 +57,7 @@
 		]
 	},
 	"dependencies": {
-		"n8n-nodes-yt-dlp-platform": "0.2.0"
+		"n8n-nodes-yt-dlp-platform": "0.2.1"
 	},
 	"devDependencies": {
 		"@n8n/node-cli": "0.39.3",

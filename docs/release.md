@@ -3,20 +3,22 @@
 Everything below is release-only. The cheap per-pull-request gate — `typecheck`, `lint`, `test` —
 lives in `docs/ci.md` and never touches these workflows.
 
-`.github/workflows/publish.yml` is the normal publication path for v0.2.0. Run it from the exact
+`.github/workflows/publish.yml` is the normal publication path for v0.2.1. Run it from the exact
 release commit. The `candidate` job performs a clean npm install and build, packs the Platform
 Package, Platform Selector, and main package once in dependency order, then records every tarball
 digest, file digest/mode, package metadata, Toolchain Lock identity, Corresponding Source identity,
 and rollback policy in `release-candidate.json`. GitHub build provenance and the checked
 `build-provenance.json` bind the same three package subjects.
 
-The bootstrap run stops after public registry read-back and credential retirement. A later
+The publishing run stops after public registry read-back and credential retirement. A later
 `verify-existing` run performs every disposable E2E job for the published-byte ticket. Its
-`candidate` job downloads the exact `release-candidate-0.2.0` artifact from bootstrap run
-`30467323585` and requires manifest SHA-256
-`23b019830d524fe9a0cce7a50e78c5e505355a8df1f41c53167ce7884e3012db`. Registry read-back then
+`candidate` job downloads the exact `release-candidate-0.2.1` artifact from the run that built it,
+named by `PUBLISHED_CANDIDATE_RUN_ID`, and requires the manifest SHA-256 in
+`PUBLISHED_CANDIDATE_SHA256`. Both still carry the 0.2.0 bootstrap values and must be replaced with
+the 0.2.1 candidate run before `verify-existing` can run; a stale pair fails the checksum check
+instead of verifying the wrong bytes. Registry read-back then
 verifies all three public `next` identities, metadata, provenance, integrity, and tarball SHA-256
-values while writing the fetched bytes to `published-candidate-0.2.0`. Every post-publication gate
+values while writing the fetched bytes to `published-candidate-0.2.1`. Every post-publication gate
 downloads that public-byte artifact; the checkout and original candidate tarballs are never used as
 release evidence.
 
@@ -189,7 +191,7 @@ For later Trusted Publisher releases, choose `stage`. The protected `npm-release
 OIDC and `npm stage publish`; the workflow stops after staging so a maintainer can inspect and
 approve each package with 2FA. After approval, rerun the same release commit with
 `verify-existing`. That mode does not publish again: it starts at registry read-back, then requires
-acceptance and generates `release-evidence-0.2.0.json`.
+acceptance and generates `release-evidence-0.2.1.json`.
 
 Every lane must carry candidate-matching package, source, and tool identities plus a test/vector
 identity; n8n lanes must also carry exact official image digests. The versioned evidence contains

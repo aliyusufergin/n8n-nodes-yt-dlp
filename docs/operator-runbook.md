@@ -4,7 +4,7 @@ This node relies on n8n and the worker platform for capacity, queue, storage, an
 monitoring. Its Resource Envelope limits one execution; those hard caps are not sizing guidance
 for a deployment.
 
-The v0.2.0 supported topology is official n8n Docker Linux x64, queue mode, `database` binary
+The v0.2.1 supported topology is official n8n Docker Linux x64, queue mode, `database` binary
 storage, and worker concurrency 1. Set `N8N_REINSTALL_MISSING_PACKAGES=true` on every worker as a
 missing-package recovery aid. It is not a readiness check: verify the exact package chain and run
 an authorized node execution before a worker accepts production traffic.
@@ -66,7 +66,7 @@ workloads. Never use a general temporary-directory or Docker prune as node recov
 
 ## Postgres, Redis, and binary-storage monitoring
 
-V0.2.0 Doğrulanmış Destek requires queue mode with `database` binary storage. Queue-mode
+V0.2.1 Doğrulanmış Destek requires queue mode with `database` binary storage. Queue-mode
 `filesystem` storage is unsupported and S3 is unverified.
 
 Monitor Postgres for:
@@ -87,7 +87,7 @@ the backend writes are not a transaction: if a later transfer fails, earlier wri
 unreferenced until normal execution hard-delete and pruning. Monitor that lifecycle through public
 n8n operations. Do not use an internal binary deletion API.
 
-## Frozen-head v0.2.0 capacity decision
+## Frozen-head v0.2.1 capacity decision
 
 The [n8n 2.34.5 / node 0.2.0 capacity record](capacity/n8n-2.34.5-node-0.2.0.json)
 classifies worker concurrency 10 as unsafe on its exact four-CPU, 16 GB disposable topology. All
@@ -95,7 +95,7 @@ ten concurrent worst-allowed requests completed in the run that holds the record
 lag peaked at 1.25 seconds and crossed the one-second gate, which alone decides the lane. Earlier
 runs of the same anchor additionally lost five or six of the ten requests to
 `BINARY_TRANSFER_FAILED`, so a fully successful run is within this topology's spread and is not a
-change of verdict. Keep the v0.2.0 supported scope at worker concurrency 1 until a
+change of verdict. Keep the v0.2.1 supported scope at worker concurrency 1 until a
 lower-concurrency disposable lane passes. Do not raise the node Resource Envelope hard caps.
 
 The previous frozen head kept its own record, [n8n 2.30.7 / node

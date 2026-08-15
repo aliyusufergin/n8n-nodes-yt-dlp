@@ -1,7 +1,7 @@
 # n8n-nodes-yt-dlp
 
 A self-hosted n8n Community Node that turns one authorized HTTP(S) media URL into one
-`binary.data` Artifact per final file. Version 0.2.0 carries its own pinned yt-dlp, FFmpeg,
+`binary.data` Artifact per final file. Version 0.2.1 carries its own pinned yt-dlp, FFmpeg,
 FFprobe, Deno, and challenge assets; it does not use tools from `PATH` or download tools at
 runtime.
 
@@ -11,9 +11,9 @@ particular site is supported.
 
 ## Support boundary
 
-The v0.2.0 support statement has two deliberately separate parts:
+The v0.2.1 support statement has two deliberately separate parts:
 
-| Boundary | v0.2.0 statement |
+| Boundary | v0.2.1 statement |
 | --- | --- |
 | Uyumluluk Hedefi (compatibility target) | n8n `>=2.0.0 <3.0.0` |
 | Doğrulanmış Destek (exact verified support) | Official n8n Docker Linux x64 images for n8n 2.0.0, 2.27.4, and 2.34.5 |
@@ -22,7 +22,7 @@ The v0.2.0 support statement has two deliberately separate parts:
 
 The compatibility target is an intention, not certification of every n8n 2.x patch. The
 stable-head anchor was advanced from 2.30.7 to 2.34.5 on 2026-08-13 and refrozen there. Versions
-after that head, and intermediate versions not listed above, are unverified for node 0.2.0.
+after that head, and intermediate versions not listed above, are unverified for node 0.2.1.
 
 Only official n8n Docker Linux x64 is supported. n8n Cloud, n8n 1.x or 3.x, Linux arm64,
 Windows, macOS, bare-metal npm installs, alternative container bases, and other Linux x64
@@ -31,12 +31,12 @@ environments are unsupported. Incidental success does not expand the support bou
 ## Install, update, and rollback
 
 Before installation, configure queue mode to use `database` binary storage on main and every
-worker. Do not use queue-mode `filesystem` storage with v0.2.0.
+worker. Do not use queue-mode `filesystem` storage with v0.2.1.
 
 To install:
 
 1. Open **Settings → Community Nodes** in n8n.
-2. Install `n8n-nodes-yt-dlp` at exact version `0.2.0` and acknowledge n8n's Community Node
+2. Install `n8n-nodes-yt-dlp` at exact version `0.2.1` and acknowledge n8n's Community Node
    warning.
 3. Wait until the package appears on main and every online worker.
 4. Run the authorized first-Artifact workflow below on each worker before enabling production
@@ -45,9 +45,9 @@ To install:
 The main package installs this exact three-package chain:
 
 ```text
-n8n-nodes-yt-dlp@0.2.0
-└── n8n-nodes-yt-dlp-platform@0.2.0
-    └── n8n-nodes-yt-dlp-linux-x64@0.2.0
+n8n-nodes-yt-dlp@0.2.1
+└── n8n-nodes-yt-dlp-platform@0.2.1
+    └── n8n-nodes-yt-dlp-linux-x64@0.2.1
 ```
 
 The main package uses an exact normal dependency on the Platform Selector; the selector uses an
@@ -322,7 +322,7 @@ node cannot safely pre-classify. Operators who accept untrusted URLs are respons
 container/host egress controls, DNS policy, proxy allowlists, private/link-local/metadata endpoint
 blocking, and network monitoring.
 
-V0.2.0 deliberately does not expose:
+V0.2.1 deliberately does not expose:
 
 - arbitrary yt-dlp CLI, output paths, configs, plugins, self-update, user-selectable runtimes,
   external commands, local files, debug/print/simulation, or resource-control options;
@@ -354,7 +354,8 @@ issue-18 disposable capacity record for the current frozen head, [n8n 2.34.5 / n
 | `n8n-nodes-yt-dlp@0.2.0` | `48849e72c5947a0e5dcd0ab15f1df4a1d39e5342c75a41cf45b3e7726a8b3898` |
 
 Those are local release-gate tarball digests, not proof that registry bytes have been published.
-`0.2.0` is unreleased, so these digests move whenever node code lands; the previous frozen head's
+They record the 0.2.0 bytes that run measured; 0.2.1 repacks the node changes made since, so the
+digests move. The previous frozen head's
 record, [n8n 2.30.7 / node 0.2.0](docs/capacity/n8n-2.30.7-node-0.2.0.json), measured a different
 and now superseded set. Read digests from the capacity record matching your n8n anchor.
 Registry metadata, provenance, and tarball digests must be read back and matched before promotion.

@@ -1,4 +1,4 @@
-name: v0.2.0 Release Candidate Chain
+name: v0.2.1 Release Candidate Chain
 
 on:
   workflow_dispatch:
@@ -18,7 +18,7 @@ on:
         type: boolean
 
 concurrency:
-  group: release-0.2.0
+  group: release-0.2.1
   cancel-in-progress: false
 
 permissions:
@@ -28,11 +28,14 @@ env:
   HERMETIC_IMAGE: node@sha256:8d3442d5f074940723be6eece34e992eb147ba1f59c73888e8f257918dea2e78
   NODE_VERSION: 24.16.0
   NPM_VERSION: 11.16.0
+  # Still the 0.2.0 bootstrap run. `verify-existing` cannot run for 0.2.1 until both are replaced
+  # with the run id and manifest SHA-256 of the 0.2.1 candidate. A stale pair fails the checksum
+  # check in the candidate job rather than verifying the wrong bytes.
   PUBLISHED_CANDIDATE_RUN_ID: 30467323585
   PUBLISHED_CANDIDATE_SHA256: 23b019830d524fe9a0cce7a50e78c5e505355a8df1f41c53167ce7884e3012db
   RELEASE_WORKFLOW_REF: ${{ github.ref }}
   RUNNER_REGION: ${{ vars.RUNNER_REGION }}
-  VERSION: 0.2.0
+  VERSION: 0.2.1
 
 jobs:
   candidate:
@@ -54,7 +57,7 @@ jobs:
       - if: inputs.publish_mode == 'verify-existing'
         uses: actions/download-artifact@v8
         with:
-          name: release-candidate-0.2.0
+          name: release-candidate-0.2.1
           path: ${{ runner.temp }}/release-candidate
           run-id: ${{ env.PUBLISHED_CANDIDATE_RUN_ID }}
           github-token: ${{ github.token }}
@@ -78,7 +81,7 @@ jobs:
           subject-path: ${{ runner.temp }}/release-candidate/tarballs/*.tgz
       - uses: actions/upload-artifact@v7
         with:
-          name: release-candidate-0.2.0
+          name: release-candidate-0.2.1
           path: ${{ runner.temp }}/release-candidate
           if-no-files-found: error
           retention-days: 30
@@ -97,7 +100,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
-          name: release-candidate-0.2.0
+          name: release-candidate-0.2.1
           path: .release-candidate
       - run: npm ci
       - run: npm run verify:ffmpeg-release
@@ -126,7 +129,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
-          name: release-candidate-0.2.0
+          name: release-candidate-0.2.1
           path: .release-candidate
       - run: npm ci
       - run: npm test
@@ -148,7 +151,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
-          name: published-candidate-0.2.0
+          name: published-candidate-0.2.1
           path: .release-candidate
       - run: npm ci
       - run: npm run test:e2e:release-gate
@@ -185,7 +188,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
-          name: published-candidate-0.2.0
+          name: published-candidate-0.2.1
           path: .release-candidate
       - run: npm ci
       - run: npm run test:e2e:multiworker
@@ -222,7 +225,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
-          name: published-candidate-0.2.0
+          name: published-candidate-0.2.1
           path: .release-candidate
       - run: npm ci
       - run: npm run test:e2e:capacity
@@ -259,7 +262,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
-          name: published-candidate-0.2.0
+          name: published-candidate-0.2.1
           path: .release-candidate
       - run: npm ci
       - name: solves official frozen EJS vectors
@@ -295,7 +298,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
-          name: published-candidate-0.2.0
+          name: published-candidate-0.2.1
           path: .release-candidate
       - run: npm ci
       - run: |
@@ -323,7 +326,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8
         with:
-          name: release-candidate-0.2.0
+          name: release-candidate-0.2.1
           path: .release-candidate
       - uses: actions/setup-node@v7
         with:
@@ -363,7 +366,7 @@ jobs:
       - run: npm ci
       - uses: actions/download-artifact@v8
         with:
-          name: release-candidate-0.2.0
+          name: release-candidate-0.2.1
           path: .release-candidate
       - run: |
           node scripts/release-candidate.mjs materialize-registry \
@@ -373,7 +376,7 @@ jobs:
             registry-readback.json
       - uses: actions/upload-artifact@v7
         with:
-          name: published-candidate-0.2.0
+          name: published-candidate-0.2.1
           path: ${{ runner.temp }}/published-candidate
           if-no-files-found: error
           retention-days: 30
@@ -396,7 +399,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
-          name: release-candidate-0.2.0
+          name: release-candidate-0.2.1
           path: .release-candidate
       - name: report exact package names after partial publication
         run: |
@@ -425,7 +428,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
-          name: release-candidate-0.2.0
+          name: release-candidate-0.2.1
           path: .release-candidate
       - name: verify bootstrap token revocation and environment-secret deletion
         env:
@@ -461,7 +464,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
-          name: published-candidate-0.2.0
+          name: published-candidate-0.2.1
           path: .release-candidate
       - run: npm ci
       - run: node scripts/release-candidate.mjs verify .release-candidate
@@ -536,7 +539,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
-          name: published-candidate-0.2.0
+          name: published-candidate-0.2.1
           path: .release-candidate
       - name: verify approved narrow acceptance-stack evidence
         env:
@@ -577,7 +580,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
-          name: published-candidate-0.2.0
+          name: published-candidate-0.2.1
           path: .release-candidate
       - uses: actions/download-artifact@v8
         with:
@@ -591,8 +594,8 @@ jobs:
             "release-evidence-${VERSION}.json"
       - uses: actions/upload-artifact@v7
         with:
-          name: release-evidence-0.2.0
-          path: release-evidence-0.2.0.json
+          name: release-evidence-0.2.1
+          path: release-evidence-0.2.1.json
           if-no-files-found: error
           retention-days: 90
       - env:
@@ -612,7 +615,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
-          name: published-candidate-0.2.0
+          name: published-candidate-0.2.1
           path: .release-candidate
       - name: verify interactive 2FA promotion with main moved last
         run: |

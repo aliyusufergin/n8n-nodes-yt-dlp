@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-yt-dlp-linux-x64",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"description": "Pinned Linux x64 toolchain for n8n-nodes-yt-dlp",
 	"license": "SEE LICENSE IN LICENSES.md",
 	"repository": {

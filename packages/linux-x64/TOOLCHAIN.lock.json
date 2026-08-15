@@ -1,9 +1,9 @@
 {
 	"schemaVersion": 1,
 	"packageName": "n8n-nodes-yt-dlp-linux-x64",
-	"packageVersion": "0.2.0",
+	"packageVersion": "0.2.1",
 	"policy": {
-		"lockstepPackageVersion": "0.2.0",
+		"lockstepPackageVersion": "0.2.1",
 		"mutableAssets": false,
 		"runtimeDownloads": false,
 		"runtimeSelfUpdate": false

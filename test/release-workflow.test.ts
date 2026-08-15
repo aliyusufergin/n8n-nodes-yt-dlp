@@ -121,7 +121,7 @@ describe('release workflow', () => {
 
 		const readback = job(workflow, 'registry-readback');
 		expect(readback).toContain('materialize-registry');
-		expect(readback).toContain('name: published-candidate-0.2.0');
+		expect(readback).toContain('name: published-candidate-0.2.1');
 
 		for (const jobName of [
 			'hermetic',
@@ -134,7 +134,7 @@ describe('release workflow', () => {
 			'release-evidence',
 			'promote-latest',
 		]) {
-			expect(job(workflow, jobName), jobName).toContain('name: published-candidate-0.2.0');
+			expect(job(workflow, jobName), jobName).toContain('name: published-candidate-0.2.1');
 		}
 	});
 
@@ -162,7 +162,8 @@ describe('release workflow', () => {
 		expect(hermetic).toContain('--init');
 		expect(hermetic).toContain('target=/etc/passwd,readonly');
 		expect(hermetic).toContain('--env HOME=/tmp');
-		// /tmp is the only writable filesystem, and a measured run peaks at 2.43 GiB in it.
+		// The read-only root leaves /tmp as the container's scratch space, and a measured run peaks
+		// at 2.43 GiB in it.
 		expect(hermetic).toContain('--tmpfs /tmp:rw,nosuid,nodev,exec,size=6g');
 	});
 
@@ -200,14 +201,14 @@ describe('release workflow', () => {
 		for (const required of [
 			'Release Candidate Chain',
 			'verify-existing',
-			'published-candidate-0.2.0',
+			'published-candidate-0.2.1',
 			'both `e2e` and `control`',
 			'networks are internal',
 			'exact packaged yt-dlp, FFmpeg',
 			'Deno, and EJS versions',
 			'`inconclusive` is blocking',
 			'ACCEPTANCE_STACK_EVIDENCE_JSON',
-			'release-evidence-0.2.0.json',
+			'release-evidence-0.2.1.json',
 			'main package first',
 			'deprecate',
 			'new patch',
