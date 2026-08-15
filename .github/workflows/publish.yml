@@ -370,11 +370,14 @@ jobs:
           name: release-candidate-0.2.1
           path: .release-candidate
       - run: |
+          # Only the bootstrap reads back npm's automatic first-publish `latest`. Later releases
+          # leave `latest` on the previous version, so the allowance stays off unless asked for.
           node scripts/release-candidate.mjs materialize-registry \
             .release-candidate \
             https://registry.npmjs.org \
             "$RUNNER_TEMP/published-candidate" \
-            registry-readback.json
+            registry-readback.json \
+            ${{ inputs.publish_mode == 'bootstrap' && '--bootstrap-latest' || '' }}
       - uses: actions/upload-artifact@v7
         with:
           name: published-candidate-0.2.1
