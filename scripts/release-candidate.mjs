@@ -52,7 +52,7 @@ const hermeticImage =
 	'node@sha256:8d3442d5f074940723be6eece34e992eb147ba1f59c73888e8f257918dea2e78';
 const imageIdentitiesByLane = {
 	'acceptance-stack': [
-		'docker.n8n.io/n8nio/n8n@sha256:d91033b4fac2f7b75c5c4007e10824c66147f7d7a3cccb488720e97452ee7dc7',
+		'docker.n8n.io/n8nio/n8n@sha256:f5140088385af2d4e681e177d8264bcb41e8fe126062030c5c65cd8f3e1605e1',
 	],
 	capacity: [
 		'docker.n8n.io/n8nio/n8n@sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060',
@@ -67,7 +67,7 @@ const imageIdentitiesByLane = {
 	],
 };
 const testIdentitiesByLane = {
-	'acceptance-stack': 'n8n-2.34.5-acceptance-stack',
+	'acceptance-stack': 'n8n-2.34.6-acceptance-stack',
 	'live-canary': 'YE7VzlLtp-4',
 };
 

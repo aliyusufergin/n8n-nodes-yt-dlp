@@ -161,7 +161,7 @@ Rollback is not automatic. `restore_workflow_version` runs only when the operato
 
 Some evidence the release gates need is outside the MCP: the running image digest (ADR 0033 rejects the mutable `stable` tag as evidence), container state, worker logs, published tarball bytes.
 
-Acceptance stack, verified 2026-08-12 — n8n 2.34.5 at digest `sha256:d91033b4fac2f7b75c5c4007e10824c66147f7d7a3cccb488720e97452ee7dc7` on both main and worker, matching ADR 0033. The containers run the mutable `stable` tag, so the version moves on its own: re-resolve the digest at the start of every acceptance run rather than trusting this line.
+Acceptance stack, verified 2026-08-18 — n8n 2.34.6 at digest `sha256:f5140088385af2d4e681e177d8264bcb41e8fe126062030c5c65cd8f3e1605e1` on both main and worker, matching ADR 0033. The containers run the mutable `stable` tag, so the version moves on its own: re-resolve the digest at the start of every acceptance run rather than trusting this line.
 
 | Role         | Target                                        |
 | ------------ | --------------------------------------------- |
