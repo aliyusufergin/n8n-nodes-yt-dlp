@@ -22,8 +22,9 @@ image; only the platform manifest belongs in this column.
 Head advanced 2026-08-13, per ADR 0025's own advance clause, from 2.30.7
 (`1e2d027d6d239a55fc95598179e2a25d47e78c9b`, `sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060`)
 to 2.34.5. The 2.34.5 image index digest is
-`sha256:d91033b4fac2f7b75c5c4007e10824c66147f7d7a3cccb488720e97452ee7dc7`, which is the
-same image ADR 0033 records for the acceptance deployment. Findings below still carry
+`sha256:d91033b4fac2f7b75c5c4007e10824c66147f7d7a3cccb488720e97452ee7dc7`. ADR 0033 recorded the
+same image for the acceptance deployment until 2026-08-18, when that deployment moved to 2.34.6;
+the two identities are independent and the frozen stable head stays at 2.34.5. Findings below still carry
 their 2026-07-17 access date against the previous head unless a finding names 2.34.5.
 
 ## Head re-verification (2026-08-13)

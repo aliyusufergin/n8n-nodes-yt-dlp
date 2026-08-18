@@ -78,8 +78,8 @@ runner. Its operator places already-completed, candidate-bound evidence in the p
 does not treat environment approval alone as test proof. Its `identities` object must contain the
 candidate's exact `packages`, `source`, and `toolchain` values, a non-empty `test.id`, and the exact
 official acceptance image reference in `images`. The acceptance test identity is exactly
-`n8n-2.34.5-acceptance-stack`, and the only accepted image is the ADR 0033 n8n 2.34.5 digest
-`sha256:d91033b4fac2f7b75c5c4007e10824c66147f7d7a3cccb488720e97452ee7dc7`.
+`n8n-2.34.6-acceptance-stack`, and the only accepted image is the ADR 0033 n8n 2.34.6 digest
+`sha256:f5140088385af2d4e681e177d8264bcb41e8fe126062030c5c65cd8f3e1605e1`.
 
 ## Publish and continuation
 

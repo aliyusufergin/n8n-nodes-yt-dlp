@@ -31,7 +31,7 @@ const npmPublishEnvelopeLimitBytes = 250 * 1024 * 1024;
 const DIST_TAG_GATE_PASSED = 'Registry provenance Sigstore signature verification failed.';
 const imagesByLane: Partial<Record<(typeof requiredLanes)[number], string[]>> = {
 	'acceptance-stack': [
-		'docker.n8n.io/n8nio/n8n@sha256:d91033b4fac2f7b75c5c4007e10824c66147f7d7a3cccb488720e97452ee7dc7',
+		'docker.n8n.io/n8nio/n8n@sha256:f5140088385af2d4e681e177d8264bcb41e8fe126062030c5c65cd8f3e1605e1',
 	],
 	capacity: [
 		'docker.n8n.io/n8nio/n8n@sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060',
@@ -111,7 +111,7 @@ async function writeGateEvidence(
 	for (const lane of requiredLanes) {
 		const testId =
 			lane === 'acceptance-stack'
-				? 'n8n-2.34.5-acceptance-stack'
+				? 'n8n-2.34.6-acceptance-stack'
 				: lane === 'live-canary'
 					? 'YE7VzlLtp-4'
 					: lane;
