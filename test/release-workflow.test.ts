@@ -200,6 +200,17 @@ describe('release workflow', () => {
 		);
 	});
 
+	// The gate runs no test, so a self-hosted runner buys no verification. It would instead write the
+	// evidence secret into a persistent workspace, and on the acceptance host it would put arbitrary
+	// merged workflow code beside production n8n. The candidate binding lives in the evidence.
+	it('validates acceptance-stack evidence on a hosted runner', async () => {
+		const workflow = await readFile('.github/workflows/publish.yml', 'utf8');
+		const acceptanceStack = job(workflow, 'acceptance-stack');
+		expect(acceptanceStack).toContain('runs-on: ubuntu-24.04');
+		expect(acceptanceStack).not.toMatch(/runs-on:.*self-hosted/u);
+		expect(acceptanceStack).toContain('environment: acceptance-stack');
+	});
+
 	it('retains bounded live-canary evidence when the canary blocks release', async () => {
 		const workflow = await readFile('.github/workflows/publish.yml', 'utf8');
 		expect(job(workflow, 'live-canary')).toMatch(
