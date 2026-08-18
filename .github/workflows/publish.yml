@@ -559,7 +559,11 @@ jobs:
       needs.registry-readback.result == 'success'
     needs:
       - registry-readback
-    runs-on: [self-hosted, linux, x64, acceptance-stack]
+    # The job runs no test: it validates operator-supplied evidence that is already bound to the
+    # candidate digest. A self-hosted runner would verify nothing, would place the evidence secret in
+    # a persistent workspace, and on the acceptance host would give every merge code execution beside
+    # production n8n. The binding is `candidateSha256`, `identities`, and the environment reviewer.
+    runs-on: ubuntu-24.04
     environment: acceptance-stack
     steps:
       - uses: actions/checkout@v7

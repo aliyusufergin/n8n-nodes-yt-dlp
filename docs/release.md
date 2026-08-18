@@ -72,10 +72,13 @@ GitHub source assets, their exact `.sha256` sidecar contents, clean isolated-reb
 manual license-review bindings, component inventory, notices, licenses, and the passed Linux
 runtime source gate.
 
-The narrow real acceptance environment is approval-protected and uses a dedicated self-hosted
-runner. Its operator places already-completed, candidate-bound evidence in the protected
-`ACCEPTANCE_STACK_EVIDENCE_JSON` secret. The job validates that the evidence is a clean pass; it
-does not treat environment approval alone as test proof. Its `identities` object must contain the
+The narrow real acceptance environment is approval-protected. Its operator runs the test on the
+ADR 0033 acceptance stack and places the already-completed, candidate-bound evidence in the
+protected `ACCEPTANCE_STACK_EVIDENCE_JSON` secret. The job itself runs no test and therefore needs
+no privileged runner: it validates that the evidence is a clean pass, and it does not treat
+environment approval alone as test proof. What binds the evidence to this release is its
+`candidateSha256`, its `identities`, and the environment's required reviewer -- never the identity
+of the machine that read the secret. Its `identities` object must contain the
 candidate's exact `packages`, `source`, and `toolchain` values, a non-empty `test.id`, and the exact
 official acceptance image reference in `images`. The acceptance test identity is exactly
 `n8n-2.34.5-acceptance-stack`, and the only accepted image is the ADR 0033 n8n 2.34.5 digest
