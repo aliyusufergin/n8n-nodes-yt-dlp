@@ -4,11 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       publish_mode:
-        description: Bootstrap publishes next; stage stops for human 2FA approval.
+        description: Stage stops for human tarball review and 2FA approval.
         required: true
         type: choice
         options:
-          - bootstrap
           - stage
           - verify-existing
       promote_latest:
@@ -348,7 +347,11 @@ jobs:
       - source-delivery
       - prepublication
     runs-on: ubuntu-24.04
-    environment: ${{ inputs.publish_mode == 'bootstrap' && 'npm-bootstrap' || 'npm-release' }}
+    # The npm Trusted Publisher for all three packages names this workflow, this repository, and this
+    # environment, and grants `stage publish` alone. The job therefore carries no publication
+    # credential of its own: it stages the exact candidate tarballs over OIDC, and each one becomes
+    # public only when a maintainer reviews it and approves it with npm 2FA.
+    environment: npm-release
     permissions:
       contents: read
       id-token: write
@@ -362,29 +365,24 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: https://registry.npmjs.org
       - run: npm install --global "npm@$NPM_VERSION"
-      - name: publish dependency-ordered next candidate
+      - name: stage dependency-ordered next candidate
         env:
-          NODE_AUTH_TOKEN: ${{ inputs.publish_mode == 'bootstrap' && secrets.NPM_BOOTSTRAP_TOKEN || '' }}
+          # `registry-url` above writes `:_authToken=${NODE_AUTH_TOKEN}` into the runner npmrc, and
+          # npm leaves an unset variable in place as that literal string, which reads as credentials
+          # and turns a missing OIDC token into an opaque registry 401. An empty value is no
+          # credential, so the same failure reports `ENEEDAUTH` instead.
+          NODE_AUTH_TOKEN: ''
         run: |
           platform=".release-candidate/tarballs/n8n-nodes-yt-dlp-linux-x64-${VERSION}.tgz"
           selector=".release-candidate/tarballs/n8n-nodes-yt-dlp-platform-${VERSION}.tgz"
           main=".release-candidate/tarballs/n8n-nodes-yt-dlp-${VERSION}.tgz"
-          if [ "${{ inputs.publish_mode }}" = bootstrap ]; then
-            npm publish "$platform" --provenance --tag next --access public
-            npm publish "$selector" --provenance --tag next --access public
-            npm publish "$main" --provenance --tag next --access public
-          else
-            npm stage publish "$platform" --provenance --tag next --access public
-            npm stage publish "$selector" --provenance --tag next --access public
-            npm stage publish "$main" --provenance --tag next --access public
-          fi
+          npm stage publish "$platform" --provenance --tag next --access public
+          npm stage publish "$selector" --provenance --tag next --access public
+          npm stage publish "$main" --provenance --tag next --access public
 
   registry-readback:
     name: registry-readback
-    if: >-
-      always() &&
-      inputs.publish_mode != 'stage' &&
-      (needs.publish-next.result == 'success' || inputs.publish_mode == 'verify-existing')
+    if: always() && inputs.publish_mode == 'verify-existing'
     needs: publish-next
     runs-on: ubuntu-24.04
     steps:
@@ -419,7 +417,7 @@ jobs:
     name: partial-publish-audit
     if: >-
       always() &&
-      inputs.publish_mode == 'bootstrap' &&
+      inputs.publish_mode == 'stage' &&
       needs.publish-next.result != 'success' &&
       needs.publish-next.result != 'skipped'
     needs: publish-next
@@ -430,6 +428,10 @@ jobs:
         with:
           name: release-candidate-0.2.1
           path: .release-candidate
+      # Nothing is public until a maintainer approves a staged package with 2FA, so on a first stage
+      # run that fails midway this reports all three as missing, which is not a partial publication.
+      # It carries a finding on a retry, where an already-approved package is public and
+      # `npm stage publish` refuses it.
       - name: report exact package names after partial publication
         run: |
           node scripts/release-candidate.mjs audit-registry \
@@ -440,38 +442,6 @@ jobs:
         with:
           name: partial-publish-audit
           path: partial-publish-audit.json
-          if-no-files-found: error
-
-  bootstrap-token-retirement:
-    name: bootstrap-token-retirement
-    if: >-
-      always() &&
-      inputs.publish_mode == 'bootstrap'
-    needs:
-      - publish-next
-      - registry-readback
-      - partial-publish-audit
-    runs-on: ubuntu-24.04
-    environment: npm-bootstrap-retirement
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v8
-        with:
-          name: release-candidate-0.2.1
-          path: .release-candidate
-      - name: verify bootstrap token revocation and environment-secret deletion
-        env:
-          BOOTSTRAP_RETIREMENT_EVIDENCE_JSON: ${{ secrets.BOOTSTRAP_RETIREMENT_EVIDENCE_JSON }}
-        run: |
-          test -n "$BOOTSTRAP_RETIREMENT_EVIDENCE_JSON"
-          printf '%s\n' "$BOOTSTRAP_RETIREMENT_EVIDENCE_JSON" > bootstrap-token-retirement.json
-          node scripts/release-candidate.mjs verify-bootstrap-retirement \
-            .release-candidate/release-candidate.json \
-            bootstrap-token-retirement.json
-      - uses: actions/upload-artifact@v7
-        with:
-          name: gate-bootstrap-token-retirement
-          path: bootstrap-token-retirement.json
           if-no-files-found: error
 
   hermetic:
@@ -645,14 +615,23 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
+          cache: npm
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@v8
         with:
           name: published-candidate-0.2.1
           path: .release-candidate
+      # The read-back verifies each package's Sigstore provenance again, which needs the pinned
+      # `sigstore` dependency present.
+      - run: npm ci
       - name: verify interactive 2FA promotion with main moved last
         run: |
           node scripts/release-candidate.mjs verify-promotion \
             .release-candidate \
             https://registry.npmjs.org \
             promotion.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gate-promote-latest
+          path: promotion.json
+          if-no-files-found: error

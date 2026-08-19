@@ -113,8 +113,12 @@ Platform Paketi, Platform Selector ve ana paketin aynı exact sürümle önce `n
 _Avoid_: Main-first publish, doğrudan latest, bağımsız paket sürümü
 
 **Bootstrap Publish**:
-Henüz mevcut paket gerektiren Trusted Publisher ve staged publishing kullanılamadığı için yalnız `0.2.0` Release Candidate Zinciri'nde uygulanan, korumalı GitHub Environment içindeki kısa ömürlü granular token ile provenance üreten tek seferlik doğrudan `next` yayını. npm'in ilk görünür sürüme zorunlu otomatik `latest` ataması bilinçli terfi veya release-readiness kanıtı değildir.
+Henüz mevcut paket gerektiren Trusted Publisher ve staged publishing kullanılamadığı için yalnız `0.2.0` Release Candidate Zinciri'nde uygulanan, korumalı GitHub Environment içindeki kısa ömürlü granular token ile provenance üreten tek seferlik doğrudan `next` yayını. npm'in ilk görünür sürüme zorunlu otomatik `latest` ataması bilinçli terfi veya release-readiness kanıtı değildir. `0.2.1` terfisiyle birlikte emekliye ayrıldı: token revoke, `npm-bootstrap` ve `npm-bootstrap-retirement` environment'ları ile recovery workflow'u kaldırıldı.
 _Avoid_: Kalıcı npm token'ı, provenance'sız ilk yayın, tekrarlanan bootstrap
+
+**Stage-Only Yayın**:
+Üç paketin de aynı `publish.yml` ve korumalı `npm-release` environment'ına yalnız `npm stage publish` izniyle bağlı OIDC Trusted Publisher üzerinden stage edildiği tek yayın yolu. Staged bytes public değildir; her tarball insan tarafından incelenip npm 2FA ile onaylandığında yayımlanır, yani yayımlayan workflow run'ı değil o onaydır.
+_Avoid_: Workflow'da npm token'ı, doğrudan `npm publish`, onaysız otomatik yayın
 
 **Lisans Yüzeyi**:
 Bir npm tarball'ının `license` metadata'sı, component eşlemesi, verbatim lisans/notice dosyaları ve Corresponding Source yönlendirmesinden oluşan, alıcının her dağıtılmış bileşenin koşullarını doğrudan görebildiği yayın sözleşmesi.

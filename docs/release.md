@@ -7,13 +7,14 @@ lives in `docs/ci.md` and never touches these workflows.
 release commit. The `candidate` job performs a clean npm install and build, packs the Platform
 Package, Platform Selector, and main package once in dependency order, then records every tarball
 digest, file digest/mode, package metadata, Toolchain Lock identity, Corresponding Source identity,
-and rollback policy in `release-candidate.json`. GitHub build provenance and the checked
-`build-provenance.json` bind the same three package subjects.
+and rollback policy in `release-candidate.json`. Candidate construction recompresses the unchanged
+Platform Package tar members with exact `7zip-bin@5.2.0` gzip settings and fails closed unless the
+Base64 tarball plus a 1 MiB metadata budget fits within a 250 MiB publish-request envelope. GitHub
+build provenance and the checked `build-provenance.json` bind the same three package subjects.
 
-A `bootstrap` run stops after public registry read-back and credential retirement; a `stage` run
-stops earlier still, right after `publish-next`, having done neither — `registry-readback` is gated
-on `publish_mode != 'stage'`, and the staged packages are not public until a maintainer approves
-each one with 2FA. A later `verify-existing` run performs every disposable E2E job for the
+A `stage` run stops right after `publish-next`: `registry-readback` runs only under
+`verify-existing`, and the staged packages are not public until a maintainer reviews each tarball and
+approves it with npm 2FA. A later `verify-existing` run performs every disposable E2E job for the
 published-byte ticket. Its
 `candidate` job downloads the exact `release-candidate-0.2.1` artifact from the run that built it,
 named by `PUBLISHED_CANDIDATE_RUN_ID`, and requires the manifest SHA-256 in
@@ -37,8 +38,8 @@ services.
 The workflow exposes independent `source-delivery`, `hermetic`, `three-anchor`, `multiworker`,
 `capacity`, `official-ejs`, `live-canary`, and `acceptance-stack` statuses. `source-delivery` and
 `prepublication` gate the irreversible `next` publication. All release-readiness statuses run only
-after registry read-back; bootstrap runs additionally wait for credential retirement. No job uses
-`continue-on-error`, and every recorded gate has `waived: false`.
+after registry read-back. No job uses `continue-on-error`, and every recorded gate has
+`waived: false`.
 
 The `hermetic` status verifies the candidate manifest, then runs the candidate-bound suite inside
 the pinned Linux x64 Node image with Docker networking disabled, all capabilities dropped, a
@@ -86,119 +87,48 @@ official acceptance image reference in `images`. The acceptance test identity is
 
 ## Publish and continuation
 
-Before the one-time bootstrap, the operator must record this exact plan:
+Publication is stage-only. Each of the three packages configures an npm Trusted Publisher that names
+`publish.yml` in `aliyusufergin/n8n-nodes-yt-dlp` with the protected `npm-release` environment, and
+that publisher is granted `npm stage publish` alone. The workflow therefore holds no npm token of any
+kind and cannot publish directly; `publish_mode` offers `stage` and `verify-existing` and nothing
+else. The long-lived granular token that published `0.2.0` existed only because package names that do
+not exist yet cannot configure a Trusted Publisher. All three names are configured, the token is
+revoked, and its environment is retired.
 
-- This token exception exists only because new package names cannot yet configure npm Trusted
-  Publisher or staged publishing. After bootstrap, those tokenless mechanisms replace it.
-- GitHub source assets:
-  `n8n-nodes-yt-dlp-ffmpeg-source-0.2.0.tar.xz` with SHA-256
-  `3dcd8963e229e3b34fb9d0d969377e59e25a01146fd128282ad599200034e882`, and
-  `n8n-nodes-yt-dlp-linux-runtime-source-0.2.0.tar.xz` with SHA-256
-  `9ffef7272744ddaa982cd960c95ae49a25bd4df689d3485f4b7e555759421ccc`.
-  Each asset and its `<asset>.sha256` sidecar uses the direct
-  `https://github.com/aliyusufergin/n8n-nodes-yt-dlp/releases/download/v0.2.0/`
-  prefix.
-- npm targets, in order: `n8n-nodes-yt-dlp-linux-x64@0.2.0`,
-  `n8n-nodes-yt-dlp-platform@0.2.0`, and `n8n-nodes-yt-dlp@0.2.0`.
-- Candidate construction recompresses the unchanged Platform Package tar members with exact
-  `7zip-bin@5.2.0` gzip settings and fails closed unless the Base64 tarball plus a 1 MiB metadata
-  budget fits within a 250 MiB publish-request envelope.
-- In npm's Access Tokens UI, create a one-day granular token named
-  `n8n-nodes-yt-dlp-bootstrap-0.2.0`, with bypass-2FA, read/write access to all
-  packages, and no organization access. All-package access is the minimum available authority
-  because these package names do not exist yet. Do not put the token in chat, issues, commands,
-  shell history, or logs.
-- In GitHub, open Settings → Environments → `npm-bootstrap`, verify that a required reviewer
-  protects the environment, and add the token only as `NPM_BOOTSTRAP_TOKEN`. The reviewer approves
-  the protected `publish-next` job only after checking the exact commit and candidate digest. Then
-  dispatch:
-  `gh workflow run publish.yml --ref <exact-release-ref> -f publish_mode=bootstrap
-  -f promote_latest=false`.
-- The irreversible risk is a public partial or bad `0.2.0` chain. Do not unpublish. Remove or move
-  affected `next` tags, deprecate exact published names, and release a new lockstep patch. Any
-  permission or unexpected result stops the run without increasing token scope. The
-  `partial-publish-audit` artifact reports exact published, missing, and unexpected package names.
-- Temporary resources are the one-day token, two environment secrets, hosted-runner workspaces,
-  and retention-bounded workflow artifacts. Verification reads back both GitHub source sidecars,
-  every npm `next` tag, metadata, dependency graph, tarball integrity, and Sigstore provenance;
-  for this first publication it accepts npm's automatic `latest == next == 0.2.0` only while `0.2.0`
-  is the sole visible version and performs no dist-tag promotion.
+Dispatch with `main` at the exact release commit:
 
-For the one-time v0.2.0 bootstrap, choose `bootstrap`. The protected `npm-bootstrap` environment
-supplies the short-lived granular token. The workflow publishes with provenance under `next` in
-Platform Package → Platform Selector → main order, then reads registry metadata, provenance, and
-tarball bytes back. The read-back fetches each DSSE provenance statement and compares its subject
-digest, release workflow/repository, Git commit, and GitHub-hosted builder identity to the expected
-candidate manifest. Before trusting those fields, Sigstore verifies the bundle signature,
-transparency material, GitHub Actions issuer, and the exact `publish.yml@<release-ref>` certificate
-identity.
+`gh workflow run publish.yml --ref main -f publish_mode=stage -f promote_latest=false`
 
-Immediately after bootstrap read-back, revoke the granular npm token and delete
-`NPM_BOOTSTRAP_TOKEN` from the `npm-bootstrap` Environment. Then place a separate proof in the
-protected `npm-bootstrap-retirement` Environment as `BOOTSTRAP_RETIREMENT_EVIDENCE_JSON`:
+The ref is not free: the environment's deployment branch policy admits `main` only, and
+`RELEASE_WORKFLOW_REF` bakes it into the candidate's expected `publish.yml@<ref>` certificate
+identity, so a tag ref both stalls at the environment gate and produces provenance the read-back will
+not match. The `npm-release` environment's required reviewer approves `publish-next` only after
+checking the exact commit and candidate digest.
+The job stages the three candidate tarballs with provenance under `--tag next --access public` in
+Platform Package → Platform Selector → main order. Staged versions are not public. A maintainer then
+reviews each staged tarball in npm and approves it with npm 2FA; that human approval, not the
+workflow run, is what publishes.
 
-```json
-{
-	"schemaVersion": 1,
-	"candidateSha256": "<sha256 of release-candidate.json>",
-	"completedAt": "2026-07-29T12:00:00.000Z",
-	"actor": "<reviewed operator identity>",
-	"bypassTwoFactorAuthentication": true,
-	"environment": "npm-bootstrap",
-	"environmentSecretDeleted": true,
-	"organizationPermissions": "no-access",
-	"packageAccess": "all-packages",
-	"packagePermissions": "read-write",
-	"secretName": "NPM_BOOTSTRAP_TOKEN",
-	"tokenCreatedAt": "2026-07-29T11:00:00.000Z",
-	"tokenExpiresAt": "2026-07-30T11:00:00.000Z",
-	"tokenName": "n8n-nodes-yt-dlp-bootstrap-0.2.0",
-	"tokenRevoked": true,
-	"tokenType": "granular",
-	"verificationMethod": "operator-ui-read-back",
-	"waived": false
-}
-```
+Those three approvals are separate, so a public partial or bad chain is the irreversible risk. Do not
+unpublish. Remove or move the affected `next` tags, deprecate the exact published names, and release
+a new lockstep patch. Any permission or unexpected result stops the release. When `publish-next`
+itself fails, the `partial-publish-audit` artifact reports the exact published, missing, and
+unexpected package names. Read it against where the run failed: on a first stage run nothing has been
+approved yet, so all three read as missing and that is not a partial publication. It names a real
+partial chain on a retry, where an already-approved package is public.
 
-The bootstrap workflow completes after that protected proof passes. Public-package tests run later
-under `verify-existing`; promotion never receives or reuses the bootstrap token. Delete
-`BOOTSTRAP_RETIREMENT_EVIDENCE_JSON` after the protected job passes. Hosted-runner workspaces are
-ephemeral, and workflow artifacts expire under their configured retention periods.
+After the approvals, rerun the same release commit with `verify-existing`. That mode does not publish
+again: it starts at registry read-back, then requires acceptance and generates
+`release-evidence-0.2.1.json`. Read-back verifies all three public `next` identities, metadata,
+dependency graph, tarball integrity, and Sigstore provenance. It fetches each DSSE provenance
+statement and compares its subject digest, release workflow/repository, Git commit, and
+GitHub-hosted builder identity to the expected candidate manifest. Before trusting those fields,
+Sigstore verifies the bundle signature, transparency material, GitHub Actions issuer, and the exact
+`publish.yml@<release-ref>` certificate identity.
 
-### Partial bootstrap recovery
-
-Use `.github/workflows/recover-bootstrap.yml` only for the recorded partial publication from
-run `30467323585`: the exact `0.2.0` Platform Package and Platform Selector are public, while the
-main package is missing. The recovery pins candidate manifest SHA-256
-`23b019830d524fe9a0cce7a50e78c5e505355a8df1f41c53167ce7884e3012db` and Rekor log index
-`2281202262`. It re-runs the GitHub source-asset and checksum read-back, verifies both dependency
-packages against the candidate, reconstructs and verifies the original main-package Sigstore bundle,
-and uses the existing `NPM_BOOTSTRAP_TOKEN` only inside the protected `npm-bootstrap` Environment.
-Do not create another token.
-
-Dispatch
-`gh workflow run recover-bootstrap.yml --ref bootstrap-recovery-0.2.0-r2`, then approve the protected
-publication job after its preparation succeeds. Before approval, verify that the exact recovery tag
-still identifies the reviewed recovery commit; do not substitute a mutable branch. The job publishes
-only the main tarball when it is missing; an exact already-published main package skips publication
-so interrupted read-back can be retried.
-npm requires every package to have a `latest` tag and may assign it to the first published version
-even when publication explicitly uses `--tag next`. The recovery does not run any dist-tag promotion
-or mutation. Its bootstrap-specific read-back accepts `latest == next == 0.2.0` only when `0.2.0` is
-the package's sole visible version, while still verifying the full candidate-bound metadata,
-tarball, integrity, dependency, and provenance evidence. Any publish or permission failure stops
-without broadening token scope and uploads
-`partial-publish-audit` with exact package names. Never unpublish a recovered package.
-
-After successful read-back, revoke that same granular token, delete `NPM_BOOTSTRAP_TOKEN`, record the
-existing retirement evidence, and approve `bootstrap-token-retirement`. No retirement is requested
-after a failed recovery, so the same short-lived token can be used for a corrected retry.
-
-For later Trusted Publisher releases, choose `stage`. The protected `npm-release` environment uses
-OIDC and `npm stage publish`; the workflow stops after staging so a maintainer can inspect and
-approve each package with 2FA. After approval, rerun the same release commit with
-`verify-existing`. That mode does not publish again: it starts at registry read-back, then requires
-acceptance and generates `release-evidence-0.2.1.json`.
+Temporary resources are the protected environment secrets, hosted-runner workspaces, and
+retention-bounded workflow artifacts. Delete `ACCEPTANCE_STACK_EVIDENCE_JSON` once the protected job
+has passed.
 
 Every lane must carry candidate-matching package, source, and tool identities plus a test/vector
 identity; n8n lanes must also carry exact official image digests. The versioned evidence contains
@@ -210,15 +140,61 @@ existing asset is not overwritten.
 
 ## Promotion and rollback
 
-After the evidence job passes, interactively move `latest` with npm 2FA in dependency order:
-Platform Package, Platform Selector, then the main package last. Enable `promote_latest` while the
-workflow waits at its protected `npm-promotion` Environment. The job performs unauthenticated
-registry read-back and passes only if all three `latest` tags identify the accepted version; it has
-no publication or tag-changing credential.
+Promotion is interactive and needs npm 2FA; no workflow holds a tag-changing credential. After the
+evidence job passes, move `latest` in dependency order:
+Platform Package, Platform Selector, then the main package last.
+Main moves last because an install that resolves the main package mid-promotion
+must never reach a selector or platform build that `latest` does not yet name.
+
+```sh
+npm dist-tag add n8n-nodes-yt-dlp-linux-x64@0.2.1 latest
+npm dist-tag add n8n-nodes-yt-dlp-platform@0.2.1 latest
+npm dist-tag add n8n-nodes-yt-dlp@0.2.1 latest
+```
+
+Enable `promote_latest` while the workflow waits at its protected `npm-promotion` Environment. The
+job performs unauthenticated registry read-back and passes only if all three `latest` tags identify
+the accepted version; it has no publication or tag-changing credential. `verify-promotion` verifies
+the published-byte candidate directory first, so what it compares against the registry is the
+read-back artifact rather than the checkout. For each of the three packages it records the full
+dist-tag set, requires `latest` to identify the accepted version, and re-reads the registry metadata,
+the tarball SHA-256 and integrity, and the Sigstore provenance. It then re-reads the Corresponding
+Source offer that promoted installs inherit: each versioned GitHub asset URL must still resolve, and
+each `<asset>.sha256` sidecar must still name the digest the candidate recorded. The result is
+uploaded as `gate-promote-latest`.
 
 Rollback is tag-based and starts with the main package first so new installs stop selecting the bad
 chain. Move or remove its `latest` and `next` tags, then do the same for the Platform Selector and
 Platform Package. Mark every bad lockstep package version with `npm deprecate`, publish a new patch,
 run the complete chain again, and promote that patch.
+
+### Rollback rehearsal
+
+The rehearsal runs before promotion, reads the live registry, and changes nothing. It runs no
+`npm dist-tag`, no `npm deprecate`, and no `npm publish`. Record, in rollback order — main first —
+what each restore would name, and confirm every one resolves:
+
+```sh
+for package in n8n-nodes-yt-dlp n8n-nodes-yt-dlp-platform n8n-nodes-yt-dlp-linux-x64; do
+	npm view "$package" dist-tags --json
+	npm view "$package@<previous>" version dist.integrity
+done
+```
+
+The rehearsal passes when each package reports the exact version its `latest` would be moved back to,
+that version is still installable, and the deprecation text and new patch version are written down
+with the exact bad version strings.
+
+### Executing a rollback
+
+Run these only to roll a bad chain back — never as part of the rehearsal, and never before a bad
+chain exists.
+
+```sh
+npm dist-tag add n8n-nodes-yt-dlp@<previous> latest
+npm dist-tag add n8n-nodes-yt-dlp-platform@<previous> latest
+npm dist-tag add n8n-nodes-yt-dlp-linux-x64@<previous> latest
+npm deprecate n8n-nodes-yt-dlp@<bad> "Superseded by <patch>; see the release record."
+```
 
 Never use `npm unpublish` for rollback.
