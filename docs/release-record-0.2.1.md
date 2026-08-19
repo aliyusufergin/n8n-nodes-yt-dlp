@@ -65,6 +65,22 @@ Release, which the `0.2.1` candidate's source identity points at:
 - No architecture, operating system, or libc outside Linux x64 was tested, and none is claimed.
 - yt-dlp's own supported-site list is upstream's, is unpinned by this release, and is untested here.
 
+## Recorded rollback rehearsal
+
+Read-only, run against the live registry on 2026-08-19, before promotion. It moved no tag and
+deprecated nothing. Each package reported the exact version its `latest` would be restored to, and
+that version was still installable:
+
+| Package | `latest` restores to | `dist.integrity` of that version |
+| --- | --- | --- |
+| `n8n-nodes-yt-dlp` | 0.2.0 | `sha512-DnClZObcdKOlCEoAReeWlszqhtf8JXEVhCVdVECDxdMZBAbBDRIxYKwB5PA8KIOCQRupFXePvQaveu83B3cuHw==` |
+| `n8n-nodes-yt-dlp-platform` | 0.2.0 | `sha512-V5ZK5FlY4Jn9oVVwYxhRbDh0GxeN8VV6G4NQ7Pbdle1gjHt6ne+9AnZR4mR9ZoAxvVYGsXhEKUG9kDBczf/tdw==` |
+| `n8n-nodes-yt-dlp-linux-x64` | 0.2.0 | `sha512-NTafQ8WLeNqRjMV0RjZIu1C7YXe0Q/vDzjI/adUHR5l40dSa/pLTxnRsMOAJit6KDjo0Y87kBvzP/70N8u/l0A==` |
+
+All three read `next=0.2.1`, `latest=0.2.0` at rehearsal time. A rollback would move `latest` back in
+this order — main package first — deprecate the bad `0.2.1` names, and ship a new lockstep patch. No
+`npm unpublish`.
+
 ## Operator responsibilities
 
 - Publish only through the stage-only path. `publish.yml` holds no npm token; each package's Trusted
