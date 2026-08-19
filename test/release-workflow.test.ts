@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 
 import { describe, expect, it } from 'vitest';
@@ -24,7 +25,6 @@ describe('release workflow', () => {
 			'publish-next',
 			'registry-readback',
 			'partial-publish-audit',
-			'bootstrap-token-retirement',
 			'acceptance-stack',
 			'release-evidence',
 			'promote-latest',
@@ -76,23 +76,62 @@ describe('release workflow', () => {
 		expect(selector).toBeGreaterThan(platform);
 		expect(main).toBeGreaterThan(selector);
 
-		expect(job(workflow, 'bootstrap-token-retirement')).toContain(
-			'BOOTSTRAP_RETIREMENT_EVIDENCE_JSON',
-		);
+		// A maintainer approves each staged package separately with 2FA, so a chain can still go
+		// public in part when a later approval or stage publish fails. The audit names exactly which
+		// of the three that left visible.
 		expect(job(workflow, 'partial-publish-audit')).toContain('audit-registry');
 		expect(job(workflow, 'partial-publish-audit')).toContain(
 			"needs.publish-next.result != 'skipped'",
 		);
-		expect(job(workflow, 'bootstrap-token-retirement')).toContain('always()');
-		expect(job(workflow, 'bootstrap-token-retirement')).toContain('partial-publish-audit');
+		expect(job(workflow, 'partial-publish-audit')).toContain(
+			"inputs.publish_mode == 'stage'",
+		);
 		const promote = job(workflow, 'promote-latest');
 		expect(promote).toContain('verify-promotion');
-		expect(promote).not.toContain('NPM_BOOTSTRAP_TOKEN');
+		expect(promote).toContain('npm ci');
+		expect(promote).toContain('name: gate-promote-latest');
 		expect(promote).not.toContain('npm dist-tag add');
 		expect(workflow).not.toMatch(/\bnpm unpublish\b/u);
 	});
 
-	it('stops bootstrap after registry read-back and credential retirement', async () => {
+	// The long-lived granular token published 0.2.0 only because package names that do not exist yet
+	// cannot configure a Trusted Publisher. All three names are configured now, so that exception is
+	// retired: the sole publication this workflow can perform is `npm stage publish` under OIDC, and
+	// staged bytes become public only after a maintainer reviews each tarball and approves it with
+	// npm 2FA.
+	it('publishes only through the stage-only Trusted Publisher path', async () => {
+		const workflow = await readFile('.github/workflows/publish.yml', 'utf8');
+		expect(workflow).not.toMatch(/bootstrap/iu);
+		const publish = job(workflow, 'publish-next');
+		expect(publish).toContain('environment: npm-release');
+		expect(publish).toContain('npm stage publish');
+		// No npm credential of any kind reaches the step; the empty `NODE_AUTH_TOKEN` exists so an
+		// absent OIDC token fails as `ENEEDAUTH` rather than as an unreplaced npmrc placeholder.
+		expect(publish).not.toMatch(/secrets\./u);
+		expect(publish).toContain("NODE_AUTH_TOKEN: ''");
+		expect(publish).not.toMatch(/(?<!stage )npm publish/u);
+		for (const mode of ['stage', 'verify-existing']) {
+			expect(workflow, mode).toContain(`- ${mode}\n`);
+		}
+	});
+
+	// The recovery workflow existed for one recorded partial `0.2.0` publication, which it completed.
+	// It is the last holder of the granular token and of the `npm-bootstrap` Environment, so leaving
+	// it dispatchable would keep a long-lived-token publish path alive after the token is retired.
+	it('retires the token-publish surface with the environment that held it', async () => {
+		for (const path of [
+			'.github/workflows/recover-bootstrap.yml',
+			'scripts/bootstrap-recovery.mjs',
+			'scripts/bootstrap-recovery.d.mts',
+		]) {
+			expect(existsSync(path), path).toBe(false);
+		}
+		const script = await readFile('scripts/release-candidate.mjs', 'utf8');
+		expect(script).not.toContain('verify-bootstrap-retirement');
+		expect(script).not.toContain('verify-bootstrap-registry');
+	});
+
+	it('runs every published-byte gate only under verify-existing', async () => {
 		const workflow = await readFile('.github/workflows/publish.yml', 'utf8');
 		for (const status of [
 			'hermetic',
@@ -218,26 +257,22 @@ describe('release workflow', () => {
 		);
 	});
 
-	it('recovers only the missing main package from the original signed candidate', async () => {
-		const workflow = await readFile('.github/workflows/recover-bootstrap.yml', 'utf8');
-		expect(workflow).toContain('environment: npm-bootstrap');
-		expect(workflow).toContain('run-id: ${{ env.ORIGINAL_RUN_ID }}');
-		expect(workflow).toContain('github-token: ${{ github.token }}');
-		expect(workflow).toContain('bootstrap-recovery.mjs prepare');
-		expect(workflow).toContain('npm run verify:ffmpeg-release');
-		expect(workflow).toContain('RUNNER_REGION: ${{ vars.RUNNER_REGION }}');
-		expect(workflow).toContain('bootstrap-recovery-state.json');
-		expect(workflow).toContain('n8n-nodes-yt-dlp-${VERSION}.tgz');
-		expect(workflow).toContain('--provenance-file');
-		expect(workflow).toContain('verify-bootstrap-registry');
-		expect(workflow).toContain('partial-publish-audit');
-		expect(workflow).toContain('audit-registry');
-		expect(workflow).toContain('BOOTSTRAP_RETIREMENT_EVIDENCE_JSON');
-		expect(workflow).toContain('environment: npm-bootstrap-retirement');
-		expect(workflow).not.toContain('n8n-nodes-yt-dlp-linux-x64-${VERSION}.tgz');
-		expect(workflow).not.toContain('n8n-nodes-yt-dlp-platform-${VERSION}.tgz');
-		expect(workflow).not.toContain('npm dist-tag');
-		expect(workflow).not.toMatch(/\bnpm unpublish\b/u);
+	it('publishes a release record with the matrix, the unverified facts, and operator duties', async () => {
+		const record = await readFile('docs/release-record-0.2.1.md', 'utf8');
+		for (const required of [
+			'## Supported matrix',
+			'## Known unverified facts',
+			'## Operator responsibilities',
+			'Linux only',
+			'x64 only',
+			'2.34.6',
+			'036a5ae8d9fed314cc1ef465cc3e86ce52eb2562e468974528cd96792573eb47',
+			'not a supported-site\n  guarantee',
+			'npm 2FA',
+			'Never run `npm unpublish`',
+		]) {
+			expect(record, required).toContain(required);
+		}
 	});
 
 	it('documents staged continuation, evidence, and non-unpublish rollback', async () => {
@@ -257,9 +292,12 @@ describe('release workflow', () => {
 			'deprecate',
 			'new patch',
 			'Never use `npm unpublish`',
-			'recover-bootstrap.yml',
-			'gh workflow run recover-bootstrap.yml --ref bootstrap-recovery-0.2.0-r2',
-			'exact recovery tag',
+			'stage-only',
+			'`npm-release`',
+			'Trusted Publisher',
+			'Platform Package, Platform Selector, then the main package last',
+			'Rollback rehearsal',
+			'npm 2FA',
 		]) {
 			expect(documentation).toContain(required);
 		}

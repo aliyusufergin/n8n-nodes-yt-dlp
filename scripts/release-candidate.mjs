@@ -730,7 +730,7 @@ export async function verifyRegistryProvenance(
 	}
 }
 
-async function assertRegistryDistTagState(candidate, registry, allowInitialLatest) {
+async function assertRegistryDistTagState(candidate, registry) {
 	// Deliberately duplicates the invariant verifyCandidate re-asserts below, so a manifest with no
 	// package chain cannot skip this gate silently. No test covers this line and none can: with the
 	// guard removed the loop iterates nothing, issues no request, and verifyCandidate then fails
@@ -753,25 +753,74 @@ async function assertRegistryDistTagState(candidate, registry, allowInitialLates
 			packument['dist-tags']?.latest === candidate.version &&
 			publishedVersions.length === 1 &&
 			publishedVersions[0] === candidate.version;
-		if (allowInitialLatest && !exactInitialPublication) {
-			fail(`${packageEvidence.name} bootstrap registry state is not an exact initial publication.`);
-		}
 		// npm forces `latest` onto a package's first published version, so a candidate that is the
 		// only version may legitimately hold it. Any other candidate holding `latest` was promoted,
 		// which no read-back may treat as staged state. This reads the registry rather than the
-		// publish mode because the bootstrap's forced `latest` outlives the run that caused it: the
-		// `verify-existing` run that follows a bootstrap reads the same state from a different mode.
+		// publish mode because that forced tag outlives the run that caused it: the `verify-existing`
+		// run that follows the staging run reads the same state from a different mode.
 		if (packument['dist-tags']?.latest === candidate.version && !exactInitialPublication) {
 			fail(`${packageEvidence.name} latest unexpectedly identifies ${candidate.version}.`);
 		}
 	}
 }
 
+// Metadata, provenance, and bytes for one published package. Read-back and promotion ask the same
+// question of the registry at two different moments, so they ask it with the same code: a tag that
+// moved is no evidence that what it names is still the reviewed candidate.
+async function readBackPublishedPackage(packageEvidence, candidate, registry, verifyBundle) {
+	const expected = candidate.expectedRegistry.packages[packageEvidence.name];
+	const packageUrl = `${registry}/${encodeURIComponent(packageEvidence.name)}`;
+	const metadataResponse = await fetch(`${packageUrl}/${packageEvidence.version}`, {
+		signal: AbortSignal.timeout(30_000),
+	});
+	if (!metadataResponse.ok) {
+		fail(`${packageEvidence.name} registry metadata returned HTTP ${metadataResponse.status}.`);
+	}
+	const metadata = await metadataResponse.json();
+	if (
+		metadata.name !== packageEvidence.name ||
+		metadata.version !== packageEvidence.version ||
+		!jsonEqual(metadata.dependencies ?? {}, expected.dependencies) ||
+		!jsonEqual(metadata.optionalDependencies ?? {}, expected.optionalDependencies) ||
+		!jsonEqual(metadata.scripts ?? {}, expected.scripts) ||
+		!jsonEqual(metadata.os ?? null, expected.os) ||
+		!jsonEqual(metadata.cpu ?? null, expected.cpu) ||
+		!jsonEqual(metadata.bin ?? null, expected.bin) ||
+		!jsonEqual(metadata.libc ?? null, expected.libc) ||
+		metadata.license !== expected.license ||
+		metadata.dist?.integrity !== expected.integrity ||
+		metadata.dist?.attestations?.provenance?.predicateType !== provenancePredicateType ||
+		typeof metadata.dist?.attestations?.url !== 'string'
+	) {
+		fail(`${packageEvidence.name} registry metadata or provenance mismatch.`);
+	}
+	await verifyRegistryProvenance(
+		metadata.dist.attestations.url,
+		packageEvidence,
+		candidate,
+		verifyBundle,
+	);
+	const tarballResponse = await fetch(metadata.dist.tarball, {
+		signal: AbortSignal.timeout(600_000),
+	});
+	if (!tarballResponse.ok) {
+		fail(`${packageEvidence.name} registry tarball returned HTTP ${tarballResponse.status}.`);
+	}
+	const tarball = Buffer.from(await tarballResponse.arrayBuffer());
+	if (
+		digest('sha256', tarball) !== packageEvidence.sha256 ||
+		`sha512-${digest('sha512', tarball, 'base64')}` !== expected.integrity
+	) {
+		fail(`${packageEvidence.name} registry tarball digest mismatch.`);
+	}
+	return tarball;
+}
+
 export async function verifyRegistry(
 	candidateDirectory,
 	registryArgument,
 	outputPath,
-	{ allowInitialLatest = false, materializeDirectory, verifyBundle = verifySigstoreBundle } = {},
+	{ materializeDirectory, verifyBundle = verifySigstoreBundle } = {},
 ) {
 	const candidateRoot = resolve(candidateDirectory);
 	const candidateBytes = await readFile(join(candidateRoot, 'release-candidate.json'));
@@ -781,7 +830,7 @@ export async function verifyRegistry(
 	// verifyCandidate has validated it, so both are given the same bytes: nothing it decides can
 	// come from a manifest other than the one verified here, and no evidence is recorded until
 	// verifyCandidate returns.
-	await assertRegistryDistTagState(JSON.parse(candidateBytes), registry, allowInitialLatest);
+	await assertRegistryDistTagState(JSON.parse(candidateBytes), registry);
 	const candidate = await verifyCandidate(candidateRoot, candidateBytes);
 	const materializedRoot =
 		materializeDirectory === undefined ? undefined : resolve(materializeDirectory);
@@ -792,51 +841,12 @@ export async function verifyRegistry(
 	}
 	const packages = [];
 	for (const packageEvidence of candidate.packages) {
-		const expected = candidate.expectedRegistry.packages[packageEvidence.name];
-		const packageUrl = `${registry}/${encodeURIComponent(packageEvidence.name)}`;
-		const metadataResponse = await fetch(`${packageUrl}/${packageEvidence.version}`, {
-			signal: AbortSignal.timeout(30_000),
-		});
-		if (!metadataResponse.ok) {
-			fail(`${packageEvidence.name} registry metadata returned HTTP ${metadataResponse.status}.`);
-		}
-		const metadata = await metadataResponse.json();
-		if (
-			metadata.name !== packageEvidence.name ||
-			metadata.version !== packageEvidence.version ||
-			!jsonEqual(metadata.dependencies ?? {}, expected.dependencies) ||
-			!jsonEqual(metadata.optionalDependencies ?? {}, expected.optionalDependencies) ||
-			!jsonEqual(metadata.scripts ?? {}, expected.scripts) ||
-			!jsonEqual(metadata.os ?? null, expected.os) ||
-			!jsonEqual(metadata.cpu ?? null, expected.cpu) ||
-			!jsonEqual(metadata.bin ?? null, expected.bin) ||
-			!jsonEqual(metadata.libc ?? null, expected.libc) ||
-			metadata.license !== expected.license ||
-			metadata.dist?.integrity !== expected.integrity ||
-			metadata.dist?.attestations?.provenance?.predicateType !== provenancePredicateType ||
-			typeof metadata.dist?.attestations?.url !== 'string'
-		) {
-			fail(`${packageEvidence.name} registry metadata or provenance mismatch.`);
-		}
-		await verifyRegistryProvenance(
-			metadata.dist.attestations.url,
+		const tarball = await readBackPublishedPackage(
 			packageEvidence,
 			candidate,
+			registry,
 			verifyBundle,
 		);
-		const tarballResponse = await fetch(metadata.dist.tarball, {
-			signal: AbortSignal.timeout(600_000),
-		});
-		if (!tarballResponse.ok) {
-			fail(`${packageEvidence.name} registry tarball returned HTTP ${tarballResponse.status}.`);
-		}
-		const tarball = Buffer.from(await tarballResponse.arrayBuffer());
-		if (
-			digest('sha256', tarball) !== packageEvidence.sha256 ||
-			`sha512-${digest('sha512', tarball, 'base64')}` !== expected.integrity
-		) {
-			fail(`${packageEvidence.name} registry tarball digest mismatch.`);
-		}
 		if (materializedRoot !== undefined) {
 			await writeFile(join(materializedRoot, 'tarballs', packageEvidence.tarball), tarball);
 		}
@@ -1088,47 +1098,17 @@ async function finalizeEvidence(candidatePath, evidenceDirectory, outputPath) {
 	process.stdout.write(`${JSON.stringify({ candidateSha256, output: resolvedOutput })}\n`);
 }
 
-async function verifyBootstrapRetirement(candidatePath, evidencePath) {
-	const candidateBytes = await readFile(resolve(candidatePath));
-	const evidence = await readJson(resolve(evidencePath));
-	const tokenCreatedAt = Date.parse(evidence.tokenCreatedAt);
-	const tokenExpiresAt = Date.parse(evidence.tokenExpiresAt);
-	const completedAt = Date.parse(evidence.completedAt);
-	if (
-		evidence.schemaVersion !== 1 ||
-		evidence.candidateSha256 !== digest('sha256', candidateBytes) ||
-		evidence.tokenRevoked !== true ||
-		evidence.environmentSecretDeleted !== true ||
-		evidence.tokenName !== 'n8n-nodes-yt-dlp-bootstrap-0.2.0' ||
-		evidence.tokenType !== 'granular' ||
-		evidence.packageAccess !== 'all-packages' ||
-		evidence.packagePermissions !== 'read-write' ||
-		evidence.organizationPermissions !== 'no-access' ||
-		evidence.bypassTwoFactorAuthentication !== true ||
-		evidence.environment !== 'npm-bootstrap' ||
-		evidence.secretName !== 'NPM_BOOTSTRAP_TOKEN' ||
-		evidence.verificationMethod !== 'operator-ui-read-back' ||
-		evidence.waived !== false ||
-		typeof evidence.actor !== 'string' ||
-		evidence.actor.length === 0 ||
-		Number.isNaN(tokenCreatedAt) ||
-		Number.isNaN(tokenExpiresAt) ||
-		Number.isNaN(completedAt) ||
-		tokenExpiresAt <= tokenCreatedAt ||
-		tokenExpiresAt - tokenCreatedAt > 24 * 60 * 60 * 1_000 ||
-		completedAt < tokenCreatedAt ||
-		completedAt > tokenExpiresAt
-	) {
-		fail('Bootstrap retirement must prove token revocation and environment-secret deletion.');
-	}
-	process.stdout.write(`${JSON.stringify({ actor: evidence.actor, outcome: 'pass' })}\n`);
-}
-
-async function verifyPromotion(candidateDirectory, registryArgument, outputPath) {
+export async function verifyPromotion(
+	candidateDirectory,
+	registryArgument,
+	outputPath,
+	{ fetchSource = fetch, verifyBundle = verifySigstoreBundle } = {},
+) {
 	const candidateRoot = resolve(candidateDirectory);
 	const candidate = await verifyCandidate(candidateRoot);
 	const candidateBytes = await readFile(join(candidateRoot, 'release-candidate.json'));
 	const registry = normalizeRegistry(registryArgument, 'Promotion read-back');
+	const packages = [];
 	for (const packageEvidence of candidate.packages) {
 		const response = await fetch(`${registry}/${encodeURIComponent(packageEvidence.name)}`, {
 			signal: AbortSignal.timeout(30_000),
@@ -1137,17 +1117,58 @@ async function verifyPromotion(candidateDirectory, registryArgument, outputPath)
 			fail(`${packageEvidence.name} promotion read-back returned HTTP ${response.status}.`);
 		}
 		const packument = await response.json();
-		if (packument['dist-tags']?.latest !== candidate.version) {
+		const distTags = packument['dist-tags'] ?? {};
+		if (distTags.latest !== candidate.version) {
 			fail(`${packageEvidence.name} latest does not identify ${candidate.version}.`);
 		}
+		await readBackPublishedPackage(packageEvidence, candidate, registry, verifyBundle);
+		packages.push({ distTags, name: packageEvidence.name, sha256: packageEvidence.sha256 });
+	}
+	// Promotion changes what a plain `npm install` resolves to, so the Corresponding Source offer
+	// those installs inherit is read back at the same moment. The bundles are large and their bytes
+	// were already verified against this candidate by `source-delivery`, so this asks the two
+	// questions promotion can newly break: the versioned asset still resolves, and the checksum
+	// published beside it still names the digest the candidate recorded.
+	const source = [];
+	for (const bundle of candidate.source.bundles) {
+		const assetResponse = await fetchSource(bundle.url, {
+			headers: { 'User-Agent': 'n8n-nodes-yt-dlp-gate' },
+			method: 'HEAD',
+			signal: AbortSignal.timeout(30_000),
+		});
+		if (!assetResponse.ok) {
+			fail(`${bundle.name} source asset is not retrievable at its immutable URL.`);
+		}
+		const checksumResponse = await fetchSource(bundle.checksumUrl, {
+			headers: { 'User-Agent': 'n8n-nodes-yt-dlp-gate' },
+			signal: AbortSignal.timeout(30_000),
+		});
+		if (
+			!checksumResponse.ok ||
+			(await checksumResponse.text()) !== `${bundle.sha256}  ${bundle.name}\n`
+		) {
+			fail(`${bundle.name} SHA-256 sidecar does not match the candidate.`);
+		}
+		source.push({ name: bundle.name, sha256: bundle.sha256, url: bundle.url });
 	}
 	const evidence = {
 		schemaVersion: 1,
 		candidateSha256: digest('sha256', candidateBytes),
 		completedAt: new Date().toISOString(),
-		diagnostics: [`latest-packages=${candidate.packages.length}`],
+		diagnostics: [`latest-packages=${packages.length}`, `source-bundles=${source.length}`],
+		identities: {
+			packages: candidatePackageIdentities(candidate),
+			registry,
+			source: candidate.source,
+			test: { id: 'promotion-readback' },
+			toolchain: candidate.toolchain,
+		},
+		lane: 'promote-latest',
 		outcome: 'pass',
+		packages,
 		region: requiredRegion(),
+		registry,
+		source,
 		version: candidate.version,
 		waived: false,
 	};
@@ -1172,23 +1193,15 @@ async function main() {
 			}
 			await verifyRegistry(arguments_[0], arguments_[1], arguments_[2]);
 			break;
-		case 'verify-bootstrap-registry':
-			if (arguments_.length !== 3) {
-				fail('Usage: verify-bootstrap-registry <candidate-directory> <registry-url> <output.json>');
-			}
-			await verifyRegistry(arguments_[0], arguments_[1], arguments_[2], {
-				allowInitialLatest: true,
-			});
-			break;
 		case 'materialize-registry':
 			if (arguments_.length !== 4) {
 				fail(
 					'Usage: materialize-registry <candidate-directory> <registry-url> <output-directory> <output.json>',
 				);
 			}
-			// No bootstrap allowance to pass: `assertRegistryDistTagState` decides from the published
-			// versions whether this candidate's `latest` is npm's forced first-publish tag or a
-			// promotion, which is the same answer in every publish mode.
+			// `assertRegistryDistTagState` decides from the published versions whether this
+			// candidate's `latest` is npm's forced first-publish tag or a promotion, which is the
+			// same answer in every publish mode.
 			await verifyRegistry(arguments_[0], arguments_[1], arguments_[3], {
 				materializeDirectory: arguments_[2],
 			});
@@ -1211,12 +1224,6 @@ async function main() {
 			}
 			await verifyGateEvidence(arguments_[0], arguments_[1], arguments_[2]);
 			break;
-		case 'verify-bootstrap-retirement':
-			if (arguments_.length !== 2) {
-				fail('Usage: verify-bootstrap-retirement <candidate.json> <evidence.json>');
-			}
-			await verifyBootstrapRetirement(arguments_[0], arguments_[1]);
-			break;
 		case 'verify-promotion':
 			if (arguments_.length !== 3) {
 				fail('Usage: verify-promotion <candidate-directory> <registry-url> <output.json>');
@@ -1231,7 +1238,7 @@ async function main() {
 			break;
 		default:
 			fail(
-				'Usage: release-candidate.mjs <build|verify|verify-registry|verify-bootstrap-registry|materialize-registry|audit-registry|record-gate|verify-gate|verify-bootstrap-retirement|verify-promotion|finalize-evidence> ...',
+				'Usage: release-candidate.mjs <build|verify|verify-registry|materialize-registry|audit-registry|record-gate|verify-gate|verify-promotion|finalize-evidence> ...',
 			);
 	}
 }

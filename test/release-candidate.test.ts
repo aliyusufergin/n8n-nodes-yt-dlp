@@ -451,85 +451,6 @@ describe('immutable Release Candidate Chain', () => {
 		}
 	});
 
-	it('blocks bootstrap continuation until token and secret retirement are proven', async () => {
-		const candidatePath = join(candidateRoot, 'release-candidate.json');
-		const candidateBytes = await readFile(candidatePath);
-		const retirementPath = join(candidateRoot, 'bootstrap-token-retirement.json');
-		const evidence = {
-			schemaVersion: 1,
-			candidateSha256: sha256(candidateBytes),
-			completedAt: '2026-07-29T08:00:00.000Z',
-			actor: 'release-operator',
-			bypassTwoFactorAuthentication: true,
-			environment: 'npm-bootstrap',
-			tokenRevoked: true,
-			tokenCreatedAt: '2026-07-29T07:00:00.000Z',
-			tokenExpiresAt: '2026-07-30T07:00:00.000Z',
-			tokenName: 'n8n-nodes-yt-dlp-bootstrap-0.2.0',
-			tokenType: 'granular',
-			environmentSecretDeleted: true,
-			organizationPermissions: 'no-access',
-			packageAccess: 'all-packages',
-			packagePermissions: 'read-write',
-			secretName: 'NPM_BOOTSTRAP_TOKEN',
-			verificationMethod: 'operator-ui-read-back',
-			waived: false,
-		};
-		await writeFile(retirementPath, `${JSON.stringify(evidence)}\n`);
-		await expect(
-			execFileAsync(
-				process.execPath,
-				[
-					'scripts/release-candidate.mjs',
-					'verify-bootstrap-retirement',
-					candidatePath,
-					retirementPath,
-				],
-				{ cwd: repositoryRoot },
-			),
-		).resolves.toMatchObject({
-			stdout: expect.stringContaining('"outcome":"pass"'),
-		});
-
-		await writeFile(
-			retirementPath,
-			`${JSON.stringify({ ...evidence, environmentSecretDeleted: false })}\n`,
-		);
-		await expect(
-			execFileAsync(
-				process.execPath,
-				[
-					'scripts/release-candidate.mjs',
-					'verify-bootstrap-retirement',
-					candidatePath,
-					retirementPath,
-				],
-				{ cwd: repositoryRoot },
-			),
-		).rejects.toMatchObject({
-			stderr: expect.stringContaining('Bootstrap retirement must prove token revocation'),
-		});
-
-		await writeFile(
-			retirementPath,
-			`${JSON.stringify({ ...evidence, packagePermissions: 'read-only' })}\n`,
-		);
-		await expect(
-			execFileAsync(
-				process.execPath,
-				[
-					'scripts/release-candidate.mjs',
-					'verify-bootstrap-retirement',
-					candidatePath,
-					retirementPath,
-				],
-				{ cwd: repositoryRoot },
-			),
-		).rejects.toMatchObject({
-			stderr: expect.stringContaining('Bootstrap retirement must prove token revocation'),
-		});
-	});
-
 	it('rejects a candidate whose tarball bytes changed', async () => {
 		const tarballPath = join(candidateRoot, 'tarballs', manifest.packages[0].tarball);
 		const backupPath = `${tarballPath}.backup`;
@@ -558,6 +479,8 @@ describe('immutable Release Candidate Chain', () => {
 	describe('registry read-back', () => {
 		let attestationRequests = 0;
 		let includeFiles = true;
+		let sourceAssetsPublished: boolean;
+		let sourceChecksum: string | undefined;
 		let latestVersion: string | undefined;
 		let nextVersion: string;
 		let publishedVersions: string[];
@@ -567,6 +490,23 @@ describe('immutable Release Candidate Chain', () => {
 
 		const handle: RequestListener = (request, response) => {
 			const url = new URL(request.url ?? '/', 'http://registry');
+			if (url.pathname.startsWith('/source/')) {
+				const asset = decodeURIComponent(url.pathname.slice('/source/'.length));
+				const bundle = manifest.source.bundles.find(
+					({ name }) => asset === name || asset === `${name}.sha256`,
+				);
+				if (bundle === undefined || !sourceAssetsPublished) {
+					response.statusCode = 404;
+					response.end();
+					return;
+				}
+				response.end(
+					asset.endsWith('.sha256')
+						? `${sourceChecksum ?? bundle.sha256}  ${bundle.name}\n`
+						: 'corresponding source bytes',
+				);
+				return;
+			}
 			const tarball = manifest.packages.find(
 				(packageEvidence) => url.pathname === `/tarballs/${packageEvidence.tarball}`,
 			);
@@ -700,12 +640,11 @@ describe('immutable Release Candidate Chain', () => {
 			nextVersion = manifest.version;
 			publishedVersions = [manifest.version];
 			provenanceCommit = manifest.commit;
+			sourceAssetsPublished = true;
+			sourceChecksum = undefined;
 		});
 
-		const verifyWithTestSignature = async (
-			allowInitialLatest = false,
-			materializeDirectory?: string,
-		) =>
+		const verifyWithTestSignature = async (materializeDirectory?: string) =>
 			await execFileAsync(
 				process.execPath,
 				[
@@ -715,8 +654,6 @@ describe('immutable Release Candidate Chain', () => {
 							import { verifyRegistry } from './scripts/release-candidate.mjs';
 							const [candidateRoot, registry, outputPath] = process.argv.slice(1);
 							await verifyRegistry(candidateRoot, registry, outputPath, {
-								allowInitialLatest:
-									process.env.ALLOW_INITIAL_LATEST === 'true',
 								materializeDirectory:
 									process.env.MATERIALIZE_DIRECTORY || undefined,
 								verifyBundle: async (bundle, identity) => {
@@ -741,7 +678,6 @@ describe('immutable Release Candidate Chain', () => {
 					cwd: repositoryRoot,
 					env: {
 						...process.env,
-						ALLOW_INITIAL_LATEST: String(allowInitialLatest),
 						MATERIALIZE_DIRECTORY: materializeDirectory ?? '',
 						RUNNER_REGION: 'test-region',
 					},
@@ -778,6 +714,96 @@ describe('immutable Release Candidate Chain', () => {
 				],
 				{ cwd: repositoryRoot },
 			);
+		const verifyPromotionWithTestSignature = async () =>
+			await execFileAsync(
+				process.execPath,
+				[
+					'--input-type=module',
+					'--eval',
+					`
+							import { verifyPromotion } from './scripts/release-candidate.mjs';
+							const [candidateRoot, registry, outputPath] = process.argv.slice(1);
+							await verifyPromotion(candidateRoot, registry, outputPath, {
+								fetchSource: async (url, init) =>
+									await fetch(
+										\`\${registry}/source/\${url.split('/').pop()}\`,
+										init,
+									),
+								verifyBundle: async (bundle, identity) => {
+									if (
+										bundle?.dsseEnvelope?.signatures?.length !== 1 ||
+										identity?.certificateIssuer !==
+											'https://token.actions.githubusercontent.com'
+									) {
+										throw new Error('missing test signature');
+									}
+								},
+							});
+						`,
+					candidateRoot,
+					registry,
+					join(candidateRoot, 'promotion.json'),
+				],
+				{ cwd: repositoryRoot, env: { ...process.env, RUNNER_REGION: 'test-region' } },
+			);
+
+		// Promotion is the last irreversible step, and it is performed by hand outside any workflow.
+		// The job that follows it therefore re-reads everything the release claims about the promoted
+		// bytes, not just the tag that moved.
+		it('reads back every dist-tag, the bytes, the provenance, and the source links after promotion', async () => {
+			latestVersion = manifest.version;
+			publishedVersions = ['0.2.0', manifest.version];
+			await verifyPromotionWithTestSignature();
+			const promotion = JSON.parse(
+				await readFile(join(candidateRoot, 'promotion.json'), 'utf8'),
+			) as {
+				outcome: string;
+				packages: Array<{ distTags: Record<string, string>; name: string; sha256: string }>;
+				source: Array<{ name: string; sha256: string; url: string }>;
+				waived: boolean;
+			};
+			expect(promotion.outcome).toBe('pass');
+			expect(promotion.waived).toBe(false);
+			expect(promotion.packages).toEqual(
+				manifest.packages.map(({ name, sha256: tarballDigest }) => ({
+					distTags: { latest: manifest.version, next: manifest.version },
+					name,
+					sha256: tarballDigest,
+				})),
+			);
+			expect(promotion.source).toEqual(
+				manifest.source.bundles.map(({ name, sha256: bundleDigest, url }) => ({
+					name,
+					sha256: bundleDigest,
+					url,
+				})),
+			);
+			// One provenance statement per package, fetched from the registry rather than trusted
+			// from the candidate directory.
+			expect(attestationRequests).toBe(manifest.packages.length);
+		}, 60_000);
+
+		it('rejects a promotion whose latest still identifies another version', async () => {
+			latestVersion = '0.2.0';
+			publishedVersions = ['0.2.0', manifest.version];
+			await expect(verifyPromotionWithTestSignature()).rejects.toMatchObject({
+				stderr: expect.stringContaining(`latest does not identify ${manifest.version}`),
+			});
+		}, 60_000);
+
+		it('rejects a promotion whose corresponding source links no longer resolve or match', async () => {
+			latestVersion = manifest.version;
+			sourceChecksum = '0'.repeat(64);
+			await expect(verifyPromotionWithTestSignature()).rejects.toMatchObject({
+				stderr: expect.stringContaining('SHA-256 sidecar'),
+			});
+			sourceChecksum = undefined;
+			sourceAssetsPublished = false;
+			await expect(verifyPromotionWithTestSignature()).rejects.toMatchObject({
+				stderr: expect.stringContaining('source asset'),
+			});
+		}, 60_000);
+
 		it('matches registry metadata, provenance, and tarball bytes on read-back', async () => {
 			await verifyWithTestSignature();
 			const readback = JSON.parse(
@@ -795,7 +821,7 @@ describe('immutable Release Candidate Chain', () => {
 
 		it('materializes the published chain from the registry bytes it read back', async () => {
 			const materializedRoot = join(candidateRoot, 'published-candidate');
-			await verifyWithTestSignature(false, materializedRoot);
+			await verifyWithTestSignature(materializedRoot);
 			for (const packageEvidence of manifest.packages) {
 				const materialized = await readFile(
 					join(materializedRoot, 'tarballs', packageEvidence.tarball),
@@ -834,34 +860,11 @@ describe('immutable Release Candidate Chain', () => {
 			});
 		}, 60_000);
 
-		it('accepts only an exact initial publication as a bootstrap latest', async () => {
-			latestVersion = manifest.version;
-			await verifyWithTestSignature(true);
-		}, 60_000);
-
-		it('rejects every bootstrap registry state that is not an exact initial publication', async () => {
-			// The table is built inside the test because `manifest` is only read back in beforeAll.
-			const states: Array<[string, string | undefined, string[]]> = [
-				['no latest tag', undefined, [manifest.version]],
-				['a latest tag on another version', '0.1.0', [manifest.version]],
-				['an earlier published version', manifest.version, ['0.1.0', manifest.version]],
-				['both a foreign latest and an earlier version', '0.1.0', ['0.1.0', manifest.version]],
-			];
-			for (const [state, latest, published] of states) {
-				latestVersion = latest;
-				publishedVersions = published;
-				await expect(verifyWithTestSignature(true), state).rejects.toMatchObject({
-					stderr: expect.stringContaining(
-						'bootstrap registry state is not an exact initial publication',
-					),
-				});
-			}
-		}, 60_000);
-
-		// Only the bootstrap accepts npm's automatic first-publish `latest`. Every release after it
-		// leaves `latest` on the previous version, so `materialize-registry` must refuse a candidate
-		// that `latest` already names unless it is told this is the bootstrap. The gate that decides
-		// that runs before the chain is re-hashed, so this reaches it without a real signature.
+		// npm forces `latest` onto a package's only published version, so a first publication may
+		// hold it. Every release after that leaves `latest` on the previous version, so
+		// `materialize-registry` must refuse a candidate that `latest` already names. The gate that
+		// decides that runs before the chain is re-hashed, so this reaches it without a real
+		// signature.
 		let materializeCount = 0;
 		const materializeRegistry = async () => {
 			const label = `materialized-${(materializeCount += 1)}`;

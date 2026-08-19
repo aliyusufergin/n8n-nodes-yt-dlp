@@ -45,7 +45,7 @@ gh api repos/aliyusufergin/n8n-nodes-yt-dlp/branches/main/protection --jq \
   manual escape hatch, so the gate makes an accidental merge onto red impossible without claiming to
   stop a deliberate one. Everything else merges only on green.
 
-`publish.yml` and `recover-bootstrap.yml` stay `workflow_dispatch`-only and are unaffected.
+`publish.yml` stays `workflow_dispatch`-only and is unaffected.
 
 ## Proof that the gate blocks
 
