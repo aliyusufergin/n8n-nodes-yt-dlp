@@ -395,12 +395,18 @@ jobs:
         with:
           name: release-candidate-0.2.1
           path: .release-candidate
-      - run: |
+      # A run dispatched with `promote_latest` verifies an already promoted candidate, so it reads
+      # back the tag state promotion produced. Without the flag the read-back requires the staged
+      # state instead, where `latest` still names the previous release.
+      - env:
+          PROMOTED: ${{ inputs.promote_latest && '--promoted' || '' }}
+        run: |
           node scripts/release-candidate.mjs materialize-registry \
             .release-candidate \
             https://registry.npmjs.org \
             "$RUNNER_TEMP/published-candidate" \
-            registry-readback.json
+            registry-readback.json \
+            $PROMOTED
       - uses: actions/upload-artifact@v7
         with:
           name: published-candidate-0.2.1

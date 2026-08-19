@@ -89,7 +89,8 @@ this order — main package first — deprecate the bad `0.2.1` names, and ship 
   then review each staged tarball in npm and approve it with npm 2FA. That approval is what
   publishes.
 - Promote `latest` in dependency order — Platform Package, Platform Selector, main package last — and
-  only after the evidence job passes. Enable `promote_latest` so the read-back job confirms it.
+  only after the evidence job passes. Then dispatch `verify-existing` with `promote_latest` enabled,
+  which verifies the promoted tag state and runs the post-promotion read-back.
 - Keep `PUBLISHED_CANDIDATE_RUN_ID` and `PUBLISHED_CANDIDATE_SHA256` pointing at the staged candidate
   that was actually published; a stale pair fails closed.
 - Delete `ACCEPTANCE_STACK_EVIDENCE_JSON` once its protected job has passed.

@@ -730,7 +730,7 @@ export async function verifyRegistryProvenance(
 	}
 }
 
-async function assertRegistryDistTagState(candidate, registry) {
+async function assertRegistryDistTagState(candidate, registry, promoted) {
 	// Deliberately duplicates the invariant verifyCandidate re-asserts below, so a manifest with no
 	// package chain cannot skip this gate silently. No test covers this line and none can: with the
 	// guard removed the loop iterates nothing, issues no request, and verifyCandidate then fails
@@ -753,12 +753,18 @@ async function assertRegistryDistTagState(candidate, registry) {
 			packument['dist-tags']?.latest === candidate.version &&
 			publishedVersions.length === 1 &&
 			publishedVersions[0] === candidate.version;
-		// npm forces `latest` onto a package's first published version, so a candidate that is the
-		// only version may legitimately hold it. Any other candidate holding `latest` was promoted,
-		// which no read-back may treat as staged state. This reads the registry rather than the
-		// publish mode because that forced tag outlives the run that caused it: the `verify-existing`
-		// run that follows the staging run reads the same state from a different mode.
-		if (packument['dist-tags']?.latest === candidate.version && !exactInitialPublication) {
+		// A promotion read-back verifies the state promotion produced, so there `latest` must name the
+		// candidate. Everywhere else the opposite holds: npm forces `latest` onto a package's first
+		// published version, so a candidate that is the only version may legitimately hold it, but
+		// any other candidate holding it was promoted, which no staged read-back may accept. That
+		// reads the registry rather than the publish mode because the forced tag outlives the run
+		// that caused it: the `verify-existing` run following a staging run reads the same state
+		// from a different mode.
+		if (promoted) {
+			if (packument['dist-tags']?.latest !== candidate.version) {
+				fail(`${packageEvidence.name} latest does not identify ${candidate.version}.`);
+			}
+		} else if (packument['dist-tags']?.latest === candidate.version && !exactInitialPublication) {
 			fail(`${packageEvidence.name} latest unexpectedly identifies ${candidate.version}.`);
 		}
 	}
@@ -820,7 +826,7 @@ export async function verifyRegistry(
 	candidateDirectory,
 	registryArgument,
 	outputPath,
-	{ materializeDirectory, verifyBundle = verifySigstoreBundle } = {},
+	{ materializeDirectory, promoted = false, verifyBundle = verifySigstoreBundle } = {},
 ) {
 	const candidateRoot = resolve(candidateDirectory);
 	const candidateBytes = await readFile(join(candidateRoot, 'release-candidate.json'));
@@ -830,7 +836,7 @@ export async function verifyRegistry(
 	// verifyCandidate has validated it, so both are given the same bytes: nothing it decides can
 	// come from a manifest other than the one verified here, and no evidence is recorded until
 	// verifyCandidate returns.
-	await assertRegistryDistTagState(JSON.parse(candidateBytes), registry);
+	await assertRegistryDistTagState(JSON.parse(candidateBytes), registry, promoted);
 	const candidate = await verifyCandidate(candidateRoot, candidateBytes);
 	const materializedRoot =
 		materializeDirectory === undefined ? undefined : resolve(materializeDirectory);
@@ -1193,19 +1199,25 @@ async function main() {
 			}
 			await verifyRegistry(arguments_[0], arguments_[1], arguments_[2]);
 			break;
-		case 'materialize-registry':
-			if (arguments_.length !== 4) {
+		case 'materialize-registry': {
+			const promoted = arguments_.at(-1) === '--promoted';
+			const positional = promoted ? arguments_.slice(0, -1) : arguments_;
+			if (positional.length !== 4) {
 				fail(
-					'Usage: materialize-registry <candidate-directory> <registry-url> <output-directory> <output.json>',
+					'Usage: materialize-registry <candidate-directory> <registry-url> <output-directory> <output.json> [--promoted]',
 				);
 			}
-			// `assertRegistryDistTagState` decides from the published versions whether this
-			// candidate's `latest` is npm's forced first-publish tag or a promotion, which is the
-			// same answer in every publish mode.
-			await verifyRegistry(arguments_[0], arguments_[1], arguments_[3], {
-				materializeDirectory: arguments_[2],
+			// Without `--promoted`, `assertRegistryDistTagState` decides from the published versions
+			// whether this candidate's `latest` is npm's forced first-publish tag or a promotion,
+			// which is the same answer in every publish mode. `--promoted` states that the operator
+			// has already moved `latest`, which is the one case where the candidate is required to
+			// hold it.
+			await verifyRegistry(positional[0], positional[1], positional[3], {
+				materializeDirectory: positional[2],
+				promoted,
 			});
 			break;
+		}
 		case 'audit-registry':
 			if (arguments_.length !== 3) {
 				fail('Usage: audit-registry <candidate.json> <registry-url> <output.json>');

@@ -172,6 +172,9 @@ describe('release workflow', () => {
 
 		const readback = job(workflow, 'registry-readback');
 		expect(readback).toContain('materialize-registry');
+		// A run that verifies an interactively promoted candidate must read back the tag state that
+		// promotion produced, not the staged one it replaced.
+		expect(readback).toContain("inputs.promote_latest && '--promoted'");
 		expect(readback).toContain('name: published-candidate-0.2.1');
 
 		for (const jobName of [
