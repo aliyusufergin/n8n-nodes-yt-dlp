@@ -601,9 +601,19 @@ jobs:
           path: release-evidence-0.2.1.json
           if-no-files-found: error
           retention-days: 90
+      # The evidence for a version is uploaded once and never overwritten. A repeat `verify-existing`
+      # run over the same published bytes — which is what a promotion read-back is — must leave the
+      # first run's asset in place, and must not fail the release for finding it there: that failure
+      # would skip `promote-latest` for a reason unrelated to the candidate.
       - env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "v${VERSION}" "release-evidence-${VERSION}.json"
+        run: |
+          published=$(gh release view "v${VERSION}" --json assets --jq '.assets[].name')
+          if printf '%s\n' "$published" | grep -qxF "release-evidence-${VERSION}.json"; then
+            echo "release-evidence-${VERSION}.json is already published; leaving it unchanged."
+          else
+            gh release upload "v${VERSION}" "release-evidence-${VERSION}.json"
+          fi
 
   promote-latest:
     name: promote-latest

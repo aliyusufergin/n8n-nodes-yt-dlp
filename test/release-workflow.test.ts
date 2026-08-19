@@ -94,6 +94,18 @@ describe('release workflow', () => {
 		expect(workflow).not.toMatch(/\bnpm unpublish\b/u);
 	});
 
+	// Evidence for a version is published once. A second `verify-existing` run over the same public
+	// bytes — the shape a promotion read-back takes — must leave the first run's asset alone without
+	// failing the job, or `promote-latest` is skipped for a reason that has nothing to do with the
+	// release.
+	it('publishes the evidence asset once without failing a repeat run', async () => {
+		const workflow = await readFile('.github/workflows/publish.yml', 'utf8');
+		const evidence = job(workflow, 'release-evidence');
+		expect(evidence).toContain('gh release upload');
+		expect(evidence).not.toContain('--clobber');
+		expect(evidence).toContain('is already published');
+	});
+
 	// The long-lived granular token published 0.2.0 only because package names that do not exist yet
 	// cannot configure a Trusted Publisher. All three names are configured now, so that exception is
 	// retired: the sole publication this workflow can perform is `npm stage publish` under OIDC, and
