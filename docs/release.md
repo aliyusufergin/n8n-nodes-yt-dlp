@@ -152,9 +152,12 @@ npm dist-tag add n8n-nodes-yt-dlp-platform@0.2.1 latest
 npm dist-tag add n8n-nodes-yt-dlp@0.2.1 latest
 ```
 
-Enable `promote_latest` while the workflow waits at its protected `npm-promotion` Environment. The
-job performs unauthenticated registry read-back and passes only if all three `latest` tags identify
-the accepted version; it has no publication or tag-changing credential. `verify-promotion` verifies
+Then rerun the release commit once more with `verify-existing` and `promote_latest` enabled. That
+run verifies the promotion rather than the staging that preceded it: registry read-back is given
+`--promoted` and now requires all three `latest` tags to identify the candidate, where a run without
+the flag refuses a candidate that `latest` already names. Promotion therefore happens before this
+dispatch, never during it. The `promote-latest` job waits at the protected `npm-promotion`
+Environment, performs unauthenticated read-back, and has no publication or tag-changing credential. `verify-promotion` verifies
 the published-byte candidate directory first, so what it compares against the registry is the
 read-back artifact rather than the checkout. For each of the three packages it records the full
 dist-tag set, requires `latest` to identify the accepted version, and re-reads the registry metadata,

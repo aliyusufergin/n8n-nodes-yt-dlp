@@ -644,7 +644,7 @@ describe('immutable Release Candidate Chain', () => {
 			sourceChecksum = undefined;
 		});
 
-		const verifyWithTestSignature = async (materializeDirectory?: string) =>
+		const verifyWithTestSignature = async (materializeDirectory?: string, promoted = false) =>
 			await execFileAsync(
 				process.execPath,
 				[
@@ -656,6 +656,7 @@ describe('immutable Release Candidate Chain', () => {
 							await verifyRegistry(candidateRoot, registry, outputPath, {
 								materializeDirectory:
 									process.env.MATERIALIZE_DIRECTORY || undefined,
+								promoted: process.env.PROMOTED === 'true',
 								verifyBundle: async (bundle, identity) => {
 									if (
 										bundle?.dsseEnvelope?.signatures?.length !== 1 ||
@@ -679,6 +680,7 @@ describe('immutable Release Candidate Chain', () => {
 					env: {
 						...process.env,
 						MATERIALIZE_DIRECTORY: materializeDirectory ?? '',
+						PROMOTED: String(promoted),
 						RUNNER_REGION: 'test-region',
 					},
 				},
@@ -714,6 +716,32 @@ describe('immutable Release Candidate Chain', () => {
 				],
 				{ cwd: repositoryRoot },
 			);
+		// The chain verifies a promoted candidate with the same public bytes it staged, so the tag
+		// state it must see is the opposite one: read-back before promotion refuses a candidate that
+		// `latest` already names, and read-back of a promotion requires it.
+		it('reads back a promoted candidate that latest identifies', async () => {
+			latestVersion = manifest.version;
+			publishedVersions = ['0.2.0', manifest.version];
+			await verifyWithTestSignature(undefined, true);
+			const readback = JSON.parse(
+				await readFile(join(candidateRoot, 'registry-readback.json'), 'utf8'),
+			) as { outcome: string; packages: unknown[] };
+			expect(readback.outcome).toBe('pass');
+			expect(readback.packages).toHaveLength(manifest.packages.length);
+		}, 60_000);
+
+		it('rejects a promoted read-back whose latest identifies another version', async () => {
+			latestVersion = '0.2.0';
+			publishedVersions = ['0.2.0', manifest.version];
+			await expect(verifyWithTestSignature(undefined, true)).rejects.toMatchObject({
+				stderr: expect.stringContaining(`latest does not identify ${manifest.version}`),
+			});
+			latestVersion = undefined;
+			await expect(verifyWithTestSignature(undefined, true)).rejects.toMatchObject({
+				stderr: expect.stringContaining(`latest does not identify ${manifest.version}`),
+			});
+		}, 60_000);
+
 		const verifyPromotionWithTestSignature = async () =>
 			await execFileAsync(
 				process.execPath,
