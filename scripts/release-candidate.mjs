@@ -54,16 +54,19 @@ const imageIdentitiesByLane = {
 	'acceptance-stack': [
 		'docker.n8n.io/n8nio/n8n@sha256:f5140088385af2d4e681e177d8264bcb41e8fe126062030c5c65cd8f3e1605e1',
 	],
+	// The frozen stable head. `e2e/release-gate/run.mjs` runs the capacity and multiworker lanes
+	// against this anchor alone, and it is the third of the three-anchor lane's anchors, so all
+	// three expectations move together whenever the head is refrozen.
 	capacity: [
-		'docker.n8n.io/n8nio/n8n@sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060',
+		'docker.n8n.io/n8nio/n8n@sha256:7e82936bc03d310ddb8759c361f4e225412f0c3daad8d4b4e0d10c7e034c1b11',
 	],
 	multiworker: [
-		'docker.n8n.io/n8nio/n8n@sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060',
+		'docker.n8n.io/n8nio/n8n@sha256:7e82936bc03d310ddb8759c361f4e225412f0c3daad8d4b4e0d10c7e034c1b11',
 	],
 	'three-anchor': [
 		'docker.n8n.io/n8nio/n8n@sha256:bd39d2d238b51af2626b2ac7b6b9938efff069390cce83ba769e52f10eedf795',
 		'docker.n8n.io/n8nio/n8n@sha256:6dd442962208ff080af3e0a8ab5254eb4c6138f2d188d4a7e3cf84eed3b7eae1',
-		'docker.n8n.io/n8nio/n8n@sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060',
+		'docker.n8n.io/n8nio/n8n@sha256:7e82936bc03d310ddb8759c361f4e225412f0c3daad8d4b4e0d10c7e034c1b11',
 	],
 };
 const testIdentitiesByLane = {

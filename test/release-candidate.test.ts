@@ -34,15 +34,15 @@ const imagesByLane: Partial<Record<(typeof requiredLanes)[number], string[]>> = 
 		'docker.n8n.io/n8nio/n8n@sha256:f5140088385af2d4e681e177d8264bcb41e8fe126062030c5c65cd8f3e1605e1',
 	],
 	capacity: [
-		'docker.n8n.io/n8nio/n8n@sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060',
+		'docker.n8n.io/n8nio/n8n@sha256:7e82936bc03d310ddb8759c361f4e225412f0c3daad8d4b4e0d10c7e034c1b11',
 	],
 	multiworker: [
-		'docker.n8n.io/n8nio/n8n@sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060',
+		'docker.n8n.io/n8nio/n8n@sha256:7e82936bc03d310ddb8759c361f4e225412f0c3daad8d4b4e0d10c7e034c1b11',
 	],
 	'three-anchor': [
 		'docker.n8n.io/n8nio/n8n@sha256:bd39d2d238b51af2626b2ac7b6b9938efff069390cce83ba769e52f10eedf795',
 		'docker.n8n.io/n8nio/n8n@sha256:6dd442962208ff080af3e0a8ab5254eb4c6138f2d188d4a7e3cf84eed3b7eae1',
-		'docker.n8n.io/n8nio/n8n@sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060',
+		'docker.n8n.io/n8nio/n8n@sha256:7e82936bc03d310ddb8759c361f4e225412f0c3daad8d4b4e0d10c7e034c1b11',
 	],
 };
 
@@ -407,6 +407,48 @@ describe('immutable Release Candidate Chain', () => {
 		await expect(finalize()).rejects.toMatchObject({
 			stderr: expect.stringContaining('source-delivery evidence has no valid time and region'),
 		});
+	});
+
+	it('rejects the superseded frozen stable head anchor', async () => {
+		const candidateBytes = await readFile(join(candidateRoot, 'release-candidate.json'));
+		const evidenceRoot = join(candidateRoot, 'superseded-head-identities');
+		// The 2.30.7 digest the stable head was frozen at before the 2026-08-13 advance to 2.34.5.
+		// The lanes moved with `e2e/release-gate/run.mjs` while this expectation did not, and
+		// `release-evidence` failed on evidence that was in fact correct. Each of the three lanes
+		// bound to the head is checked, so the next advance cannot pass a stale expectation either.
+		const supersededHead =
+			'docker.n8n.io/n8nio/n8n@sha256:4da852b9488cf32bedc65ba1239216b50b0989f8187597e164b2901631954060';
+		for (const lane of ['three-anchor', 'capacity', 'multiworker'] as const) {
+			await writeGateEvidence(evidenceRoot, sha256(candidateBytes));
+			const lanePath = join(evidenceRoot, `${lane}.json`);
+			const evidence = JSON.parse(await readFile(lanePath, 'utf8')) as {
+				identities: { images: string[] };
+			};
+			const laneImages = imagesByLane[lane] ?? [];
+			const frozenHead = laneImages[laneImages.length - 1];
+			evidence.identities.images = evidence.identities.images.map((image) =>
+				image === frozenHead ? supersededHead : image,
+			);
+			await writeFile(lanePath, `${JSON.stringify(evidence)}\n`);
+
+			await expect(
+				execFileAsync(
+					process.execPath,
+					[
+						'scripts/release-candidate.mjs',
+						'finalize-evidence',
+						join(candidateRoot, 'release-candidate.json'),
+						evidenceRoot,
+						join(candidateRoot, 'release-evidence-0.2.1.json'),
+					],
+					{ cwd: repositoryRoot },
+				),
+			).rejects.toMatchObject({
+				stderr: expect.stringContaining(
+					`${lane} evidence has the wrong official n8n image identity`,
+				),
+			});
+		}
 	});
 
 	it('blocks bootstrap continuation until token and secret retirement are proven', async () => {
