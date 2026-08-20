@@ -173,8 +173,14 @@ describe('release workflow', () => {
 		const readback = job(workflow, 'registry-readback');
 		expect(readback).toContain('materialize-registry');
 		// A run that verifies an interactively promoted candidate must read back the tag state that
-		// promotion produced, not the staged one it replaced.
-		expect(readback).toContain("inputs.promote_latest && '--promoted'");
+		// promotion produced, not the staged one it replaced. The dispatched boolean can arrive as a
+		// boolean or as its string form, and the two contexts disagree about the string `false`, so
+		// both forms are compared explicitly wherever the input decides something.
+		for (const guarded of [readback, job(workflow, 'promote-latest')]) {
+			expect(guarded).toContain("inputs.promote_latest == true");
+			expect(guarded).toContain("inputs.promote_latest == 'true'");
+			expect(guarded).not.toMatch(/inputs\.promote_latest\s*&&/u);
+		}
 		expect(readback).toContain('name: published-candidate-0.2.1');
 
 		for (const jobName of [
