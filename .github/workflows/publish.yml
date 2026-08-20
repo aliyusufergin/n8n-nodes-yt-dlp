@@ -398,8 +398,15 @@ jobs:
       # A run dispatched with `promote_latest` verifies an already promoted candidate, so it reads
       # back the tag state promotion produced. Without the flag the read-back requires the staged
       # state instead, where `latest` still names the previous release.
+      # A dispatched boolean can arrive as a boolean or as its string form, and a non-empty string
+      # is truthy in an expression while a job `if` reads the literal string `false` as false. A bare
+      # `inputs.promote_latest` therefore passes `--promoted` for a run whose `promote-latest` job is
+      # skipped, which is exactly backwards: the staged read-back would accept a promoted `latest`.
+      # Both forms are compared explicitly instead.
       - env:
-          PROMOTED: ${{ inputs.promote_latest && '--promoted' || '' }}
+          PROMOTED: >-
+            ${{ (inputs.promote_latest == true || inputs.promote_latest == 'true')
+            && '--promoted' || '' }}
         run: |
           node scripts/release-candidate.mjs materialize-registry \
             .release-candidate \
@@ -623,7 +630,9 @@ jobs:
 
   promote-latest:
     name: promote-latest
-    if: inputs.publish_mode == 'verify-existing' && inputs.promote_latest
+    if: >-
+      inputs.publish_mode == 'verify-existing' &&
+      (inputs.promote_latest == true || inputs.promote_latest == 'true')
     needs: release-evidence
     runs-on: ubuntu-24.04
     environment: npm-promotion
