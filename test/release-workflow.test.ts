@@ -88,6 +88,11 @@ describe('release workflow', () => {
 		);
 		const promote = job(workflow, 'promote-latest');
 		expect(promote).toContain('verify-promotion');
+		// `publish-next` is skipped in every `verify-existing` run and that skip propagates to any
+		// descendant without `always()`, which silently skipped this job behind the read-back and
+		// evidence jobs that do declare it.
+		expect(promote).toContain('always()');
+		expect(promote).toContain("needs.release-evidence.result == 'success'");
 		expect(promote).toContain('npm ci');
 		expect(promote).toContain('name: gate-promote-latest');
 		expect(promote).not.toContain('npm dist-tag add');

@@ -630,9 +630,16 @@ jobs:
 
   promote-latest:
     name: promote-latest
+    # `publish-next` is skipped in every `verify-existing` run, and a skipped job propagates down
+    # the graph to any descendant that does not say `always()`. Read-back and the evidence job each
+    # say it and run; this job did not, so it was skipped behind them however its own condition read.
+    # `always()` costs an explicit success check on what it needs, which is the same shape the gates
+    # above use.
     if: >-
+      always() &&
       inputs.publish_mode == 'verify-existing' &&
-      (inputs.promote_latest == true || inputs.promote_latest == 'true')
+      (inputs.promote_latest == true || inputs.promote_latest == 'true') &&
+      needs.release-evidence.result == 'success'
     needs: release-evidence
     runs-on: ubuntu-24.04
     environment: npm-promotion
