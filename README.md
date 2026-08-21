@@ -17,12 +17,20 @@ The v0.2.1 support statement has two deliberately separate parts:
 | --- | --- |
 | Uyumluluk Hedefi (compatibility target) | n8n `>=2.0.0 <3.0.0` |
 | Doğrulanmış Destek (exact verified support) | Official n8n Docker Linux x64 images for n8n 2.0.0, 2.27.4, and 2.34.5 |
+| Acceptance stack | n8n 2.34.6, where the release acceptance E2E ran |
 | Binary storage | Queue mode with `database` binary storage |
 | Worker concurrency | 1 until a lower-concurrency disposable capacity lane passes |
 
 The compatibility target is an intention, not certification of every n8n 2.x patch. The
 stable-head anchor was advanced from 2.30.7 to 2.34.5 on 2026-08-13 and refrozen there. Versions
 after that head, and intermediate versions not listed above, are unverified for node 0.2.1.
+
+The acceptance stack is listed separately because it is not part of Doğrulanmış Destek. Its
+version is whatever the acceptance deployment is running when a release is accepted, so it moves
+without a gate and cannot carry a support statement; the three anchors are frozen and re-run on
+every release. Running n8n 2.34.6 therefore means the acceptance E2E for 0.2.1 ran on that exact
+version, not that 2.34.6 is verified support. `docs/release-record-0.2.1.md` records the exact
+image digest.
 
 Only official n8n Docker Linux x64 is supported. n8n Cloud, n8n 1.x or 3.x, Linux arm64,
 Windows, macOS, bare-metal npm installs, alternative container bases, and other Linux x64
