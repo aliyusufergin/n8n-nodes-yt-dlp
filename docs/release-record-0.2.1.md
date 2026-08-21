@@ -81,6 +81,24 @@ All three read `next=0.2.1`, `latest=0.2.0` at rehearsal time. A rollback would 
 this order — main package first — deprecate the bad `0.2.1` names, and ship a new lockstep patch. No
 `npm unpublish`.
 
+## Recorded promotion read-back
+
+`latest` was moved by hand with npm 2FA in dependency order — Platform Package, Platform Selector,
+main package last — and the `promote-latest` job then read the result back from the public registry
+with no publication or tag-changing credential. Its evidence (`gate-promote-latest` on run
+[32390677734](https://github.com/aliyusufergin/n8n-nodes-yt-dlp/actions/runs/32390677734)) is bound to
+candidate `036a5ae8d9fed314cc1ef465cc3e86ce52eb2562e468974528cd96792573eb47` and records
+`outcome: pass`, `waived: false`:
+
+| Package | dist-tags after promotion | Tarball SHA-256 re-read from the registry |
+| --- | --- | --- |
+| `n8n-nodes-yt-dlp-linux-x64` | `latest=0.2.1`, `next=0.2.1` | `04acc71c…` |
+| `n8n-nodes-yt-dlp-platform` | `latest=0.2.1`, `next=0.2.1` | `cd116ec0…` |
+| `n8n-nodes-yt-dlp` | `latest=0.2.1`, `next=0.2.1` | `d227b8ab…` |
+
+Registry metadata, tarball integrity, and Sigstore provenance were re-verified per package, and both
+Corresponding Source assets still resolve at their versioned URLs with matching `.sha256` sidecars.
+
 ## Operator responsibilities
 
 - Publish only through the stage-only path. `publish.yml` holds no npm token; each package's Trusted
