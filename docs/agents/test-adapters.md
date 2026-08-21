@@ -54,3 +54,18 @@ In practice:
 | `e2e/release-gate/` | none | published tarballs on a real n8n |
 
 If a change spans two rows, the test belongs in the lower row.
+
+## When the misplaced Adapter stays
+
+Rule 2 asks where a test's Adapter sits, not that every Adapter be removed. A test whose Adapter
+is below the layer under test has two honest outcomes: move it up, or narrow what it claims and
+add a test at the real seam.
+
+The Artifact budget cases in `test/download.test.ts` took the second path deliberately. They pin
+`validateArtifactSet`'s own arithmetic — the count boundary at 20 and 50, the size boundary to the
+byte, the running total across several Artifacts — and reproducing those against real yt-dlp would
+mean downloading hundreds of MiB per case. They keep the fixture executable, say `validates`
+rather than `enforces`, and the pair they cannot see is covered in `test/real-toolchain.test.ts`.
+
+What the rule forbids is the third outcome: leaving the Adapter where it is and letting the test
+keep its original claim.

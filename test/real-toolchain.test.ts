@@ -26,6 +26,9 @@ const ffprobePath = join(toolchainDirectory, 'ffprobe');
 let fixtureDirectory: string;
 let origin: Server;
 let originUrl: string;
+/** Bytes the size-withholding route has fully flushed, so a test can tell a completed download
+ * from an early abort without reaching into error internals. */
+let chunkedBytesServed = 0;
 
 async function collect(stream: Readable): Promise<Buffer> {
 	const chunks: Buffer[] = [];
@@ -309,12 +312,26 @@ beforeAll(async () => {
 			);
 			return;
 		}
-		const requestedName = pathname.slice(1);
+		// A real origin may also stream a body whose size it never advertises. That is production
+		// behaviour, not a forgiving Adapter: it is the case the option profile's `?` suffix exists
+		// for, so it needs an origin that can reproduce it.
+		const withheldSize = pathname.startsWith('/chunked/');
+		const requestedName = withheldSize
+			? pathname.slice('/chunked/'.length)
+			: pathname.slice(1);
 		const fixtureName = ['alpha.mp4', 'bravo.mp4'].includes(requestedName)
 			? 'combined.mp4'
 			: requestedName;
 		try {
 			const body = await readFile(join(fixtureDirectory, fixtureName));
+			if (withheldSize) {
+				response.writeHead(200, { 'content-type': contentType(requestedName) });
+				response.on('finish', () => {
+					chunkedBytesServed += body.byteLength;
+				});
+				response.end(body);
+				return;
+			}
 			// A real origin advertises the size of a static file. Answering chunked instead hides
 			// it, and a size yt-dlp cannot see before the download changes which Resource Envelope
 			// path a request takes, so the fixture origin must not be more forgiving than reality.
@@ -358,6 +375,34 @@ describe('real packaged media toolchain', () => {
 		await expect(executeYtDlpNode(context)).rejects.toMatchObject({
 			context: { errorCode: 'RESOURCE_LIMIT', itemIndex: 0 },
 		});
+	}, 60_000);
+
+	// The unknown-size branch of the same pair. `resourceEnvelopeOptionProfile` writes
+	// `filesize<=?N`, whose `?` suffix deliberately admits a format whose size yt-dlp cannot learn
+	// before downloading, so that case has to reach the post-hoc Artifact checks and classify
+	// there. Without an origin that withholds the size, every test takes the early-abort path and
+	// this branch has no coverage at all.
+	it('classifies media whose size the origin never advertises as RESOURCE_LIMIT', async () => {
+		const probe = await fetch(`${originUrl}/chunked/oversized.mp4`);
+		const probeBytes = (await probe.arrayBuffer()).byteLength;
+		expect(probe.headers.get('content-length')).toBeNull();
+		chunkedBytesServed = 0;
+		const context = createExecutionContext(`${originUrl}/chunked/oversized.mp4`, '', {
+			maximumArtifactSizeMiB: 1,
+			maximumTotalArtifactSizeMiB: 2,
+		});
+
+		const error = await executeYtDlpNode(context).catch((cause: unknown) => cause);
+
+		expect(error).toMatchObject({ context: { errorCode: 'RESOURCE_LIMIT', itemIndex: 0 } });
+		// The classification has to come from the post-hoc Artifact checks, not from the option
+		// profile's early abort — otherwise the `?` branch is still untested and this case only
+		// repeats the test above.
+		// The classification has to come from the post-hoc Artifact checks, not from the option
+		// profile's early abort — otherwise the `?` branch is still untested and this case only
+		// repeats the test above. A completed download is the observable difference: an early
+		// abort never pulls the whole body.
+		expect(chunkedBytesServed).toBeGreaterThanOrEqual(probeBytes);
 	}, 60_000);
 
 	// The other half of the pair, and the interaction #52 actually broke: an envelope whose

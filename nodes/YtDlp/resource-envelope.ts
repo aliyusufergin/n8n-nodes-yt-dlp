@@ -35,15 +35,6 @@ export const WORKSPACE_HEADROOM_BYTES = 64 * MEBIBYTE;
 export const TOOLCHAIN_RUNTIME_BASELINE_BYTES = 128 * MEBIBYTE;
 
 /**
- * yt-dlp fragment concurrency and FFmpeg thread count are Resource Envelope terms the request
- * cannot exceed because the node pins them, so they are enforced by the option profile rather
- * than classified after the fact. They stay named terms so a change to either is a change to the
- * envelope, not an untracked argv edit.
- */
-const FRAGMENT_CONCURRENCY = 1;
-const FFMPEG_THREADS = 1;
-
-/**
  * yt-dlp exits with this code when a break condition stops the download process. The only break
  * condition an execution plan carries is the single-Artifact size filter this module projects in
  * `resourceEnvelopeOptionProfile` — `--max-downloads` and `--break-on-existing` are outside the
@@ -94,6 +85,8 @@ export type ResourceEnvelopeErrorCode = typeof RESOURCE_LIMIT | typeof REQUEST_T
 interface ImposedResourceEnvelopeTerm {
 	readonly enforcement: 'imposed';
 	readonly enforcedBy: string;
+	/** The value the node pins the term to. The option profile projects it from here. */
+	readonly value: number;
 }
 
 /**
@@ -193,10 +186,12 @@ export const RESOURCE_ENVELOPE_TERMS = {
 	fragmentConcurrency: {
 		enforcement: 'imposed',
 		enforcedBy: '--concurrent-fragments in the yt-dlp option profile',
+		value: 1,
 	},
 	ffmpegThreads: {
 		enforcement: 'imposed',
 		enforcedBy: 'ffmpeg:-threads in the yt-dlp postprocessor arguments',
+		value: 1,
 	},
 	playlistEntries: {
 		// The playlist selection cap is checked by the V1 Argument Allowlist while the Arguments
@@ -217,11 +212,6 @@ export type ViolableResourceEnvelopeTermName = {
 }[ResourceEnvelopeTerm];
 
 /**
- * The violable terms whose declared code is `RESOURCE_LIMIT`. `resourceEnvelopeViolationError`
- * only accepts these, so a term that ADR 0026 gives its own code cannot be smuggled into a
- * Resource Limit error class by a call site.
- */
-/**
  * The violable terms a workflow author may narrow. A configuration outside a term's hard cap
  * violates the Resource Envelope before any request runs.
  */
@@ -231,6 +221,11 @@ export type ConfigurableResourceEnvelopeTerm = {
 		: never;
 }[ViolableResourceEnvelopeTermName];
 
+/**
+ * The violable terms whose declared code is `RESOURCE_LIMIT`. `resourceLimitViolationError` only
+ * accepts these, so a term that ADR 0026 gives its own code cannot be smuggled into a Resource
+ * Limit error class by a call site.
+ */
 export type ResourceLimitTerm = {
 	[Term in ViolableResourceEnvelopeTermName]: TermTable[Term]['errorCode'] extends typeof RESOURCE_LIMIT
 		? Term
@@ -241,6 +236,11 @@ export type ResourceLimitTerm = {
  * Every produced `ResourceEnvelope` field, and the term it carries. Adding a field without naming
  * its term does not satisfy this Interface, and the term it names has to exist in the table
  * above — so a new envelope number cannot reach an enforcement site unclassified.
+ *
+ * This declaration exists for that compile-time bind alone; no enforcement site reads it at run
+ * time. Terms that are not produced fields — the imposed ones, and the preflight one — are bound
+ * instead by the term-inventory test in `test/resource-envelope.test.ts`, which fails when the
+ * table and the Resource Envelope of ADR 0019 stop agreeing.
  */
 export const RESOURCE_ENVELOPE_FIELD_TERMS: Readonly<
 	Record<keyof ResourceEnvelope, ResourceEnvelopeTerm>
@@ -279,7 +279,7 @@ export function resourceEnvelopeConfigurationError(
 	);
 }
 
-export function resourceEnvelopeViolationError(
+export function resourceLimitViolationError(
 	term: ResourceLimitTerm,
 ): YtDlpRequestResourceLimitError | YtDlpExecutionResourceLimitError {
 	const violation = classifyResourceEnvelopeViolation(term);
@@ -303,9 +303,9 @@ export function resourceEnvelopeOptionProfile(envelope: ResourceEnvelope): strin
 		`filesize<=?${envelope.maximumArtifactSizeBytes} & ` +
 			`filesize_approx<=?${envelope.maximumArtifactSizeBytes}`,
 		'--concurrent-fragments',
-		String(FRAGMENT_CONCURRENCY),
+		String(RESOURCE_ENVELOPE_TERMS.fragmentConcurrency.value),
 		'--postprocessor-args',
-		`ffmpeg:-threads ${FFMPEG_THREADS}`,
+		`ffmpeg:-threads ${RESOURCE_ENVELOPE_TERMS.ffmpegThreads.value}`,
 	];
 }
 

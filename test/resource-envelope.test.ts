@@ -10,7 +10,7 @@ import {
 	classifyResourceEnvelopeViolation,
 	createResourceEnvelope,
 	resourceEnvelopeOptionProfile,
-	resourceEnvelopeViolationError,
+	resourceLimitViolationError,
 	type ResourceEnvelope,
 	type ResourceEnvelopeTerm,
 } from '../nodes/YtDlp/resource-envelope';
@@ -86,10 +86,33 @@ describe('Resource Envelope violation classification', () => {
 		}
 	});
 
+	it('declares exactly the Resource Envelope of ADR 0019', () => {
+		// The tripwire for terms that are not produced envelope fields: the imposed ones and the
+		// preflight one are bound by nothing at compile time, so widening the Resource Envelope
+		// without classifying the new term fails here instead of silently reaching a call site.
+		expect(Object.keys(RESOURCE_ENVELOPE_TERMS).sort()).toEqual([
+			'artifactCount',
+			'artifactSize',
+			'executionDuration',
+			'executionInputs',
+			'ffmpegThreads',
+			'fragmentConcurrency',
+			'playlistEntries',
+			'requestTimeout',
+			'totalArtifactSize',
+			'workspaceSize',
+		]);
+	});
+
 	it('classifies every declared term exactly once', () => {
 		for (const [term, definition] of Object.entries(RESOURCE_ENVELOPE_TERMS)) {
 			expect(['imposed', 'preflight', 'violable'], term).toContain(definition.enforcement);
-			if (definition.enforcement !== 'violable') continue;
+			if (definition.enforcement !== 'violable') {
+				// A term nothing classifies still has to say where it is enforced, so an unclassified
+				// term cannot mean "nobody knows".
+				expect(definition.enforcedBy.length, term).toBeGreaterThan(0);
+				continue;
+			}
 			expect(FROZEN_REQUEST_FAILURE_CODES, term).toContain(definition.errorCode);
 			expect(definition.violationMessage.length, term).toBeGreaterThan(0);
 		}
@@ -117,13 +140,13 @@ describe('Resource Envelope violation classification', () => {
 		{ term: 'artifactSize', name: 'YtDlpRequestResourceLimitError' },
 		{ term: 'executionInputs', name: 'YtDlpExecutionResourceLimitError' },
 	] as const)('builds a $name for a violated $term', ({ term, name }) => {
-		const error = resourceEnvelopeViolationError(term);
+		const error = resourceLimitViolationError(term);
 
 		expect(error).toMatchObject({ code: RESOURCE_LIMIT, name });
 		expect(error.message).toBe(classifyResourceEnvelopeViolation(term).violationMessage);
 	});
 
-	it('projects the imposed terms into the yt-dlp option profile', () => {
+	it('projects the terms that reach yt-dlp as options', () => {
 		const envelope = createResourceEnvelope({ maximumArtifactSizeMiB: 1 });
 
 		expect(resourceEnvelopeOptionProfile(envelope)).toEqual([

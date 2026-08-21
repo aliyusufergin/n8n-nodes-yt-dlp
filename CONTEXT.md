@@ -92,6 +92,10 @@ _Avoid_: Output path, recursive output tree, temp dizini
 Bir node execution ve İndirme İsteği için input/playlist/artifact sayısı, dosya/toplam/workspace boyutu, süre, FFmpeg thread'i ve fragment concurrency üzerinde uygulanan varsayılan ve yükseltilemez hard cap'ler.
 _Avoid_: yt-dlp resource flag'i, operatör kapasite garantisi, sınırsız playlist
 
+**Resource Envelope Terimi**:
+Resource Envelope'un tek tek adlandırılmış bileşenlerinden biri. Her terim tek bir tabloda tam bir kez sınıflandırılır: node'un sabitlediği ve ihlal edilemeyen `imposed`, İndirme İsteği doğmadan başka bir sözleşmenin reddettiği `preflight`, ya da çalışırken ihlal edilebilen ve ihlalinin kararlı `errorCode`'u aynı deklarasyonda yaşayan `violable`. Enforcement siteleri kodu ve mesajı oradan okur; hiçbiri kendi sınıflandırmasına karar vermez.
+_Avoid_: Site başına sınıflandırma, isimsiz argv sabiti, serbest limit adı
+
 **Process Group**:
 Linux'ta detached yt-dlp lideri ile onun FFmpeg ve Deno descendants'ından oluşan, cancellation/timeout/limit halinde tek termination state machine tarafından birlikte sinyallenen process grubu.
 _Avoid_: Yalnız child PID, shell process'i, unref child

@@ -23,7 +23,7 @@ import {
 	YtDlpRequestResourceLimitError,
 	createResourceEnvelope,
 	resourceEnvelopeOptionProfile,
-	resourceEnvelopeViolationError,
+	resourceLimitViolationError,
 	type ResourceEnvelope,
 } from './resource-envelope';
 import { removeWorkspace } from './workspace';
@@ -164,7 +164,7 @@ async function validateArtifactSet(
 		const artifactNames = (await readdir(descriptorDirectoryPath)).sort();
 		if (artifactNames.length === 0) throw invalidArtifactSet();
 		if (artifactNames.length > resourceEnvelope.maximumArtifactCount) {
-			throw resourceEnvelopeViolationError('artifactCount');
+			throw resourceLimitViolationError('artifactCount');
 		}
 
 		for (const fileName of artifactNames) {
@@ -191,11 +191,11 @@ async function validateArtifactSet(
 					throw invalidArtifactSet();
 				}
 				if (descriptorStat.size > resourceEnvelope.maximumArtifactSizeBytes) {
-					throw resourceEnvelopeViolationError('artifactSize');
+					throw resourceLimitViolationError('artifactSize');
 				}
 				totalArtifactSizeBytes += descriptorStat.size;
 				if (totalArtifactSizeBytes > resourceEnvelope.maximumTotalArtifactSizeBytes) {
-					throw resourceEnvelopeViolationError('totalArtifactSize');
+					throw resourceLimitViolationError('totalArtifactSize');
 				}
 				await assertDirectoryIdentity(directory);
 				artifacts.push({ fileName, fileHandle, stat: descriptorStat });

@@ -48,7 +48,7 @@ import {
 	YtDlpExecutionResourceLimitError,
 	YtDlpRequestResourceLimitError,
 	createResourceEnvelope,
-	resourceEnvelopeViolationError,
+	resourceLimitViolationError,
 	type ResourceEnvelope,
 	type ResourceLimitTerm,
 } from './resource-envelope';
@@ -186,7 +186,7 @@ function executionResourceLimitError(
 	execution: IExecuteFunctions,
 	term: ResourceLimitTerm,
 ): NodeOperationError {
-	const violation = resourceEnvelopeViolationError(term);
+	const violation = resourceLimitViolationError(term);
 	const errorCode = violation.code;
 	const error = new NodeOperationError(execution.getNode(), violation, {
 		description: errorCode,

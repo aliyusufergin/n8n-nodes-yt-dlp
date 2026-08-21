@@ -279,7 +279,11 @@ describe('download request', () => {
 				response.end('authentication required');
 				return;
 			}
-			response.writeHead(200, { 'content-type': 'video/mp4' });
+			// See `docs/agents/test-adapters.md`: a real origin advertises the size of a static body.
+			response.writeHead(200, {
+				'content-length': String(fixture.byteLength),
+				'content-type': 'video/mp4',
+			});
 			response.end(fixture);
 		});
 		servers.push(origin);
