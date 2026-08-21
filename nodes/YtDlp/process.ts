@@ -12,6 +12,9 @@ import type { YtDlpExecutionPlan } from './arguments';
 import {
 	DEFAULT_REQUEST_TIMEOUT_MINUTES,
 	MAXIMUM_REQUEST_TIMEOUT_MINUTES,
+	YTDLP_BREAK_EXIT_CODE,
+	classifyResourceEnvelopeViolation,
+	type ViolableResourceEnvelopeTermName,
 } from './resource-envelope';
 
 export interface YtDlpSpawnContext {
@@ -32,14 +35,6 @@ export const DEFAULT_REQUEST_TIMEOUT_MS = DEFAULT_REQUEST_TIMEOUT_MINUTES * 60 *
 export const MAXIMUM_REQUEST_TIMEOUT_MS = MAXIMUM_REQUEST_TIMEOUT_MINUTES * 60 * 1000;
 export const PROCESS_TERMINATION_GRACE_MS = 5_000;
 export const WORKSPACE_POLL_INTERVAL_MS = 1_000;
-/**
- * yt-dlp exits 101 when a break condition stops the download process. The only break condition an
- * execution plan carries is the Resource Envelope's single-Artifact size filter — `--max-downloads`
- * and `--break-on-existing` are outside the supported option profile and cannot be requested — so
- * this exit code means the request exceeded its Resource Envelope, not that yt-dlp failed.
- */
-export const YTDLP_BREAK_EXIT_CODE = 101;
-
 export type YtDlpProcessErrorCode =
 	| 'PROCESS_OUTPUT_LIMIT'
 	| 'RESOURCE_LIMIT'
@@ -168,6 +163,24 @@ export type SpawnProcess = (
 
 const spawnProcess: SpawnProcess = (command, args, options) => spawn(command, [...args], options);
 
+/**
+ * Builds the process error for a violated Resource Envelope term. The code and the message both
+ * come from the term's classification, so the supervisor never decides either one itself.
+ */
+function envelopeViolation(
+	term: ViolableResourceEnvelopeTermName,
+	stdoutTail: BoundedRedactedTail,
+	stderrTail: BoundedRedactedTail,
+): YtDlpProcessError {
+	const violation = classifyResourceEnvelopeViolation(term);
+	return new YtDlpProcessError(
+		violation.errorCode,
+		violation.violationMessage,
+		stdoutTail.finish(),
+		stderrTail.finish(),
+	);
+}
+
 function workspaceMeasurementError(cause: unknown): Error {
 	return new Error('The yt-dlp workspace could not be measured.', { cause });
 }
@@ -246,11 +259,12 @@ export async function superviseYtDlpExecutionPlan(
 	const stderrTail = new BoundedRedactedTail(context.redactValues ?? []);
 	const child = spawnYtDlpExecutionPlan(executablePath, plan, context);
 	let outputBytes = 0;
+	// A supervisor termination is either a violated Resource Envelope term — named, so the code it
+	// reports comes from the term's single classification — or one of the reasons that belong to
+	// the process contract rather than the envelope.
 	type TerminationReason =
-		| Extract<
-				YtDlpProcessErrorCode,
-				'PROCESS_OUTPUT_LIMIT' | 'REQUEST_TIMEOUT' | 'RESOURCE_LIMIT'
-		  >
+		| Extract<ViolableResourceEnvelopeTermName, 'requestTimeout' | 'workspaceSize'>
+		| Extract<YtDlpProcessErrorCode, 'PROCESS_OUTPUT_LIMIT'>
 		| 'CANCELLED'
 		| 'WORKSPACE_MONITOR_FAILURE';
 	let terminationReason: TerminationReason | undefined;
@@ -346,7 +360,7 @@ export async function superviseYtDlpExecutionPlan(
 		latestWorkspaceMeasurement = (async () => {
 			try {
 				const size = await workspaceApparentSize(context.cwd, context.workspaceLimitBytes!);
-				if (size > context.workspaceLimitBytes!) requestTermination('RESOURCE_LIMIT');
+				if (size > context.workspaceLimitBytes!) requestTermination('workspaceSize');
 			} catch (error) {
 				workspaceMonitorError =
 					error instanceof Error ? error : new Error('The workspace could not be measured.');
@@ -392,7 +406,7 @@ export async function superviseYtDlpExecutionPlan(
 	const stdinFinished = settleStream(child.stdin, true);
 	const stdoutFinished = settleStream(child.stdout);
 	const stderrFinished = settleStream(child.stderr);
-	const timeoutTimer = setTimeout(() => requestTermination('REQUEST_TIMEOUT'), timeoutMs);
+	const timeoutTimer = setTimeout(() => requestTermination('requestTimeout'), timeoutMs);
 	const abortHandler = (): void => requestTermination('CANCELLED');
 	context.signal?.addEventListener('abort', abortHandler, { once: true });
 	if (isCancelled()) requestTermination('CANCELLED');
@@ -443,29 +457,21 @@ export async function superviseYtDlpExecutionPlan(
 		});
 	}
 	if (terminationReason === 'CANCELLED') throw new YtDlpProcessCancellationError();
-	if (
-		terminationReason === 'PROCESS_OUTPUT_LIMIT' ||
-		terminationReason === 'REQUEST_TIMEOUT' ||
-		terminationReason === 'RESOURCE_LIMIT'
-	) {
+	if (terminationReason === 'PROCESS_OUTPUT_LIMIT') {
 		throw new YtDlpProcessError(
 			terminationReason,
-			terminationReason === 'PROCESS_OUTPUT_LIMIT'
-				? 'yt-dlp exceeded the process output limit.'
-				: terminationReason === 'REQUEST_TIMEOUT'
-					? 'yt-dlp exceeded the request timeout.'
-					: 'yt-dlp exceeded the request workspace limit.',
+			'yt-dlp exceeded the process output limit.',
 			stdoutTail.finish(),
 			stderrTail.finish(),
 		);
 	}
+	if (terminationReason === 'requestTimeout' || terminationReason === 'workspaceSize') {
+		throw envelopeViolation(terminationReason, stdoutTail, stderrTail);
+	}
+	// The only break condition the option profile carries is the single-Artifact size filter
+	// `resourceEnvelopeOptionProfile` projects, so this exit code is that term being violated.
 	if (exitCode === YTDLP_BREAK_EXIT_CODE) {
-		throw new YtDlpProcessError(
-			'RESOURCE_LIMIT',
-			'yt-dlp rejected a format that exceeds the request Resource Envelope.',
-			stdoutTail.finish(),
-			stderrTail.finish(),
-		);
+		throw envelopeViolation('artifactSize', stdoutTail, stderrTail);
 	}
 	if (exitCode !== 0) {
 		throw new YtDlpProcessError(

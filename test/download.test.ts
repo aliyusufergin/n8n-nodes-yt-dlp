@@ -90,7 +90,12 @@ async function waitForFile(path: string): Promise<void> {
 
 async function startSyntheticOrigin(body: Buffer): Promise<string> {
 	const server = createServer((_request, response) => {
-		response.writeHead(200, { 'content-type': 'video/mp4' });
+		// A real origin advertises the size of a static body. Answering chunked instead would make
+		// this Adapter more forgiving than production — see `docs/agents/test-adapters.md`.
+		response.writeHead(200, {
+			'content-length': String(body.byteLength),
+			'content-type': 'video/mp4',
+		});
 		response.end(body);
 	});
 	servers.push(server);
@@ -274,7 +279,11 @@ describe('download request', () => {
 				response.end('authentication required');
 				return;
 			}
-			response.writeHead(200, { 'content-type': 'video/mp4' });
+			// See `docs/agents/test-adapters.md`: a real origin advertises the size of a static body.
+			response.writeHead(200, {
+				'content-length': String(fixture.byteLength),
+				'content-type': 'video/mp4',
+			});
 			response.end(fixture);
 		});
 		servers.push(origin);
@@ -561,13 +570,18 @@ describe('download request', () => {
 		expect(prepareBinaryData).not.toHaveBeenCalled();
 	});
 
+	// The Adapter below replaces yt-dlp with a fixture executable that writes straight into the
+	// Artifact Directory, so it sits under the yt-dlp option profile that also enforces the
+	// single-Artifact budget. These cases pin `validateArtifactSet` against an already-written
+	// Artifact set and nothing beyond it; the seam that runs the option profile and the
+	// validation together is `test/real-toolchain.test.ts`. See `docs/agents/test-adapters.md`.
 	it.each([
 		{ configuredLimit: 20, artifactCount: 20, accepted: true },
 		{ configuredLimit: 20, artifactCount: 21, accepted: false },
 		{ configuredLimit: 50, artifactCount: 50, accepted: true },
 		{ configuredLimit: 50, artifactCount: 51, accepted: false },
 	])(
-		'enforces $configuredLimit configured Artifacts at $artifactCount files',
+		'validates $configuredLimit configured Artifacts against $artifactCount written files',
 		async ({ configuredLimit, artifactCount, accepted }) => {
 			const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-artifact-count-'));
 			temporaryDirectories.push(workspaceParent);
@@ -617,7 +631,7 @@ describe('download request', () => {
 		{ configuredLimitMiB: 256, artifactSizeBytes: 256 * 1024 * 1024, accepted: true },
 		{ configuredLimitMiB: 256, artifactSizeBytes: 256 * 1024 * 1024 + 1, accepted: false },
 	])(
-		'enforces a $configuredLimitMiB MiB single-Artifact limit at $artifactSizeBytes bytes',
+		'validates a $configuredLimitMiB MiB single-Artifact limit against $artifactSizeBytes written bytes',
 		async ({ configuredLimitMiB, artifactSizeBytes, accepted }) => {
 			const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-artifact-size-'));
 			temporaryDirectories.push(workspaceParent);
@@ -690,7 +704,7 @@ describe('download request', () => {
 			accepted: false,
 		},
 	])(
-		'enforces a $configuredLimitMiB MiB final-total limit',
+		'validates a $configuredLimitMiB MiB final-total limit against written Artifacts',
 		async ({ configuredLimitMiB, artifactSizesBytes, accepted }) => {
 			const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-total-size-'));
 			temporaryDirectories.push(workspaceParent);

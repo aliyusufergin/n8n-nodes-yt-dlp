@@ -119,7 +119,13 @@ beforeAll(async () => {
 		const pathname = new URL(request.url ?? '/', 'http://fixture.test').pathname;
 		try {
 			const body = await readFile(join(fixtureDirectory, pathname.slice(1)));
-			response.writeHead(200, { 'content-type': 'video/mp4' });
+			// A real origin advertises the size of a static file, and this measures a Resource
+			// Envelope term against the real toolchain — an origin that hides the size sends yt-dlp
+			// down a different envelope path. See `docs/agents/test-adapters.md`.
+			response.writeHead(200, {
+				'content-length': String(body.byteLength),
+				'content-type': 'video/mp4',
+			});
 			response.end(body);
 		} catch {
 			response.writeHead(404);

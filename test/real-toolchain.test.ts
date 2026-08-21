@@ -16,6 +16,7 @@ import type {
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { executeYtDlpNode } from '../nodes/YtDlp/YtDlp.node';
+import { MEBIBYTE } from '../nodes/YtDlp/resource-envelope';
 
 const execFileAsync = promisify(execFile);
 const toolchainDirectory = resolve('packages', 'linux-x64', 'bin');
@@ -25,6 +26,9 @@ const ffprobePath = join(toolchainDirectory, 'ffprobe');
 let fixtureDirectory: string;
 let origin: Server;
 let originUrl: string;
+/** Bytes the size-withholding route has fully flushed, so a test can tell a completed download
+ * from an early abort without reaching into error internals. */
+let chunkedBytesServed = 0;
 
 async function collect(stream: Readable): Promise<Buffer> {
 	const chunks: Buffer[] = [];
@@ -308,12 +312,26 @@ beforeAll(async () => {
 			);
 			return;
 		}
-		const requestedName = pathname.slice(1);
+		// A real origin may also stream a body whose size it never advertises. That is production
+		// behaviour, not a forgiving Adapter: it is the case the option profile's `?` suffix exists
+		// for, so it needs an origin that can reproduce it.
+		const withheldSize = pathname.startsWith('/chunked/');
+		const requestedName = withheldSize
+			? pathname.slice('/chunked/'.length)
+			: pathname.slice(1);
 		const fixtureName = ['alpha.mp4', 'bravo.mp4'].includes(requestedName)
 			? 'combined.mp4'
 			: requestedName;
 		try {
 			const body = await readFile(join(fixtureDirectory, fixtureName));
+			if (withheldSize) {
+				response.writeHead(200, { 'content-type': contentType(requestedName) });
+				response.on('finish', () => {
+					chunkedBytesServed += body.byteLength;
+				});
+				response.end(body);
+				return;
+			}
 			// A real origin advertises the size of a static file. Answering chunked instead hides
 			// it, and a size yt-dlp cannot see before the download changes which Resource Envelope
 			// path a request takes, so the fixture origin must not be more forgiving than reality.
@@ -358,6 +376,62 @@ describe('real packaged media toolchain', () => {
 			context: { errorCode: 'RESOURCE_LIMIT', itemIndex: 0 },
 		});
 	}, 60_000);
+
+	// The unknown-size branch of the same pair. `resourceEnvelopeOptionProfile` writes
+	// `filesize<=?N`, whose `?` suffix deliberately admits a format whose size yt-dlp cannot learn
+	// before downloading, so that case has to reach the post-hoc Artifact checks and classify
+	// there. Without an origin that withholds the size, every test takes the early-abort path and
+	// this branch has no coverage at all.
+	it('classifies media whose size the origin never advertises as RESOURCE_LIMIT', async () => {
+		const probe = await fetch(`${originUrl}/chunked/oversized.mp4`);
+		const probeBytes = (await probe.arrayBuffer()).byteLength;
+		expect(probe.headers.get('content-length')).toBeNull();
+		chunkedBytesServed = 0;
+		const context = createExecutionContext(`${originUrl}/chunked/oversized.mp4`, '', {
+			maximumArtifactSizeMiB: 1,
+			maximumTotalArtifactSizeMiB: 2,
+		});
+
+		const error = await executeYtDlpNode(context).catch((cause: unknown) => cause);
+
+		expect(error).toMatchObject({ context: { errorCode: 'RESOURCE_LIMIT', itemIndex: 0 } });
+		// The classification has to come from the post-hoc Artifact checks, not from the option
+		// profile's early abort — otherwise the `?` branch is still untested and this case only
+		// repeats the test above.
+		// The classification has to come from the post-hoc Artifact checks, not from the option
+		// profile's early abort — otherwise the `?` branch is still untested and this case only
+		// repeats the test above. A completed download is the observable difference: an early
+		// abort never pulls the whole body.
+		expect(chunkedBytesServed).toBeGreaterThanOrEqual(probeBytes);
+	}, 60_000);
+
+	// The other half of the pair, and the interaction #52 actually broke: an envelope whose
+	// single-Artifact budget the media fits, so the option profile lets the download run, and
+	// whose total budget it does not, so the post-hoc Artifact checks are the site that catches
+	// it. Running the option profile and the validation together is the point — each on its own
+	// stays green while the two disagree about what the violation is called.
+	it('classifies media the option profile admits but the total budget rejects as RESOURCE_LIMIT', async () => {
+		// First half pins that the option profile really does admit this media at a 2 MiB
+		// single-Artifact budget. Without it the rejection below could come from the break filter
+		// and the test would stay green while the post-hoc total check was never reached.
+		const [admitted] = await executeYtDlpNode(
+			createExecutionContext(`${originUrl}/oversized.mp4`, '', {
+				maximumArtifactSizeMiB: 2,
+				maximumTotalArtifactSizeMiB: 512,
+			}),
+		);
+		expect(admitted).toHaveLength(1);
+		expect(admitted[0].json.sizeBytes).toBeGreaterThan(MEBIBYTE);
+
+		const context = createExecutionContext(`${originUrl}/oversized.mp4`, '', {
+			maximumArtifactSizeMiB: 2,
+			maximumTotalArtifactSizeMiB: 1,
+		});
+
+		await expect(executeYtDlpNode(context)).rejects.toMatchObject({
+			context: { errorCode: 'RESOURCE_LIMIT', itemIndex: 0 },
+		});
+	}, 120_000);
 
 	it('merges separate synthetic formats into one Artifact with video and audio streams', async () => {
 		const context = createExecutionContext(

@@ -7,10 +7,10 @@ import type { ChildProcessWithoutNullStreams } from 'node:child_process';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createYtDlpExecutionPlan } from '../nodes/YtDlp/arguments';
+import { YTDLP_BREAK_EXIT_CODE } from '../nodes/YtDlp/resource-envelope';
 import {
 	PROCESS_OUTPUT_LIMIT_BYTES,
 	PROCESS_STREAM_TAIL_BYTES,
-	YTDLP_BREAK_EXIT_CODE,
 	YtDlpProcessError,
 	spawnYtDlpExecutionPlan,
 	superviseYtDlpExecutionPlan,
