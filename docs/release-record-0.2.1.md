@@ -81,6 +81,19 @@ All three read `next=0.2.1`, `latest=0.2.0` at rehearsal time. A rollback would 
 this order — main package first — deprecate the bad `0.2.1` names, and ship a new lockstep patch. No
 `npm unpublish`.
 
+The restore mechanics themselves were then exercised for real on 2026-08-21, after promotion, without
+touching a tag any install resolves. A throwaway dist-tag was added to the version a rollback would
+restore and removed again, each step authenticated with npm 2FA:
+
+```sh
+npm dist-tag add n8n-nodes-yt-dlp@0.2.0 rollback-rehearsal   # +rollback-rehearsal: n8n-nodes-yt-dlp@0.2.0
+npm dist-tag rm n8n-nodes-yt-dlp rollback-rehearsal          # -rollback-rehearsal: n8n-nodes-yt-dlp@0.2.0
+```
+
+Read-back afterwards showed all three packages holding `latest=0.2.1` and `next=0.2.1` and no
+leftover tag, so the rehearsal proved the operator can move a dist-tag onto the restore version and
+remove it again while leaving `latest` and `next` exactly where promotion put them.
+
 ## Recorded promotion read-back
 
 `latest` was moved by hand with npm 2FA in dependency order — Platform Package, Platform Selector,
