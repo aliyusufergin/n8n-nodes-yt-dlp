@@ -22,6 +22,8 @@ import { YtDlpProcessTerminationError, superviseYtDlpExecutionPlan } from './pro
 import {
 	YtDlpRequestResourceLimitError,
 	createResourceEnvelope,
+	resourceEnvelopeOptionProfile,
+	resourceEnvelopeViolationError,
 	type ResourceEnvelope,
 } from './resource-envelope';
 import { removeWorkspace } from './workspace';
@@ -162,7 +164,7 @@ async function validateArtifactSet(
 		const artifactNames = (await readdir(descriptorDirectoryPath)).sort();
 		if (artifactNames.length === 0) throw invalidArtifactSet();
 		if (artifactNames.length > resourceEnvelope.maximumArtifactCount) {
-			throw new YtDlpRequestResourceLimitError();
+			throw resourceEnvelopeViolationError('artifactCount');
 		}
 
 		for (const fileName of artifactNames) {
@@ -189,11 +191,11 @@ async function validateArtifactSet(
 					throw invalidArtifactSet();
 				}
 				if (descriptorStat.size > resourceEnvelope.maximumArtifactSizeBytes) {
-					throw new YtDlpRequestResourceLimitError();
+					throw resourceEnvelopeViolationError('artifactSize');
 				}
 				totalArtifactSizeBytes += descriptorStat.size;
 				if (totalArtifactSizeBytes > resourceEnvelope.maximumTotalArtifactSizeBytes) {
-					throw new YtDlpRequestResourceLimitError();
+					throw resourceEnvelopeViolationError('totalArtifactSize');
 				}
 				await assertDirectoryIdentity(directory);
 				artifacts.push({ fileName, fileHandle, stat: descriptorStat });
@@ -280,20 +282,10 @@ function createWorkspacePlan(
 			ffmpegPath,
 			'--abort-on-error',
 			'--no-progress',
-			// The single-Artifact budget is a Resource Envelope term, so a violation must reach the
-			// consumer as RESOURCE_LIMIT. `--max-filesize` cannot carry that: it refuses the download,
-			// writes nothing and still exits 0, which reaches `validateArtifactSet` as an empty Artifact
-			// set and is classified INVALID_ARTIFACT_SET. A breaking match filter reports the same
-			// rejection as exit code 101, which `superviseYtDlpExecutionPlan` maps to RESOURCE_LIMIT. The
-			// `?` suffix passes formats whose size is unknown before the download (direct links carry no
-			// `filesize`), and those are caught by the Artifact size checks in `validateArtifactSet`.
-			'--break-match-filters',
-			`filesize<=?${resourceEnvelope.maximumArtifactSizeBytes} & ` +
-				`filesize_approx<=?${resourceEnvelope.maximumArtifactSizeBytes}`,
-			'--concurrent-fragments',
-			'1',
-			'--postprocessor-args',
-			'ffmpeg:-threads 1',
+			// The Resource Envelope terms that reach yt-dlp as options. The projection lives with the
+			// classification of the terms it enforces, so the option profile and the code a violation
+			// reports cannot drift apart the way they did in #52.
+			...resourceEnvelopeOptionProfile(resourceEnvelope),
 			'--paths',
 			artifactsDirectory,
 			'--paths',

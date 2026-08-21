@@ -53,7 +53,12 @@ afterEach(async () => {
 
 async function startSyntheticOrigin(body: Buffer): Promise<string> {
 	const server = createServer((_request, response) => {
-		response.writeHead(200, { 'content-type': 'video/mp4' });
+		// A real origin advertises the size of a static body. Answering chunked instead would make
+		// this Adapter more forgiving than production — see `docs/agents/test-adapters.md`.
+		response.writeHead(200, {
+			'content-length': String(body.byteLength),
+			'content-type': 'video/mp4',
+		});
 		response.end(body);
 	});
 	servers.push(server);

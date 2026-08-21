@@ -48,7 +48,9 @@ import {
 	YtDlpExecutionResourceLimitError,
 	YtDlpRequestResourceLimitError,
 	createResourceEnvelope,
+	resourceEnvelopeViolationError,
 	type ResourceEnvelope,
+	type ResourceLimitTerm,
 } from './resource-envelope';
 import {
 	YtDlpProcessCancellationError,
@@ -175,13 +177,21 @@ function requestFailureCode(error: unknown): RequestFailureCode | undefined {
 	return undefined;
 }
 
-function executionResourceLimitError(execution: IExecuteFunctions, message: string): NodeOperationError {
-	const error = new NodeOperationError(
-		execution.getNode(),
-		new YtDlpExecutionResourceLimitError(message),
-		{ description: RESOURCE_LIMIT },
-	);
-	error.context.errorCode = RESOURCE_LIMIT;
+/**
+ * The execution-scoped Resource Envelope terms reach the node boundary as global failures. The
+ * code and the message come from the term's classification, so this site does not re-decide
+ * either one.
+ */
+function executionResourceLimitError(
+	execution: IExecuteFunctions,
+	term: ResourceLimitTerm,
+): NodeOperationError {
+	const violation = resourceEnvelopeViolationError(term);
+	const errorCode = violation.code;
+	const error = new NodeOperationError(execution.getNode(), violation, {
+		description: errorCode,
+	});
+	error.context.errorCode = errorCode;
 	return error;
 }
 
@@ -193,10 +203,7 @@ function throwIfExecutionTerminated(
 		throw new NodeOperationError(execution.getNode(), new YtDlpProcessCancellationError());
 	}
 	if (terminationReason !== 'timeout') return;
-	throw executionResourceLimitError(
-		execution,
-		`The execution exceeded the ${MAXIMUM_EXECUTION_DURATION_MS / (60 * 60 * 1000)}-hour Resource Envelope.`,
-	);
+	throw executionResourceLimitError(execution, 'executionDuration');
 }
 
 export async function executeYtDlpNode(
@@ -266,10 +273,7 @@ export async function executeYtDlpNode(
 		executionWorkspace = await startWorkspace();
 		throwIfExecutionTerminated(execution, executionTerminationReason);
 		if (items.length > MAXIMUM_EXECUTION_INPUTS) {
-			throw executionResourceLimitError(
-				execution,
-				`The execution exceeds the ${MAXIMUM_EXECUTION_INPUTS}-item Resource Envelope.`,
-			);
+			throw executionResourceLimitError(execution, 'executionInputs');
 		}
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			const requestStartedAt = Date.now();

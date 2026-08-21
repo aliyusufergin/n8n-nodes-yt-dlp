@@ -16,6 +16,7 @@ import type {
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { executeYtDlpNode } from '../nodes/YtDlp/YtDlp.node';
+import { MEBIBYTE } from '../nodes/YtDlp/resource-envelope';
 
 const execFileAsync = promisify(execFile);
 const toolchainDirectory = resolve('packages', 'linux-x64', 'bin');
@@ -358,6 +359,34 @@ describe('real packaged media toolchain', () => {
 			context: { errorCode: 'RESOURCE_LIMIT', itemIndex: 0 },
 		});
 	}, 60_000);
+
+	// The other half of the pair, and the interaction #52 actually broke: an envelope whose
+	// single-Artifact budget the media fits, so the option profile lets the download run, and
+	// whose total budget it does not, so the post-hoc Artifact checks are the site that catches
+	// it. Running the option profile and the validation together is the point — each on its own
+	// stays green while the two disagree about what the violation is called.
+	it('classifies media the option profile admits but the total budget rejects as RESOURCE_LIMIT', async () => {
+		// First half pins that the option profile really does admit this media at a 2 MiB
+		// single-Artifact budget. Without it the rejection below could come from the break filter
+		// and the test would stay green while the post-hoc total check was never reached.
+		const [admitted] = await executeYtDlpNode(
+			createExecutionContext(`${originUrl}/oversized.mp4`, '', {
+				maximumArtifactSizeMiB: 2,
+				maximumTotalArtifactSizeMiB: 512,
+			}),
+		);
+		expect(admitted).toHaveLength(1);
+		expect(admitted[0].json.sizeBytes).toBeGreaterThan(MEBIBYTE);
+
+		const context = createExecutionContext(`${originUrl}/oversized.mp4`, '', {
+			maximumArtifactSizeMiB: 2,
+			maximumTotalArtifactSizeMiB: 1,
+		});
+
+		await expect(executeYtDlpNode(context)).rejects.toMatchObject({
+			context: { errorCode: 'RESOURCE_LIMIT', itemIndex: 0 },
+		});
+	}, 120_000);
 
 	it('merges separate synthetic formats into one Artifact with video and audio streams', async () => {
 		const context = createExecutionContext(
