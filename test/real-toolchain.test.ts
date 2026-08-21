@@ -397,9 +397,6 @@ describe('real packaged media toolchain', () => {
 		expect(error).toMatchObject({ context: { errorCode: 'RESOURCE_LIMIT', itemIndex: 0 } });
 		// The classification has to come from the post-hoc Artifact checks, not from the option
 		// profile's early abort — otherwise the `?` branch is still untested and this case only
-		// repeats the test above.
-		// The classification has to come from the post-hoc Artifact checks, not from the option
-		// profile's early abort — otherwise the `?` branch is still untested and this case only
 		// repeats the test above. A completed download is the observable difference: an early
 		// abort never pulls the whole body.
 		expect(chunkedBytesServed).toBeGreaterThanOrEqual(probeBytes);
