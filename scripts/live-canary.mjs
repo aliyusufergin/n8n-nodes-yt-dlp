@@ -207,6 +207,10 @@ function classifySolver(stderr, expectedVersion) {
 		// never arrived. Only the former outranks a transient-network reading of the same run.
 		contradicted: fallback || (observed.length > 0 && !expected),
 		fallback,
+		// Both scripts are required, so a run that resolved only one fails with an otherwise
+		// healthy source, version, and fallback. The observed set is the diagnostic that tells
+		// that failure apart from an unexplained one.
+		scripts: distinct([...scriptTypes]),
 		selected: !fallback && expected && scriptTypes.has('lib') && scriptTypes.has('core'),
 		source,
 		version,
@@ -307,6 +311,7 @@ try {
 			`deno-challenge=${classified.denoChallenge ? 'observed' : 'not-observed'}`,
 			`solver-source=${classified.solver.source}`,
 			`solver-version=${classified.solver.version}`,
+			`solver-scripts=${classified.solver.scripts}`,
 			`solver-fallback=${classified.solver.fallback ? 'observed' : 'not-observed'}`,
 		],
 		identities: {

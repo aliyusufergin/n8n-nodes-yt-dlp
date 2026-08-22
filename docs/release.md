@@ -76,7 +76,10 @@ breaks silently the day that source goes away. The canary therefore runs its own
 …)` line to name `python package` at exactly the Toolchain Lock's `yt-dlp-ejs` tag, read from the
 packaged lock rather than a fixed string, and requires the absence of any `Remote component … was
 skipped` or `No usable challenge solver …` line. The evidence carries this as the `solver-source`,
-`solver-version`, and `solver-fallback` diagnostics.
+`solver-version`, `solver-scripts`, and `solver-fallback` diagnostics; `solver-scripts` names which
+of the two scripts were observed (`lib+core`, one of them alone, or `unavailable`), so a run that
+resolved only one is distinguishable from an unexplained failure whose source, version, and fallback
+all read healthy.
 
 A contradicting observation — the wrong source, the wrong version, or a skipped remote component —
 is `fail`, and it outranks the transient reading, because re-running the lane reproduces it and a

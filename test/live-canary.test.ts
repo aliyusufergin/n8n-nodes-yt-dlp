@@ -185,6 +185,7 @@ describe('live extractor/JSC canary', () => {
 			'deno-challenge=observed',
 			'solver-source=python package',
 			'solver-version=0.8.0',
+			'solver-scripts=lib+core',
 			'solver-fallback=not-observed',
 		]);
 		const invocation = (await readFile(invocationPath, 'utf8')).split('\n');
@@ -261,6 +262,8 @@ describe('live extractor/JSC canary', () => {
 		});
 	});
 
+	// The diagnostics carry which scripts were seen, so an operator can tell this release-blocking
+	// failure apart from an unexplained one: source, version, and fallback all read healthy here.
 	it('fails when only one of the two solver scripts is resolved', async () => {
 		await writeYtDlpStub([denoChallengeLine, solverLibLine]);
 
@@ -268,6 +271,24 @@ describe('live extractor/JSC canary', () => {
 		await expect(readFile(outputPath, 'utf8').then(JSON.parse)).resolves.toMatchObject({
 			lane: 'live-canary',
 			outcome: 'fail',
+			diagnostics: expect.arrayContaining([
+				'solver-source=python package',
+				'solver-version=0.8.0',
+				'solver-scripts=lib',
+				'solver-fallback=not-observed',
+			]),
+			waived: false,
+		});
+	});
+
+	it('reports no observed scripts when no solver source line is seen', async () => {
+		await writeYtDlpStub([denoChallengeLine]);
+
+		await expect(runCanary()).rejects.toMatchObject({ code: 1 });
+		await expect(readFile(outputPath, 'utf8').then(JSON.parse)).resolves.toMatchObject({
+			lane: 'live-canary',
+			outcome: 'fail',
+			diagnostics: expect.arrayContaining(['solver-scripts=unavailable']),
 			waived: false,
 		});
 	});
