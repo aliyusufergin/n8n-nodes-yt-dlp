@@ -348,6 +348,30 @@ describe('published Platform Gate packages', () => {
 		}
 	}, 60_000);
 
+	it('keeps the yt-dlp-ejs challenge solver bundled inside the packaged executable', async () => {
+		const platformPackage = packages.find(
+			({ metadata }) => metadata.name === 'n8n-nodes-yt-dlp-linux-x64',
+		);
+		if (platformPackage === undefined) throw new Error('The platform package fixture is missing.');
+		// The node runs yt-dlp with `--no-remote-components`, so the only challenge solver it can
+		// reach is the `yt_dlp_ejs` python package that the official executable bundles. That
+		// bundling is a property of the upstream requirements pin and the PyInstaller build rather
+		// than a compatibility guarantee, and a Toolchain Lock advance that loses it fails no other
+		// gate: it stays invisible until the first challenge and then surfaces as `YTDLP_FAILED`.
+		const executable = await readFile(
+			join(platformPackage.extractedDirectory, 'package', 'bin', 'yt-dlp.musl'),
+		);
+
+		const bundledSolver = [
+			'yt_dlp_ejs.yt.solver',
+			'yt_dlp_ejs/yt/solver/core.min.js',
+			'yt_dlp_ejs/yt/solver/lib.min.js',
+		];
+		expect(bundledSolver.filter((component) => executable.includes(component))).toEqual(
+			bundledSolver,
+		);
+	});
+
 	it('runs packaged Deno without filesystem, network, environment, or subprocess permission', async () => {
 		const source = `
 			const denied = async (operation) => {
