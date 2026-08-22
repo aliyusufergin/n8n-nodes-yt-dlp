@@ -9,12 +9,16 @@ Workflow yazarının CLI benzeri bir satırla ifade ettiği, ancak yalnızca nod
 _Avoid_: Ham CLI, serbest argüman satırı, tam terminal eşdeğerliği
 
 **İndirme İsteği**:
-Tam olarak bir URL ve ona uygulanacak Güvenli Argüman Profili'ni taşıyan tek bir n8n input item'ı. Playlist URL'si birden fazla dosya üretse de tek bir İndirme İsteği'dir.
-_Avoid_: Komut, batch, çoklu URL satırı
+Tam olarak bir Source URL ve ona uygulanacak Güvenli Argüman Profili'ni taşıyan tek indirme birimi. Bir n8n input item'ı tek bir İndirme İsteği taşıyabilir ya da playlist kaynağı verildiğinde Playlist Genişletmesi ile birden çok İndirme İsteği'ne açılabilir; genişlemeden doğan her istek kendi Artifact'leri, kendi limitleri ve kendi atomikliğiyle bağımsızdır.
+_Avoid_: Komut, batch, çoklu URL satırı, input item ile birebir eşitlik
+
+**Playlist Genişletmesi**:
+Playlist kaynağı taşıyan tek bir input item'ın entry listesi bir kez okunarak bağımsız İndirme İstekleri'ne dönüştürülmesi. Listelemeden gelen her entry adresi, kullanıcının verdiği bir adresle aynı Source URL doğrulamasından geçer; geçemeyen entry İndirme İsteği doğurmaz.
+_Avoid_: Batch input, tek istekte çoklu URL, doğrulanmamış entry adresi
 
 **Atomik İndirme İsteği**:
-Yalnızca yt-dlp başarıyla tamamlanıp bütün Artifact'leri doğrulandığında sonuç üreten İndirme İsteği. Herhangi bir hata, timeout, cancellation veya limit ihlalinde isteğin hiçbir Artifact'i yayımlanmaz.
-_Avoid_: Kısmi playlist, yarım başarı, best-effort istek
+Yalnızca yt-dlp başarıyla tamamlanıp bütün Artifact'leri doğrulandığında sonuç üreten İndirme İsteği. Herhangi bir hata, timeout, cancellation veya limit ihlalinde isteğin hiçbir Artifact'i yayımlanmaz. Atomiklik istek başınadır: Playlist Genişletmesi'nden doğan bir isteğin başarısızlığı, aynı input item'dan doğan diğer isteklerin Artifact'lerini geçersiz kılmaz.
+_Avoid_: İstek içinde yarım başarı, best-effort istek, input item düzeyinde atomiklik
 
 **Artifact**:
 Bir İndirme İsteği sonucunda üretilen ve n8n binary data olarak aktarılabilen dosya.
@@ -23,6 +27,10 @@ _Avoid_: Worker dosyası, yerel path, Result dosyası
 **Artifact Item**:
 Tam olarak bir Artifact'i `data` binary alanında, kompakt metadata ve kaynak İndirme İsteği bağıyla taşıyan output item.
 _Avoid_: Artifact paketi, summary item, çoklu-binary item
+
+**Boş Sonuç**:
+Bir Güvenli Argüman Profili filtresinin kaynağı elemesi yüzünden hiçbir Artifact üretmeden başarıyla tamamlanan İndirme İsteği. Ne Artifact Item ne Failure Item üretir; kaç isteğin böyle sonuçlandığı yalnız çalıştırma özetinde görünür. Sıfır Artifact'in geçersiz Artifact seti sayıldığı durum, yalnız hiçbir filtrenin elemediği isteklerde geçerlidir.
+_Avoid_: Geçersiz Artifact seti, boş Artifact Item, sessiz hata
 
 **İstek Hatası**:
 Tek bir İndirme İsteği'ni başarısız kılan ancak node'un diğer input item'larını işlemesini zorunlu olarak engellemeyen doğrulama, yt-dlp, timeout veya limit hatası.
@@ -69,8 +77,8 @@ Node'un desteklenen Authentication Credential değerlerini argv veya environment
 _Avoid_: Kullanıcı config'i, config path'i, environment secret'ı
 
 **Source URL**:
-Bir İndirme İsteği'nin Arguments alanından ayrı tutulan, mutlak ve userinfo içermeyen `http:` veya `https:` URL'si.
-_Avoid_: Search prefix, local URL, batch input, Arguments URL'si
+Bir İndirme İsteği'nin Arguments alanından ayrı tutulan, mutlak ve userinfo içermeyen `http:` veya `https:` URL'si. Kullanıcının verdiği adres ya da Playlist Genişletmesi'nin ürettiği entry adresi olabilir; ikisi de aynı doğrulamadan geçer.
+_Avoid_: Search prefix, local URL, batch input, Arguments URL'si, doğrulanmamış entry adresi
 
 **Network Trust Boundary**:
 Node'un Source URL şemasını ve yapısını doğruladığı, ancak extractor redirect'leri, DNS sonuçları, manifest/media uçları veya FFmpeg bağlantıları için SSRF izolasyonu vaat etmediği sınır. Güvenilmeyen URL girdileri operatör egress kontrolü gerektirir.
@@ -89,12 +97,12 @@ Bir İndirme İsteği workspace'inde yalnızca final, tek-seviye ve doğrulanmı
 _Avoid_: Output path, recursive output tree, temp dizini
 
 **Resource Envelope**:
-Bir node execution ve İndirme İsteği için input/playlist/artifact sayısı, dosya/toplam/workspace boyutu, süre, FFmpeg thread'i ve fragment concurrency üzerinde uygulanan varsayılan ve yükseltilemez hard cap'ler.
-_Avoid_: yt-dlp resource flag'i, operatör kapasite garantisi, sınırsız playlist
+Bir node execution ve İndirme İsteği'nin içinde çalıştığı sınırlar kümesi. Node, kullanıcının ne indirebileceğini kendi seçtiği sayılarla kısıtlamaz: kısıtlayan her sınır ya host n8n'in fiilî konfigürasyonundan okunur, ya pinlenmiş toolchain'e karşı ölçülmüş bir sabittir, ya da mevcut kaynaktan türetilir. Node'a ait sabitler yalnız kabiliyet kısıtlamayan koruma sınırlarında kalır: girdi ayrıştırma bütçeleri, bounded process output ve ilerlemesiz süreç tespiti.
+_Avoid_: Node'a ait hard cap, sabit artifact/boyut/süre tavanı, playlist entry tavanı, operatör kapasite garantisi
 
 **Resource Envelope Terimi**:
-Resource Envelope'un tek tek adlandırılmış bileşenlerinden biri. Her terim tek bir tabloda tam bir kez sınıflandırılır: node'un sabitlediği ve ihlal edilemeyen `imposed`, İndirme İsteği doğmadan başka bir sözleşmenin reddettiği `preflight`, ya da çalışırken ihlal edilebilen ve ihlalinin kararlı `errorCode`'u aynı deklarasyonda yaşayan `violable`. Enforcement siteleri kodu ve mesajı oradan okur; hiçbiri kendi sınıflandırmasına karar vermez.
-_Avoid_: Site başına sınıflandırma, isimsiz argv sabiti, serbest limit adı
+Resource Envelope'un tek tek adlandırılmış bileşenlerinden biri. Her terim tek bir tabloda tam bir kez sınıflandırılır: node'un sabitlediği ve ihlal edilemeyen `imposed`, İndirme İsteği doğmadan başka bir sözleşmenin reddettiği `preflight`, çalışırken ihlal edilebilen ve ihlalinin kararlı `errorCode`'u aynı deklarasyonda yaşayan `violable`, ya da ihlal edilebilen ama bound'u node'a değil host n8n'in konfigürasyonuna veya ölçülen bir kaynağa ait olan `derived`. Enforcement siteleri kodu ve mesajı oradan okur; hiçbiri kendi sınıflandırmasına karar vermez.
+_Avoid_: Site başına sınıflandırma, isimsiz argv sabiti, serbest limit adı, node'un seçtiği bound
 
 **Process Group**:
 Linux'ta detached yt-dlp lideri ile onun FFmpeg ve Deno descendants'ından oluşan, cancellation/timeout/limit halinde tek termination state machine tarafından birlikte sinyallenen process grubu.
