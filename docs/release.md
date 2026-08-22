@@ -68,6 +68,33 @@ output. `inconclusive` is blocking, including network and rate-limit outcomes. A
 only that one frozen extractor/challenge path worked at the recorded URL, time, and region; it is not
 a supported-site guarantee.
 
+The lane also decides *which* challenge solver source won. yt-dlp tries the installed `yt_dlp_ejs`
+python package, its own cache, the vendored builtin, and finally a web download, and only the first
+of those is frozen into the packaged executable; picking any other one still extracts today and
+breaks silently the day that source goes away. The canary therefore runs its own invocation with
+`--verbose` and requires both the `lib` and the `core` `Using challenge solver … script v… (source:
+…)` line to name `python package` at exactly the Toolchain Lock's `yt-dlp-ejs` tag, read from the
+packaged lock rather than a fixed string, and requires the absence of any `Remote component … was
+skipped` or `No usable challenge solver …` line. The evidence carries this as the `solver-source`,
+`solver-version`, and `solver-fallback` diagnostics.
+
+A contradicting observation — the wrong source, the wrong version, or a skipped remote component —
+is `fail`, and it outranks the transient reading, because re-running the lane reproduces it and a
+live run routinely carries retry noise that would otherwise downgrade it to a retryable
+`inconclusive`. A run that never logged a solver line at all is missing evidence rather than
+contradicting it, so the transient branch still applies there and the lane stays retryable.
+
+The version is compared against the Toolchain Lock rather than against the executable, and those are
+pinned independently: the lock's `yt-dlp-ejs` tag describes the EJS release assets the `official-ejs`
+gate runs, while the version yt-dlp reports comes from the `yt_dlp_ejs` package that upstream's own
+requirements pin bundles into the executable. The gate at `test/platform-packages.test.ts` proves
+that package is present but not which version it is, so a divergence surfaces here first and reads
+as what it is: the Toolchain Lock no longer describes the solver the shipped executable runs.
+
+`--verbose` belongs to the lane's own invocation only: it is never added to the node's production
+argv, and the asserted text stays inside the lane, so ADR 0031's bar on reflecting process output to
+the operator is unchanged.
+
 `source-delivery` runs the release verifier before `publish-next`. It checks the direct versioned
 GitHub source assets, their exact `.sha256` sidecar contents, clean isolated-rebuild evidence,
 manual license-review bindings, component inventory, notices, licenses, and the passed Linux
