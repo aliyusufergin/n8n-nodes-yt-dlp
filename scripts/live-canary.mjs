@@ -10,6 +10,23 @@ const testUrl = `https://www.youtube.com/watch?v=${testId}`;
 const upstreamCommit = 'aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8';
 const outputLimitBytes = 128 * 1024;
 const timeoutMs = 120_000;
+// yt-dlp tries `python package -> cache -> builtin -> web` for the challenge solver scripts and
+// logs the winner once per script type under `--verbose`. The packaged build carries `yt_dlp_ejs`
+// inside its own bytes, so the python package must win; any other source means the shipped
+// executable is quietly leaning on state the release never froze.
+const expectedSolverSource = 'python package';
+// Solving needs both scripts, so a clean run logs one line per type. The pattern stops at the
+// field separator after `source` rather than requiring `variant` to close the parenthesis: the
+// variant carries no assertion here, and demanding it be the last field would turn any future
+// upstream field into a hard failure reported as "no solver line at all".
+const solverSourcePattern =
+	/Using challenge solver (?<type>lib|core) script v(?<version>[^\s()]+) \(source: (?<source>[^,)]+)[,)]/gu;
+// Skipped remote components are reported only when a provider rejected the request outright
+// (`_director.py` collects them from `JsChallengeProviderRejectedRequest`), and `_get_script` stops
+// at the first usable source, so a run the python package served never reaches the npm or GitHub
+// component at all. Any of these lines therefore means the packaged solver did not serve this run.
+const solverFallbackPattern =
+	/Remote components? [^\r\n]*?(?:was|were) skipped|No usable challenge solver [^\r\n]*?script available/u;
 
 function fail(message) {
 	throw new Error(message);
@@ -172,19 +189,51 @@ async function toolVersions(toolchainLockPath, version) {
 	return versions;
 }
 
-function classifyOutcome(result) {
+function distinct(values) {
+	const unique = [...new Set(values)];
+	if (unique.length === 0) return 'unavailable';
+	return unique.join('+');
+}
+
+function classifySolver(stderr, expectedVersion) {
+	const observed = [...stderr.matchAll(solverSourcePattern)].map(({ groups }) => groups);
+	const scriptTypes = new Set(observed.map(({ type }) => type));
+	const source = distinct(observed.map((groups) => groups.source));
+	const version = distinct(observed.map((groups) => groups.version));
+	const fallback = solverFallbackPattern.test(stderr);
+	const expected = source === expectedSolverSource && version === expectedVersion;
+	return {
+		// Evidence that positively contradicts the packaged solver, as opposed to evidence that
+		// never arrived. Only the former outranks a transient-network reading of the same run.
+		contradicted: fallback || (observed.length > 0 && !expected),
+		fallback,
+		selected: !fallback && expected && scriptTypes.has('lib') && scriptTypes.has('core'),
+		source,
+		version,
+	};
+}
+
+function classifyOutcome(result, expectedSolverVersion) {
 	const denoChallenge = result.stderr.includes(
 		'[youtube] [jsc:deno] Solving JS challenges using deno',
 	);
 	const extractedId = result.stdout.trim() === testId;
+	const solver = classifySolver(result.stderr, expectedSolverVersion);
 	if (
 		result.code === 0 &&
 		result.signal === null &&
 		!result.exceeded &&
 		denoChallenge &&
-		extractedId
+		extractedId &&
+		solver.selected
 	) {
-		return { denoChallenge, extractedId, outcome: 'pass' };
+		return { denoChallenge, extractedId, outcome: 'pass', solver };
+	}
+	// A solver that reported the wrong source, the wrong version, or a skipped remote component is
+	// a deterministic defect: re-running the lane reproduces it. It is ranked above the transient
+	// branch so a routine `Connection reset ... Retrying` alongside it cannot make it retryable.
+	if (solver.contradicted) {
+		return { denoChallenge, extractedId, outcome: 'fail', solver };
 	}
 	if (
 		result.timedOut ||
@@ -192,9 +241,9 @@ function classifyOutcome(result) {
 			result.stderr,
 		)
 	) {
-		return { denoChallenge, extractedId, outcome: 'inconclusive' };
+		return { denoChallenge, extractedId, outcome: 'inconclusive', solver };
 	}
-	return { denoChallenge, extractedId, outcome: 'fail' };
+	return { denoChallenge, extractedId, outcome: 'fail', solver };
 }
 
 const [candidateArgument, outputArgument] = process.argv.slice(2);
@@ -247,7 +296,7 @@ try {
 		environment,
 		canaryTimeoutMs(),
 	);
-	const classified = classifyOutcome(result);
+	const classified = classifyOutcome(result, versions['yt-dlp-ejs']);
 	const evidence = {
 		schemaVersion: 1,
 		candidateSha256: sha256(candidateBytes),
@@ -256,6 +305,9 @@ try {
 			`yt-dlp-exit=${result.code ?? result.signal ?? 'unknown'}`,
 			`extracted-id=${classified.extractedId ? testId : 'unavailable'}`,
 			`deno-challenge=${classified.denoChallenge ? 'observed' : 'not-observed'}`,
+			`solver-source=${classified.solver.source}`,
+			`solver-version=${classified.solver.version}`,
+			`solver-fallback=${classified.solver.fallback ? 'observed' : 'not-observed'}`,
 		],
 		identities: {
 			packages: packageIdentities(candidate),
