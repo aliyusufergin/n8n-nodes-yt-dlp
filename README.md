@@ -246,13 +246,18 @@ continue:
   "json": {
     "status": "error",
     "errorCode": "INVALID_ARGUMENTS",
-    "errorMessage": "The Arguments value is invalid."
+    "errorMessage": "--audio-format accepts one of: aac, alac, best, flac, m4a, mp3, opus, vorbis, wav."
   },
   "pairedItem": {
     "item": 0
   }
 }
 ```
+
+An `INVALID_ARGUMENTS` message says what to fix: an option the profile does not accept, an option
+given a value it does not accept, or an option missing a dependency it needs. Options with a finite
+value set list that set. The message is written by the node from the allowlist's canonical option
+names, so it never repeats the value you wrote.
 
 The Failure Item always arrives on the node's single main output, whichever **On Error** value is
 set:

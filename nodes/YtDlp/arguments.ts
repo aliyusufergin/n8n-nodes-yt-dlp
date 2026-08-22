@@ -9,17 +9,28 @@ export interface YtDlpExecutionPlan {
 	argv: string[];
 }
 
+/**
+ * The rejection reason the workflow author reads. Every message is node-authored: it is built
+ * from canonical option names and the allowlist's own accepted value sets, never from the text
+ * the author wrote, so nothing the author put in Arguments can travel back out through it.
+ */
+const UNPARSABLE_ARGUMENTS_MESSAGE =
+	'Arguments do not match the supported yt-dlp option profile.';
+
+const UNSUPPORTED_OPTION_MESSAGE =
+	'The Arguments value contains an option that is not part of the supported yt-dlp option profile.';
+
 export class InvalidArgumentsError extends Error {
 	readonly code = INVALID_ARGUMENTS;
 
-	constructor() {
-		super('Arguments do not match the supported yt-dlp option profile.');
+	constructor(message: string = UNPARSABLE_ARGUMENTS_MESSAGE) {
+		super(message);
 		this.name = 'InvalidArgumentsError';
 	}
 }
 
-function invalidArguments(): never {
-	throw new InvalidArgumentsError();
+function invalidArguments(message?: string): never {
+	throw new InvalidArgumentsError(message);
 }
 
 export function tokenizeArguments(input: string): string[] {
@@ -102,10 +113,17 @@ export function tokenizeArguments(input: string): string[] {
 interface OptionDefinition {
 	canonicalName: string;
 	valueValidator?: (value: string) => boolean;
+	/**
+	 * Present only for options whose accepted values are a finite set. The message enumerates that
+	 * set; options with an open value space fall back to the generic invalid-value phrasing.
+	 */
+	acceptedValueSummary?: string;
 	requires?: string[];
 	requiresOneOf?: string[];
 	conflicts?: string[];
 }
+
+type ValueRule = Pick<OptionDefinition, 'acceptedValueSummary' | 'valueValidator'>;
 
 const mergeContainers = new Set(['avi', 'flv', 'mkv', 'mov', 'mp4', 'webm']);
 const subtitleFormats = new Set(['ass', 'best', 'lrc', 'srt', 'vtt']);
@@ -209,12 +227,12 @@ function isSubtitleLanguageExpression(value: string): boolean {
 	);
 }
 
-function isPreferenceList(value: string, allowedValues: Set<string>): boolean {
+function isPreferenceList(value: string, allowedValues: ReadonlySet<string>): boolean {
 	const values = value.split('/');
 	return values.length > 0 && values.every((item) => allowedValues.has(item));
 }
 
-function isConversionRuleList(value: string, allowedValues: Set<string>): boolean {
+function isConversionRuleList(value: string, allowedValues: ReadonlySet<string>): boolean {
 	return value.split('/').every((rule) => {
 		const values = rule.split('>');
 		return (
@@ -222,6 +240,37 @@ function isConversionRuleList(value: string, allowedValues: Set<string>): boolea
 			(values.length === 2 && values.every((item) => allowedValues.has(item)))
 		);
 	});
+}
+
+/**
+ * A finite value set is declared once and drives both the validator and the message, so an
+ * accepted value can never be missing from the set the rejection message enumerates.
+ */
+function oneOf(allowedValues: ReadonlySet<string>): ValueRule {
+	return {
+		acceptedValueSummary: `one of: ${[...allowedValues].join(', ')}`,
+		valueValidator: (value) => allowedValues.has(value),
+	};
+}
+
+function preferenceListOf(allowedValues: ReadonlySet<string>): ValueRule {
+	return {
+		acceptedValueSummary: `a "/"-separated preference list of: ${[...allowedValues].join(', ')}`,
+		valueValidator: (value) => isPreferenceList(value, allowedValues),
+	};
+}
+
+function conversionRulesOf(allowedValues: ReadonlySet<string>): ValueRule {
+	return {
+		acceptedValueSummary: `"/"-separated conversion rules built from: ${[...allowedValues].join(', ')}`,
+		valueValidator: (value) => isConversionRuleList(value, allowedValues),
+	};
+}
+
+function invalidValueMessage(definition: OptionDefinition): string {
+	return definition.acceptedValueSummary === undefined
+		? `${definition.canonicalName} did not receive a valid value.`
+		: `${definition.canonicalName} accepts ${definition.acceptedValueSummary}.`;
 }
 
 function isAudioQuality(value: string): boolean {
@@ -240,10 +289,7 @@ const optionDefinitions: OptionDefinition[] = [
 	{ canonicalName: '--format', valueValidator: isFormatSelector },
 	{ canonicalName: '--format-sort', valueValidator: isFormatSort },
 	{ canonicalName: '--format-sort-force', requires: ['--format-sort'] },
-	{
-		canonicalName: '--merge-output-format',
-		valueValidator: (value) => isPreferenceList(value, mergeContainers),
-	},
+	{ canonicalName: '--merge-output-format', ...preferenceListOf(mergeContainers) },
 	{
 		canonicalName: '--playlist-items',
 		valueValidator: (value) => playlistItemCardinality(value) !== undefined,
@@ -259,12 +305,12 @@ const optionDefinitions: OptionDefinition[] = [
 	},
 	{
 		canonicalName: '--sub-format',
-		valueValidator: (value) => isPreferenceList(value, subtitleFormats),
+		...preferenceListOf(subtitleFormats),
 		requiresOneOf: ['--write-subs', '--write-auto-subs'],
 	},
 	{
 		canonicalName: '--convert-subs',
-		valueValidator: (value) => convertedSubtitleFormats.has(value),
+		...oneOf(convertedSubtitleFormats),
 		requiresOneOf: ['--write-subs', '--write-auto-subs'],
 	},
 	{
@@ -274,14 +320,14 @@ const optionDefinitions: OptionDefinition[] = [
 	{ canonicalName: '--write-thumbnail' },
 	{
 		canonicalName: '--convert-thumbnails',
-		valueValidator: (value) => isConversionRuleList(value, thumbnailFormats),
+		...conversionRulesOf(thumbnailFormats),
 		requires: ['--write-thumbnail'],
 	},
 	{ canonicalName: '--embed-thumbnail', requires: ['--write-thumbnail'] },
 	{ canonicalName: '--extract-audio' },
 	{
 		canonicalName: '--audio-format',
-		valueValidator: (value) => audioFormats.has(value),
+		...oneOf(audioFormats),
 		requires: ['--extract-audio'],
 	},
 	{
@@ -291,12 +337,12 @@ const optionDefinitions: OptionDefinition[] = [
 	},
 	{
 		canonicalName: '--remux-video',
-		valueValidator: (value) => isConversionRuleList(value, mediaContainers),
+		...conversionRulesOf(mediaContainers),
 		conflicts: ['--recode-video'],
 	},
 	{
 		canonicalName: '--recode-video',
-		valueValidator: (value) => isConversionRuleList(value, mediaContainers),
+		...conversionRulesOf(mediaContainers),
 		conflicts: ['--remux-video'],
 	},
 	{ canonicalName: '--embed-metadata' },
@@ -323,34 +369,42 @@ export function createYtDlpExecutionPlan(request: DownloadRequest): YtDlpExecuti
 		const equalsIndex = token.startsWith('--') ? token.indexOf('=') : -1;
 		const name = equalsIndex === -1 ? token : token.slice(0, equalsIndex);
 		const definition = definitionsByName.get(name);
-		if (definition === undefined || selectedOptions.has(definition.canonicalName)) invalidArguments();
+		if (definition === undefined) invalidArguments(UNSUPPORTED_OPTION_MESSAGE);
+		if (selectedOptions.has(definition.canonicalName)) {
+			invalidArguments(`${definition.canonicalName} may be specified only once.`);
+		}
 
 		selectedOptions.add(definition.canonicalName);
 		argv.push(definition.canonicalName);
 
 		if (definition.valueValidator === undefined) {
-			if (equalsIndex !== -1) invalidArguments();
+			if (equalsIndex !== -1) {
+				invalidArguments(`${definition.canonicalName} does not accept a value.`);
+			}
 			continue;
 		}
 
 		const value = equalsIndex === -1 ? tokens[++index] : token.slice(equalsIndex + 1);
-		if (value === undefined || !definition.valueValidator(value)) invalidArguments();
+		if (value === undefined) invalidArguments(`${definition.canonicalName} requires a value.`);
+		if (!definition.valueValidator(value)) invalidArguments(invalidValueMessage(definition));
 		argv.push(value);
 	}
 
 	for (const selectedOption of selectedOptions) {
 		const definition = definitionsByName.get(selectedOption)!;
-		if (definition.requires?.some((required) => !selectedOptions.has(required)) === true) {
-			invalidArguments();
+		const missing = definition.requires?.filter((required) => !selectedOptions.has(required));
+		if (missing !== undefined && missing.length > 0) {
+			invalidArguments(`${selectedOption} requires ${missing.join(' and ')}.`);
 		}
 		if (
 			definition.requiresOneOf !== undefined &&
 			!definition.requiresOneOf.some((required) => selectedOptions.has(required))
 		) {
-			invalidArguments();
+			invalidArguments(`${selectedOption} requires one of: ${definition.requiresOneOf.join(', ')}.`);
 		}
-		if (definition.conflicts?.some((conflict) => selectedOptions.has(conflict)) === true) {
-			invalidArguments();
+		const conflicting = definition.conflicts?.filter((conflict) => selectedOptions.has(conflict));
+		if (conflicting !== undefined && conflicting.length > 0) {
+			invalidArguments(`${selectedOption} cannot be combined with ${conflicting.join(' or ')}.`);
 		}
 	}
 
