@@ -1,5 +1,6 @@
 ---
-status: accepted
+status: superseded
+superseded-by: 0040-platform-derived-resource-envelope.md
 ---
 
 # Her execution ve istek sabit bir Resource Envelope içinde çalışır
