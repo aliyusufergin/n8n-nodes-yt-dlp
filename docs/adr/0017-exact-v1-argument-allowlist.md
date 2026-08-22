@@ -1,5 +1,6 @@
 ---
-status: accepted
+status: superseded
+superseded-by: 0038-v2-argument-allowlist.md
 ---
 
 # V1 yalnızca exact media işlem allowlist'ini kabul eder
