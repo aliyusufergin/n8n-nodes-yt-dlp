@@ -167,6 +167,16 @@ function globalErrorCode(error: unknown): string {
 	return 'UNEXPECTED_ERROR';
 }
 
+/**
+ * An argument rejection authors its own message so the workflow author reads which option to fix;
+ * every other typed request failure keeps the fixed per-code message.
+ */
+function requestFailureMessage(errorCode: RequestFailureCode, error: unknown): string {
+	return error instanceof InvalidArgumentsError
+		? error.message
+		: REQUEST_FAILURE_MESSAGES[errorCode];
+}
+
 function requestFailureCode(error: unknown): RequestFailureCode | undefined {
 	if (error instanceof YtDlpProcessError) return error.code;
 	if (error instanceof InvalidSourceUrlError) return INVALID_SOURCE_URL;
@@ -374,7 +384,7 @@ export async function executeYtDlpNode(
 							json: {
 								status: 'error',
 								errorCode,
-								errorMessage: REQUEST_FAILURE_MESSAGES[errorCode],
+								errorMessage: requestFailureMessage(errorCode, effectiveError),
 							},
 							pairedItem: { item: itemIndex },
 						});
@@ -384,7 +394,7 @@ export async function executeYtDlpNode(
 					const cause =
 						effectiveError instanceof Error
 							? effectiveError
-							: new Error(REQUEST_FAILURE_MESSAGES[errorCode]);
+							: new Error(requestFailureMessage(errorCode, effectiveError));
 					const nodeError = new NodeOperationError(execution.getNode(), cause, {
 						description: errorCode,
 						itemIndex,

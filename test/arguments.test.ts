@@ -263,3 +263,161 @@ describe('V1 argument execution plan', () => {
 		}
 	});
 });
+
+describe('option-specific rejection messages', () => {
+	const UNSUPPORTED_OPTION_MESSAGE =
+		'The Arguments value contains an option that is not part of the supported yt-dlp option profile.';
+
+	function expectRejectionMessage(argumentsValue: string, message: string) {
+		expect(() => plan(argumentsValue)).toThrowError(
+			expect.objectContaining({ code: INVALID_ARGUMENTS, message }),
+		);
+	}
+
+	it.each([
+		'--unknown-option value',
+		'--exec id',
+		'--output /tmp/file',
+		'best',
+		'-fbest',
+		'--',
+	])('reports %j as an unsupported option', (argumentsValue) => {
+		expectRejectionMessage(argumentsValue, UNSUPPORTED_OPTION_MESSAGE);
+	});
+
+	it.each([
+		['--format best --format worst', '--format may be specified only once.'],
+		['-f best --format worst', '--format may be specified only once.'],
+		['-x --extract-audio', '--extract-audio may be specified only once.'],
+	])('reports %j as a duplicate option', (argumentsValue, message) => {
+		expectRejectionMessage(argumentsValue, message);
+	});
+
+	it.each([
+		['--write-subs=yes', '--write-subs does not accept a value.'],
+		['--extract-audio=mp3', '--extract-audio does not accept a value.'],
+	])('reports %j as a valueless option given a value', (argumentsValue, message) => {
+		expectRejectionMessage(argumentsValue, message);
+	});
+
+	it.each([
+		['--format', '--format requires a value.'],
+		['--write-thumbnail --convert-thumbnails', '--convert-thumbnails requires a value.'],
+	])('reports %j as a missing value', (argumentsValue, message) => {
+		expectRejectionMessage(argumentsValue, message);
+	});
+
+	it.each([
+		['--format -', '--format did not receive a valid value.'],
+		['--format-sort ***', '--format-sort did not receive a valid value.'],
+		['--playlist-items 0', '--playlist-items did not receive a valid value.'],
+		['--write-subs --sub-langs -all', '--sub-langs did not receive a valid value.'],
+		['-x --audio-quality 11', '--audio-quality did not receive a valid value.'],
+	])('reports %j as an invalid free-form value', (argumentsValue, message) => {
+		expectRejectionMessage(argumentsValue, message);
+	});
+
+	it.each([
+		[
+			'--merge-output-format exe',
+			'--merge-output-format accepts a "/"-separated preference list of: avi, flv, mkv, mov, mp4, webm.',
+		],
+		[
+			'--write-subs --sub-format exe',
+			'--sub-format accepts a "/"-separated preference list of: ass, best, lrc, srt, vtt.',
+		],
+		['--write-subs --convert-subs exe', '--convert-subs accepts one of: ass, lrc, srt, vtt.'],
+		[
+			'--write-thumbnail --convert-thumbnails svg',
+			'--convert-thumbnails accepts "/"-separated conversion rules built from: jpg, png, webp.',
+		],
+		[
+			'-x --audio-format ogg',
+			'--audio-format accepts one of: aac, alac, best, flac, m4a, mp3, opus, vorbis, wav.',
+		],
+		[
+			'--remux-video exe',
+			'--remux-video accepts "/"-separated conversion rules built from: aac, aiff, alac, avi, flac, flv, gif, m4a, mka, mkv, mov, mp3, mp4, ogg, opus, vorbis, wav, webm.',
+		],
+		[
+			'--recode-video exe',
+			'--recode-video accepts "/"-separated conversion rules built from: aac, aiff, alac, avi, flac, flv, gif, m4a, mka, mkv, mov, mp3, mp4, ogg, opus, vorbis, wav, webm.',
+		],
+	])('enumerates the accepted value set for %j', (argumentsValue, message) => {
+		expectRejectionMessage(argumentsValue, message);
+	});
+
+	it.each([
+		['--format-sort-force', '--format-sort-force requires --format-sort.'],
+		['--convert-thumbnails png', '--convert-thumbnails requires --write-thumbnail.'],
+		['--embed-thumbnail', '--embed-thumbnail requires --write-thumbnail.'],
+		['--audio-format mp3', '--audio-format requires --extract-audio.'],
+		['--audio-quality 3', '--audio-quality requires --extract-audio.'],
+		['--sub-langs en', '--sub-langs requires one of: --write-subs, --write-auto-subs.'],
+		['--sub-format srt', '--sub-format requires one of: --write-subs, --write-auto-subs.'],
+		['--convert-subs srt', '--convert-subs requires one of: --write-subs, --write-auto-subs.'],
+		['--embed-subs', '--embed-subs requires one of: --write-subs, --write-auto-subs.'],
+	])('reports %j as a missing dependency', (argumentsValue, message) => {
+		expectRejectionMessage(argumentsValue, message);
+	});
+
+	it.each([
+		['--yes-playlist --no-playlist', '--yes-playlist cannot be combined with --no-playlist.'],
+		['--no-playlist --yes-playlist', '--no-playlist cannot be combined with --yes-playlist.'],
+		[
+			'--embed-chapters --no-embed-chapters',
+			'--embed-chapters cannot be combined with --no-embed-chapters.',
+		],
+		[
+			'--remux-video mp4 --recode-video mp4',
+			'--remux-video cannot be combined with --recode-video.',
+		],
+	])('reports %j as a conflict', (argumentsValue, message) => {
+		expectRejectionMessage(argumentsValue, message);
+	});
+
+	it('keeps the frozen error code on every rejection category', () => {
+		for (const argumentsValue of [
+			'--unknown-option value',
+			'--format best --format worst',
+			'-x --audio-format ogg',
+			'--audio-format mp3',
+			'--yes-playlist --no-playlist',
+			'--format "unterminated',
+		]) {
+			expect(() => plan(argumentsValue)).toThrowError(
+				expect.objectContaining({ code: INVALID_ARGUMENTS }),
+			);
+		}
+	});
+
+	it('never repeats the value the user wrote back in the message', () => {
+		const marker = 'canary0value';
+		const templates = [
+			`--format-sort ${marker}!`,
+			`--merge-output-format ${marker}`,
+			`--playlist-items ${marker}`,
+			`--write-subs --sub-format ${marker}`,
+			`--write-subs --convert-subs ${marker}`,
+			`--write-thumbnail --convert-thumbnails ${marker}`,
+			`-x --audio-format ${marker}`,
+			`-x --audio-quality ${marker}`,
+			`--remux-video ${marker}`,
+			`--recode-video ${marker}`,
+			`--${marker} value`,
+			`--format=${marker} --format=${marker}`,
+			`--write-subs=${marker}`,
+		];
+
+		for (const argumentsValue of templates) {
+			try {
+				plan(argumentsValue);
+				expect.unreachable(`expected ${argumentsValue} to be rejected`);
+			} catch (error) {
+				const message = (error as Error).message;
+				expect(message).not.toContain(marker);
+				expect(message.split('\n')).toHaveLength(1);
+			}
+		}
+	});
+});

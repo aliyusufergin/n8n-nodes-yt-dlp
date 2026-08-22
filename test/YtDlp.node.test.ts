@@ -1010,6 +1010,47 @@ describe('yt-dlp node adapter', () => {
 	});
 
 	it.each([
+		[
+			'-x --audio-format ogg',
+			'--audio-format accepts one of: aac, alac, best, flac, m4a, mp3, opus, vorbis, wav.',
+		],
+		['--format-sort-force', '--format-sort-force requires --format-sort.'],
+		[
+			'--exec id',
+			'The Arguments value contains an option that is not part of the supported yt-dlp option profile.',
+		],
+	])(
+		'surfaces the option-specific rejection message for %j',
+		async (argumentsValue, errorMessage) => {
+			const startRequest = vi.fn<DownloadRequestExecutor>();
+			const [[failureItem]] = await executeYtDlpNode(
+				createExecutionContext(
+					[{ sourceUrl: 'https://example.com/video', arguments: argumentsValue }],
+					true,
+				),
+				startRequest,
+			);
+
+			expect(failureItem).toEqual({
+				json: { status: 'error', errorCode: 'INVALID_ARGUMENTS', errorMessage },
+				pairedItem: { item: 0 },
+			});
+			await expect(
+				executeYtDlpNode(
+					createExecutionContext([
+						{ sourceUrl: 'https://example.com/video', arguments: argumentsValue },
+					]),
+					startRequest,
+				),
+			).rejects.toMatchObject({
+				context: { errorCode: 'INVALID_ARGUMENTS', itemIndex: 0 },
+				message: errorMessage,
+			});
+			expect(startRequest).not.toHaveBeenCalled();
+		},
+	);
+
+	it.each([
 		'--output /tmp/file',
 		'--paths /tmp',
 		'--config-locations /tmp/config',
