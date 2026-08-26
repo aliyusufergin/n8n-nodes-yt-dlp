@@ -1,22 +1,22 @@
 # yt-dlp release channel and toolchain pinning
 
-Accessed: 2026-07-17
+Accessed: 2026-07-17. Re-anchored to the packaged nightly and re-verified: 2026-08-26
 
 ## Version anchors
 
 - yt-dlp stable tag: [`2026.06.09`](https://github.com/yt-dlp/yt-dlp/releases/tag/2026.06.09).
-- Inspected yt-dlp nightly tag: [`2026.07.14.233956`](https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/tag/2026.07.14.233956).
+- Packaged yt-dlp nightly tag: [`2026.07.14.233956`](https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/tag/2026.07.14.233956), source commit [`aefce1ee`](https://github.com/yt-dlp/yt-dlp/tree/aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8). This is the tag the Toolchain Lock froze and the node ships; the stable tag above is cited only where a claim is about the stable channel itself.
 - Inspected Deno tag: [`v2.9.3`](https://github.com/denoland/deno/releases/tag/v2.9.3).
 
 ## Findings
 
-1. **Kanıtlanmış platform gerçeği:** yt-dlp defines stable, nightly, and master binary channels. Its 2026.06.09 documentation says stable is mostly monthly and often stale because sites change, while nightly is the recommended channel for regular users. Binary self-update remains within the current channel unless `--update-to` selects another channel or tag. Source: [yt-dlp 2026.06.09 update channels](https://github.com/yt-dlp/yt-dlp/blob/2026.06.09/README.md#update-channels).
+1. **Kanıtlanmış platform gerçeği:** yt-dlp defines stable, nightly, and master binary channels. Its 2026.07.14.233956 documentation says stable is mostly monthly and often stale because sites change, while nightly is the recommended channel for regular users. Binary self-update remains within the current channel unless `--update-to` selects another channel or tag. Source: [yt-dlp 2026.07.14.233956 update channels](https://github.com/yt-dlp/yt-dlp/blob/aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8/README.md#update-channels).
 
 2. **Kanıtlanmış platform gerçeği:** The stable 2026.06.09 release is marked immutable by GitHub and provides SHA-256/SHA-512 manifests with GPG signatures. Its musllinux x64 executable has GitHub asset digest `sha256:74b20e9e0d8948cccd81004cb64576293cd41b8f4e7f5b6bdc4a253c3bb9b79a`. Source: [`2026.06.09` release](https://github.com/yt-dlp/yt-dlp/releases/tag/2026.06.09).
 
-3. **Kanıtlanmış platform gerçeği:** The inspected nightly `2026.07.14.233956` release is marked immutable and provides a signed SHA-256 manifest. Its musllinux x64 executable has GitHub asset digest `sha256:8f5d14830ffcfc2a45de3c13b0e5158bc228d8d00bc58df2196d0d14e01d7023`. This is evidence for the mechanism, not the final release pin. Source: [`2026.07.14.233956` release](https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/tag/2026.07.14.233956).
+3. **Kanıtlanmış platform gerçeği:** The packaged nightly `2026.07.14.233956` release is marked immutable and provides a signed SHA-256 manifest. Its musllinux x64 executable has GitHub asset digest `sha256:8f5d14830ffcfc2a45de3c13b0e5158bc228d8d00bc58df2196d0d14e01d7023`. That digest is the one the Toolchain Lock records for `yt-dlp_musllinux`, so this release is the final pin rather than evidence for the mechanism alone. Source: [`2026.07.14.233956` release](https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/tag/2026.07.14.233956).
 
-4. **Kanıtlanmış platform gerçeği:** yt-dlp documents a GPG public key and verification commands for its signed checksum manifests. The release process must pin the reviewed key material rather than fetch mutable `master` during verification. Source: [yt-dlp 2026.06.09 release files](https://github.com/yt-dlp/yt-dlp/blob/2026.06.09/README.md#release-files).
+4. **Kanıtlanmış platform gerçeği:** yt-dlp documents a GPG public key and verification commands for its signed checksum manifests. The release process must pin the reviewed key material rather than fetch mutable `master` during verification. Source: [yt-dlp 2026.07.14.233956 release files](https://github.com/yt-dlp/yt-dlp/blob/aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8/README.md#release-files).
 
 5. **Kanıtlanmış platform gerçeği:** Deno v2.9.3 is marked immutable and publishes per-asset checksums plus `deno_src.tar.gz`. The x64 GNU Linux zip has GitHub asset digest `sha256:8101865641cbede56f08ad19c0a67a87df84bce127fee0d3e3e1f7467717ffa6`. Source: [`v2.9.3` release](https://github.com/denoland/deno/releases/tag/v2.9.3).
 

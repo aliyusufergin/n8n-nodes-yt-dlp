@@ -1,16 +1,16 @@
 # yt-dlp URL and network boundary
 
-Accessed: 2026-07-17
+Accessed: 2026-07-17. Re-anchored to the packaged nightly and re-verified: 2026-08-26
 
 ## Version anchor
 
-- yt-dlp tag: [`2026.06.09`](https://github.com/yt-dlp/yt-dlp/tree/2026.06.09).
+- Packaged yt-dlp nightly tag: [`2026.07.14.233956`](https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/tag/2026.07.14.233956), source commit [`aefce1ee`](https://github.com/yt-dlp/yt-dlp/tree/aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8) as recorded in the Toolchain Lock.
 
 ## Findings
 
-1. **Kanıtlanmış platform gerçeği:** yt-dlp 2026.06.09 disables `file://` URLs by default and describes `--enable-file-urls` as security-sensitive. Source: [`options.py`](https://github.com/yt-dlp/yt-dlp/blob/2026.06.09/yt_dlp/options.py#L647).
+1. **Kanıtlanmış platform gerçeği:** yt-dlp 2026.07.14.233956 disables `file://` URLs by default and describes `--enable-file-urls` as security-sensitive. Source: [`options.py`](https://github.com/yt-dlp/yt-dlp/blob/aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8/yt_dlp/options.py#L647).
 
-2. **Kanıtlanmış platform gerçeği:** The same version can accept URL lists from a local file or stdin through `--batch-file`, load local metadata through `--load-info-json`, transform unqualified input with `--default-search`, and force its generic extractor. Sources: [`options.py` filesystem options](https://github.com/yt-dlp/yt-dlp/blob/2026.06.09/yt_dlp/options.py#L1382) and [`options.py` general options](https://github.com/yt-dlp/yt-dlp/blob/2026.06.09/yt_dlp/options.py#L411).
+2. **Kanıtlanmış platform gerçeği:** The same version can accept URL lists from a local file or stdin through `--batch-file`, load local metadata through `--load-info-json`, transform unqualified input with `--default-search`, and force its generic extractor. Sources: [`options.py` filesystem options](https://github.com/yt-dlp/yt-dlp/blob/aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8/yt_dlp/options.py#L1384) and [`options.py` general options](https://github.com/yt-dlp/yt-dlp/blob/aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8/yt_dlp/options.py#L411).
 
 3. **Ürün kararı:** v1 accepts exactly one separate absolute HTTP(S) Source URL per input item. It rejects userinfo, control characters, NUL, missing hosts, values over 16 KiB UTF-8, all other schemes, search prefixes, bare search terms, batch/stdin lists, local info JSON, and arguments that alter this boundary.
 
