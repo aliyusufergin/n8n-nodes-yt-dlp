@@ -23,18 +23,38 @@ const toolchainDirectory = resolve('packages', 'linux-x64', 'bin');
 const ffmpegPath = join(toolchainDirectory, 'ffmpeg');
 const ffprobePath = join(toolchainDirectory, 'ffprobe');
 
+/** The entry basenames each synthetic playlist page lists, in the order it presents them. Every
+ * entry that is not {@link UNAVAILABLE_ENTRY} is served from a static fixture body. */
+const PLAYLISTS = {
+	'/playlist': ['alpha.mp4', 'bravo.mp4'],
+	'/playlist/partial': ['alpha.mp4', 'restricted.mp4', 'bravo.mp4'],
+} as const satisfies Readonly<Record<string, readonly string[]>>;
+
+/** The one entry the origin refuses, standing in for a playlist entry the host will not hand over
+ * — geo-restricted, removed, members-only. A playlist fixture whose every entry succeeds cannot
+ * show what a single failing entry does to the rest of the request. */
+const UNAVAILABLE_ENTRY = 'restricted.mp4';
+
 let fixtureDirectory: string;
 let origin: Server;
 let originUrl: string;
 /** Bytes the size-withholding route has fully flushed, so a test can tell a completed download
  * from an early abort without reaching into error internals. */
 let chunkedBytesServed = 0;
+/** Requests the origin answered with the entry refusal, so a test can tell a failure caused by the
+ * refused entry from any other reason yt-dlp might exit unsuccessfully. */
+let refusedEntryRequests = 0;
 
 async function collect(stream: Readable): Promise<Buffer> {
 	const chunks: Buffer[] = [];
 	for await (const chunk of stream) chunks.push(Buffer.from(chunk));
 	return Buffer.concat(chunks);
 }
+
+/** Every entry basename any playlist page lists, so an entry request is recognised wherever it
+ * comes from and adding an entry to a page needs no second edit here. */
+const playlistEntryNames = new Set<string>(Object.values(PLAYLISTS).flat());
+const playlistPages = new Map<string, readonly string[]>(Object.entries(PLAYLISTS));
 
 function contentType(pathname: string): string {
 	if (pathname.endsWith('.jpg')) return 'image/jpeg';
@@ -302,12 +322,14 @@ beforeAll(async () => {
 			);
 			return;
 		}
-		if (pathname === '/playlist') {
+		const playlistEntries = playlistPages.get(pathname);
+		if (playlistEntries !== undefined) {
 			response.writeHead(200, { 'content-type': contentType(pathname) });
 			response.end(
 				'<html><head><title>Synthetic playlist</title></head><body>' +
-					'<video src="/alpha.mp4" controls></video>' +
-					'<video src="/bravo.mp4" controls></video>' +
+					playlistEntries
+						.map((entry) => `<video src="/${entry}" controls></video>`)
+						.join('') +
 					'</body></html>',
 			);
 			return;
@@ -319,7 +341,15 @@ beforeAll(async () => {
 		const requestedName = withheldSize
 			? pathname.slice('/chunked/'.length)
 			: pathname.slice(1);
-		const fixtureName = ['alpha.mp4', 'bravo.mp4'].includes(requestedName)
+		// One playlist entry the host will not hand over. A real refusal is an answer, not a
+		// missing route, so it carries a status a real host sends and no body to download.
+		if (requestedName === UNAVAILABLE_ENTRY) {
+			refusedEntryRequests++;
+			response.writeHead(403);
+			response.end();
+			return;
+		}
+		const fixtureName = playlistEntryNames.has(requestedName)
 			? 'combined.mp4'
 			: requestedName;
 		try {
@@ -637,6 +667,79 @@ describe('real packaged media toolchain', () => {
 		expect(probe.chapters.map(({ tags }) => tags?.title)).toEqual([
 			'Opening',
 			'Ending',
+		]);
+	}, 60_000);
+
+	// Adapter rule 1, the #52 case carried over to playlist entries. A real playlist host
+	// advertises the size of each entry's static body; an origin that answers chunked for entries
+	// hides it, so yt-dlp cannot learn an entry's size before downloading it and the Resource
+	// Envelope's pre-download path never runs for a playlist at all.
+	it('advertises content-length for every playlist entry it serves', async () => {
+		const servedEntries = Object.values(PLAYLISTS)
+			.flat()
+			.filter((entry) => entry !== UNAVAILABLE_ENTRY);
+		expect(servedEntries.length).toBeGreaterThan(0);
+
+		for (const entry of new Set(servedEntries)) {
+			const response = await fetch(`${originUrl}/${entry}`);
+
+			expect(response.status).toBe(200);
+			expect(response.headers.get('content-length')).toBe(
+				String((await response.arrayBuffer()).byteLength),
+			);
+		}
+	});
+
+	// A playlist whose entries all succeed cannot show what one refused entry does to the request
+	// around it, so the origin has to be able to refuse exactly one. The refusal belongs to the
+	// entry, not to the page: the siblings stay servable.
+	it('refuses one playlist entry while serving the entries around it', async () => {
+		const refused = await fetch(`${originUrl}/${UNAVAILABLE_ENTRY}`);
+		expect(refused.status).toBe(403);
+
+		for (const entry of PLAYLISTS['/playlist/partial'].filter(
+			(name) => name !== UNAVAILABLE_ENTRY,
+		)) {
+			const response = await fetch(`${originUrl}/${entry}`);
+			expect(response.status).toBe(200);
+			// Draining the body releases the keep-alive socket. An undrained one keeps the
+			// connection busy and `origin.close` waits on it, so teardown would hang rather than
+			// fail once an entry body outgrows the socket buffer.
+			await response.arrayBuffer();
+		}
+	});
+
+	it('fails the Download Request when real yt-dlp reaches the refused playlist entry', async () => {
+		const context = createExecutionContext(`${originUrl}/playlist/partial`, '--yes-playlist');
+		refusedEntryRequests = 0;
+
+		await expect(executeYtDlpNode(context)).rejects.toMatchObject({
+			context: { errorCode: 'YTDLP_FAILED', itemIndex: 0 },
+		});
+		// The failure has to be the refusal. `YTDLP_FAILED` alone would stay green if the page
+		// stopped being read as a playlist and yt-dlp failed for an unrelated reason, so the test
+		// pins that yt-dlp actually asked the origin for the entry it refuses.
+		expect(refusedEntryRequests).toBeGreaterThan(0);
+	}, 60_000);
+
+	// The refused entry sits in the middle, so selecting around it proves the page really does
+	// present three entries to the real extractor and that the two survivors are the ones the
+	// origin serves. Without this the test above could pass on a page yt-dlp read as one entry.
+	it('serves the entries on both sides of the refused playlist entry', async () => {
+		const context = createExecutionContext(
+			`${originUrl}/playlist/partial`,
+			'--yes-playlist --playlist-items 1,3',
+		);
+
+		const [items] = await executeYtDlpNode(context);
+
+		expect(items).toHaveLength(2);
+		// The generic extractor titles each entry after its position on the page, so the two
+		// survivors name themselves: positions 1 and 3, with the refused entry 2 absent between
+		// them.
+		expect(items.map(({ json }) => json.fileName)).toEqual([
+			expect.stringMatching(/-1\.mp4$/u),
+			expect.stringMatching(/-3\.mp4$/u),
 		]);
 	}, 60_000);
 
