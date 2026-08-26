@@ -60,6 +60,17 @@ the container's scratch space, carrying the candidate tarballs, the extracted pa
 workspaces, and the npm cache at the same time; a measured run peaks at 2.43 GiB there, and a smaller
 tmpfs fails the lane late with `ENOSPC` rather than on the candidate.
 
+The `hermetic` lane is also where the Argument Allowlist is verified against the packaged yt-dlp.
+The allowlist is a set of literal option names, so an upstream rename or removal fails nothing at
+build time and instead produces argv the executable refuses at runtime. The gate at
+`test/platform-packages.test.ts` runs the packaged executable's own `--help` and requires every
+canonical name and short alias in the allowlist to appear there as an option definition; a name the
+help output no longer defines fails the lane. Short aliases never reach argv — the execution plan
+emits the canonical name — but they are spellings the node advertises as yt-dlp's own, so the gate
+covers them too. The version that help output speaks for is read from the packaged
+`TOOLCHAIN.lock.json` and compared with what the executable reports, so the gate is never ambiguous
+about which yt-dlp it proved and never repeats that version itself.
+
 The live canary uses the frozen yt-dlp upstream test identity `YE7VzlLtp-4`, disables media
 downloads and remote components, and must record actual packaged-Deno challenge execution. Its
 evidence is bound to the public registry read-back and records the exact packaged yt-dlp, FFmpeg,

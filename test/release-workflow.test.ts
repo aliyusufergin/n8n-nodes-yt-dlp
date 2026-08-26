@@ -58,6 +58,9 @@ describe('release workflow', () => {
 		);
 		expect(job(workflow, 'hermetic')).toContain('E2E_RELEASE_CANDIDATE_ROOT');
 		expect(job(workflow, 'hermetic')).toContain('--network none');
+		// The allowlist-versus-help verification has no lane of its own: it is a test in the
+		// candidate-bound suite, so `hermetic` is what runs it against the published bytes.
+		expect(job(workflow, 'hermetic')).toContain('npm test');
 		expect(job(workflow, 'hermetic')).toContain('hermetic-identities.json');
 		for (const status of ['three-anchor', 'multiworker', 'capacity']) {
 			expect(job(workflow, status)).toContain('E2E_REQUIRE_PUBLISHED_NEXT:');
@@ -324,6 +327,8 @@ describe('release workflow', () => {
 			'Platform Package, Platform Selector, then the main package last',
 			'Rollback rehearsal',
 			'npm 2FA',
+			'Argument Allowlist is verified against the packaged yt-dlp',
+			'`TOOLCHAIN.lock.json` and compared with what the executable reports',
 		]) {
 			expect(documentation).toContain(required);
 		}

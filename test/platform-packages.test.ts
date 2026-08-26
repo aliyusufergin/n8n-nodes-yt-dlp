@@ -11,6 +11,8 @@ import { promisify } from 'node:util';
 import type { VerifiedToolchain } from 'n8n-nodes-yt-dlp-platform';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { ALLOWLISTED_OPTION_NAMES } from '../nodes/YtDlp/arguments';
+
 const execFileAsync = promisify(execFile);
 const repositoryRoot = resolve('.');
 
@@ -371,6 +373,48 @@ describe('published Platform Gate packages', () => {
 			bundledSolver,
 		);
 	});
+
+	// The allowlist is a set of literal option names. Upstream renames and removes options between
+	// releases, and neither the compiler nor any unit test notices: a renamed option keeps producing
+	// argv, and the failure surfaces only when the packaged executable refuses it at runtime. The
+	// packaged executable's own help text is the authority on which names it still defines, and the
+	// version that authority speaks for is read from the Toolchain Lock rather than repeated here,
+	// so the verification can never be ambiguous about which yt-dlp it proved.
+	it('defines every allowlisted option name in the packaged yt-dlp help output', async () => {
+		const platformPackage = packages.find(
+			({ metadata }) => metadata.name === 'n8n-nodes-yt-dlp-linux-x64',
+		);
+		if (platformPackage === undefined) throw new Error('The platform package fixture is missing.');
+		const packageRoot = join(platformPackage.extractedDirectory, 'package');
+		const lock = JSON.parse(
+			await readFile(join(packageRoot, 'TOOLCHAIN.lock.json'), 'utf8'),
+		) as ToolchainLock;
+		const pinnedTag = lock.components.find(({ name }) => name === 'yt-dlp')?.upstream.tag;
+		if (pinnedTag === undefined) throw new Error('The yt-dlp lock entry is missing.');
+
+		const ytDlp = join(packageRoot, 'bin', 'yt-dlp');
+		const [version, help] = await Promise.all([
+			execFileAsync(ytDlp, ['--version']),
+			execFileAsync(ytDlp, ['--help']),
+		]);
+		expect(version.stdout.trim()).toBe(pinnedTag);
+
+		// yt-dlp opens each option's own entry at a fixed indent and wraps its description far
+		// deeper, so only a definition line contributes a name. A parser that read the wrapped
+		// description text too would keep finding removed names in prose and pass the release that
+		// dropped them. `--add-chapters` is the control for exactly that: the help output carries it
+		// only inside another option's wrapped description, as `(Alias: --add-chapters)`, so a parser
+		// that slurped prose would report it as defined and this assertion would fail.
+		const definedOptions = new Set(
+			help.stdout
+				.split('\n')
+				.flatMap((line) => /^ {4}(-[^\s,]+(?:, -[^\s,]+)*)/u.exec(line)?.[1].split(', ') ?? []),
+		);
+		expect(definedOptions.has('--playlist-items')).toBe(true);
+		expect(definedOptions.has('--add-chapters')).toBe(false);
+
+		expect(ALLOWLISTED_OPTION_NAMES.filter((option) => !definedOptions.has(option))).toEqual([]);
+	}, 30_000);
 
 	it('runs packaged Deno without filesystem, network, environment, or subprocess permission', async () => {
 		const source = `

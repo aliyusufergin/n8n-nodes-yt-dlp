@@ -1,17 +1,17 @@
 # yt-dlp output and artifact discovery
 
-Accessed: 2026-07-17
+Accessed: 2026-07-17. Re-anchored to the packaged nightly and re-verified: 2026-08-26
 
 ## Version anchors
 
-- yt-dlp tag: [`2026.06.09`](https://github.com/yt-dlp/yt-dlp/tree/2026.06.09).
+- Packaged yt-dlp nightly tag: [`2026.07.14.233956`](https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/tag/2026.07.14.233956), source commit [`aefce1ee`](https://github.com/yt-dlp/yt-dlp/tree/aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8) as recorded in the Toolchain Lock.
 - Node.js API baseline: official rolling Node.js filesystem documentation accessed 2026-07-17; exact supported-image behavior remains an E2E target.
 
 ## Findings
 
-1. **Kanıtlanmış platform gerçeği:** yt-dlp output templates may contain arbitrary hierarchical paths, create missing directories, and use `-o -` to emit media to stdout. Source: [yt-dlp 2026.06.09 output template](https://github.com/yt-dlp/yt-dlp/blob/2026.06.09/README.md#output-template).
+1. **Kanıtlanmış platform gerçeği:** yt-dlp output templates may contain arbitrary hierarchical paths, create missing directories, and use `-o -` to emit media to stdout. Source: [yt-dlp 2026.07.14.233956 output template](https://github.com/yt-dlp/yt-dlp/blob/aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8/README.md#output-template).
 
-2. **Kanıtlanmış platform gerçeği:** yt-dlp separately controls final home and intermediate temp paths, output templates, restricted filenames, stem-length trimming, overwrite behavior, partial files, and metadata sidecars. It warns that info JSON may contain personal information. Source: [yt-dlp 2026.06.09 filesystem options](https://github.com/yt-dlp/yt-dlp/blob/2026.06.09/README.md#filesystem-options).
+2. **Kanıtlanmış platform gerçeği:** yt-dlp separately controls final home and intermediate temp paths, output templates, restricted filenames, stem-length trimming, overwrite behavior, partial files, and metadata sidecars. It warns that info JSON may contain personal information. Source: [yt-dlp 2026.07.14.233956 filesystem options](https://github.com/yt-dlp/yt-dlp/blob/aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8/README.md#filesystem-options).
 
 3. **Kanıtlanmış platform gerçeği:** Node.js exposes `lstat`, `realpath`, descriptor `fstat`, and Linux `O_NOFOLLOW`; these primitives can detect or reject symbolic-link traversal and verify the opened inode. Source: [Node.js filesystem API](https://nodejs.org/api/fs.html).
 

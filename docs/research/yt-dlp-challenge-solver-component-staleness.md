@@ -5,7 +5,7 @@ Accessed: 2026-08-21
 ## Version anchors
 
 - Packaged yt-dlp nightly tag: [`2026.07.14.233956`](https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/tag/2026.07.14.233956), source commit [`aefce1ee`](https://github.com/yt-dlp/yt-dlp/tree/aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8) as recorded in the Toolchain Lock.
-- yt-dlp stable tags cross-checked: [`2026.06.09`](https://github.com/yt-dlp/yt-dlp/tree/2026.06.09) (the ADR 0011/0013 anchor) and the current stable [`2026.08.19`](https://github.com/yt-dlp/yt-dlp/releases/tag/2026.08.19), published 2026-08-19.
+- yt-dlp stable tags cross-checked: [`2026.06.09`](https://github.com/yt-dlp/yt-dlp/tree/2026.06.09) (the anchor ADR 0011 and the research notes carried before they were re-anchored to the packaged nightly) and the current stable [`2026.08.19`](https://github.com/yt-dlp/yt-dlp/releases/tag/2026.08.19), published 2026-08-19.
 - Challenge solver package: [`yt-dlp/ejs` `0.8.0`](https://github.com/yt-dlp/ejs/releases/tag/0.8.0), published 2026-03-17, commit `4fb477f4af56880cfd324c48bd4294a2d2294e50` as recorded in the Toolchain Lock.
 - Packaged Deno tag: [`v2.9.3`](https://github.com/denoland/deno/releases/tag/v2.9.3).
 - Deno CLI documentation is rolling, not versioned; [`deno run` reference](https://docs.deno.com/runtime/reference/cli/run/) accessed 2026-08-21.

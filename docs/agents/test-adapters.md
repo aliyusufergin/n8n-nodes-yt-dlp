@@ -51,6 +51,7 @@ In practice:
 | `test/download.test.ts` | fixture executable in place of yt-dlp | workspace layout, Artifact Directory validation, argv the plan produces |
 | `test/process.test.ts` | fixture executable in place of yt-dlp | process group lifecycle, output bounds, exit-code classification |
 | `test/real-toolchain.test.ts` | synthetic origin only | option profile and Artifact validation **together**, against real yt-dlp |
+| `test/platform-packages.test.ts` | none — the packed or published tarballs | what the packaged binaries themselves still are: Toolchain Lock identities, the bundled challenge solver, and every allowlisted option name in yt-dlp's own `--help` |
 | `e2e/release-gate/` | none | published tarballs on a real n8n |
 
 If a change spans two rows, the test belongs in the lower row.

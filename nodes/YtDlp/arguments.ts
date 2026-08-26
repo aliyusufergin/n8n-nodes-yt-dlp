@@ -359,6 +359,15 @@ definitionsByName.set('-S', definitionsByName.get('--format-sort')!);
 definitionsByName.set('-I', definitionsByName.get('--playlist-items')!);
 definitionsByName.set('-x', definitionsByName.get('--extract-audio')!);
 
+/**
+ * Every option name the allowlist accepts, canonical names and short aliases alike. The release
+ * gate reads this to prove the packaged yt-dlp still defines each one. A canonical name upstream
+ * renamed would otherwise keep reaching argv and fail only at runtime. An alias never reaches argv
+ * — the execution plan emits the canonical name — but it is a spelling this node advertises as
+ * yt-dlp's own, so the gate reports its disappearance instead of leaving the two surfaces to drift.
+ */
+export const ALLOWLISTED_OPTION_NAMES: readonly string[] = [...definitionsByName.keys()];
+
 export function createYtDlpExecutionPlan(request: DownloadRequest): YtDlpExecutionPlan {
 	const tokens = tokenizeArguments(request.arguments);
 	const argv: string[] = [];

@@ -1,12 +1,12 @@
 # npm license and Corresponding Source surface
 
-Accessed: 2026-07-17
+Accessed: 2026-07-17. Re-anchored to the packaged nightly and re-verified: 2026-08-26
 
 This note records technical and licensing evidence, not legal advice.
 
 ## Version anchors
 
-- yt-dlp source tag: [`2026.06.09`](https://github.com/yt-dlp/yt-dlp/tree/2026.06.09); final binary will be a separately locked immutable nightly snapshot.
+- Packaged yt-dlp source: nightly tag [`2026.07.14.233956`](https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/tag/2026.07.14.233956), commit [`aefce1ee`](https://github.com/yt-dlp/yt-dlp/tree/aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8), the immutable snapshot the Toolchain Lock froze.
 - Deno candidate tag: [`v2.9.3`](https://github.com/denoland/deno/tree/v2.9.3); the exact bundled version remains release-gated.
 - yt-dlp FFmpeg-Builds candidate commit: [`832dd2f333d919790f117b054f628756c515adce`](https://github.com/yt-dlp/FFmpeg-Builds/tree/832dd2f333d919790f117b054f628756c515adce).
 - FFmpeg candidate source commit embedded by the inspected asset: `a09be9b91e`.
@@ -14,7 +14,7 @@ This note records technical and licensing evidence, not legal advice.
 
 ## Findings
 
-1. **Kanıtlanmış platform gerçeği:** The yt-dlp 2026.06.09 source license is the Unlicense. The Deno v2.9.3 source license is MIT. Sources: [`yt-dlp/LICENSE`](https://github.com/yt-dlp/yt-dlp/blob/2026.06.09/LICENSE) and [`deno/LICENSE.md`](https://github.com/denoland/deno/blob/v2.9.3/LICENSE.md).
+1. **Kanıtlanmış platform gerçeği:** The yt-dlp 2026.07.14.233956 source license is the Unlicense. The Deno v2.9.3 source license is MIT. Sources: [`yt-dlp/LICENSE`](https://github.com/yt-dlp/yt-dlp/blob/aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8/LICENSE) and [`deno/LICENSE.md`](https://github.com/denoland/deno/blob/v2.9.3/LICENSE.md).
 
 2. **Kanıtlanmış platform gerçeği:** The FFmpeg-Builds scripts are MIT-licensed, but the selected `gpl` variant configures FFmpeg with `--enable-gpl --enable-version3` and designates FFmpeg's `COPYING.GPLv3` as the output license. Sources: [`FFmpeg-Builds/LICENSE`](https://github.com/yt-dlp/FFmpeg-Builds/blob/832dd2f333d919790f117b054f628756c515adce/LICENSE) and [`variants/defaults-gpl.sh`](https://github.com/yt-dlp/FFmpeg-Builds/blob/832dd2f333d919790f117b054f628756c515adce/variants/defaults-gpl.sh).
 

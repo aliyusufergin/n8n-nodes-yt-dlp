@@ -1,11 +1,11 @@
 # n8n and yt-dlp credential transport
 
-Accessed: 2026-07-17
+Accessed: 2026-07-17. Re-anchored to the packaged nightly and re-verified: 2026-08-26
 
 ## Version anchors
 
 - n8n tag: `n8n@2.27.4`, commit [`a4d0dfce294064026be1a6a246e6da348fea1485`](https://github.com/n8n-io/n8n/tree/a4d0dfce294064026be1a6a246e6da348fea1485).
-- yt-dlp tag: [`2026.06.09`](https://github.com/yt-dlp/yt-dlp/tree/2026.06.09).
+- Packaged yt-dlp nightly tag: [`2026.07.14.233956`](https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/tag/2026.07.14.233956), source commit [`aefce1ee`](https://github.com/yt-dlp/yt-dlp/tree/aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8) as recorded in the Toolchain Lock.
 
 ## Findings
 
@@ -17,9 +17,9 @@ Accessed: 2026-07-17
 
 4. **Kanıtlanmış platform gerçeği:** n8n credential definitions support password-masked string properties. Masking is a UI behavior; database encryption is provided separately by the credential persistence path. Source: [`custom.credentials.ts`](https://github.com/n8n-io/n8n/blob/a4d0dfce294064026be1a6a246e6da348fea1485/packages/%40n8n/node-cli/src/template/templates/shared/credentials/custom.credentials.ts), n8n 2.27.4.
 
-5. **Kanıtlanmış platform gerçeği:** yt-dlp 2026.06.09 accepts `--config-locations -`, reads that explicit configuration from stdin, and tokenizes it with Python `shlex.split`. `--ignore-config`/`--no-config` prevents loading further configuration except explicit `--config-locations`. Sources: [`options.py`](https://github.com/yt-dlp/yt-dlp/blob/2026.06.09/yt_dlp/options.py#L424) and [`Config`](https://github.com/yt-dlp/yt-dlp/blob/2026.06.09/yt_dlp/utils/_utils.py#L4917).
+5. **Kanıtlanmış platform gerçeği:** yt-dlp 2026.07.14.233956 accepts `--config-locations -`, reads that explicit configuration from stdin, and tokenizes it with Python `shlex.split`. `--ignore-config`/`--no-config` prevents loading further configuration except explicit `--config-locations`. Sources: [`options.py`](https://github.com/yt-dlp/yt-dlp/blob/aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8/yt_dlp/options.py#L437) and [`Config`](https://github.com/yt-dlp/yt-dlp/blob/aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8/yt_dlp/utils/_utils.py#L4934).
 
-6. **Kanıtlanmış platform gerçeği:** yt-dlp's own option redactor covers username/password and video-password options, but does not include proxy URLs or arbitrary headers. Source: [`Config.hide_login_info`](https://github.com/yt-dlp/yt-dlp/blob/2026.06.09/yt_dlp/utils/_utils.py#L4989).
+6. **Kanıtlanmış platform gerçeği:** yt-dlp's own option redactor covers username/password and video-password options, but does not include proxy URLs or arbitrary headers. Source: [`Config.hide_login_info`](https://github.com/yt-dlp/yt-dlp/blob/aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8/yt_dlp/utils/_utils.py#L5007).
 
 7. **Ürün kararı:** v1 exposes one optional Authentication Credential supporting Netscape cookie content, site username/password, video password, and proxy URL. Arbitrary headers/tokens and interactive, browser, command, local-path, OAuth, OTP, and client-certificate mechanisms are outside v1.
 

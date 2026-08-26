@@ -1,19 +1,19 @@
 # FFmpeg GPL binary distribution
 
-Accessed: 2026-07-17
+Accessed: 2026-07-17. Re-anchored to the packaged nightly and re-verified: 2026-08-26
 
 This note records technical and licensing evidence, not legal advice.
 
 ## Version anchors
 
-- yt-dlp tag: [`2026.06.09`](https://github.com/yt-dlp/yt-dlp/tree/2026.06.09).
+- Packaged yt-dlp nightly tag: [`2026.07.14.233956`](https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/tag/2026.07.14.233956), source commit [`aefce1ee`](https://github.com/yt-dlp/yt-dlp/tree/aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8) as recorded in the Toolchain Lock.
 - yt-dlp FFmpeg-Builds release: [`autobuild-2026-07-12-15-07`](https://github.com/yt-dlp/FFmpeg-Builds/releases/tag/autobuild-2026-07-12-15-07).
 - FFmpeg-Builds commit: [`832dd2f333d919790f117b054f628756c515adce`](https://github.com/yt-dlp/FFmpeg-Builds/tree/832dd2f333d919790f117b054f628756c515adce).
 - Inspected Linux x64 asset: `ffmpeg-N-125551-ga09be9b91e-linux64-gpl.tar.xz`, SHA-256 `7a19456683e31d937ae48d51e23dfb869dbb9db1e4d6e1b6881d7fed168fa5cf`.
 
 ## Findings
 
-1. **Kanıtlanmış platform gerçeği:** yt-dlp 2026.06.09 highly recommends FFmpeg and FFprobe for format merging and post-processing and points users to the official `yt-dlp/FFmpeg-Builds` project. It says those builds currently have no yt-dlp-specific patches and are equivalent to upstream FFmpeg. Source: [yt-dlp 2026.06.09 dependencies](https://github.com/yt-dlp/yt-dlp/blob/2026.06.09/README.md#dependencies).
+1. **Kanıtlanmış platform gerçeği:** yt-dlp 2026.07.14.233956 highly recommends FFmpeg and FFprobe for format merging and post-processing and points users to the official `yt-dlp/FFmpeg-Builds` project. It says those builds currently have no yt-dlp-specific patches and are equivalent to upstream FFmpeg. Source: [yt-dlp 2026.07.14.233956 dependencies](https://github.com/yt-dlp/yt-dlp/blob/aefce1eea4d0b6bab1ec2bd3beff09bff91a39c8/README.md#dependencies).
 
 2. **Kanıtlanmış platform gerçeği:** The inspected dated release provides static Linux x64 and arm64 GPL assets. The Linux x64 asset identifies FFmpeg source commit `a09be9b91e`; its release asset digest is recorded above. Source: [`autobuild-2026-07-12-15-07`](https://github.com/yt-dlp/FFmpeg-Builds/releases/tag/autobuild-2026-07-12-15-07).
 
