@@ -20,7 +20,11 @@ the first regression test written for #52 passed **against the unfixed node**.
 
 In practice:
 
-- A synthetic origin advertises `content-length` for a static body, as a real origin does.
+- A synthetic origin advertises `content-length` for a static body, as a real origin does. A
+  playlist entry is a static body: the rule covers every entry, not just the single-file routes.
+- A synthetic origin can refuse an entry the way a real host refuses one — a status, not a
+  missing route. A playlist whose every entry succeeds cannot show what one failing entry does
+  to the request around it.
 - A fixture executable honours the parts of the option profile the test depends on.
 - A stub that returns a value production could not return is a defect in the test, not a
   convenience.
