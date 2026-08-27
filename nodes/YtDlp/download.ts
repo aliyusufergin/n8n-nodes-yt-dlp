@@ -190,7 +190,12 @@ async function validateArtifactSet(
 				) {
 					throw invalidArtifactSet();
 				}
-				if (descriptorStat.size > resourceEnvelope.maximumArtifactSizeBytes) {
+				// The derived file size term is enforced only where the host carries a bound; with
+				// none, n8n itself imposes no file size limit and neither does the node.
+				if (
+					resourceEnvelope.maximumArtifactSizeBytes !== undefined &&
+					descriptorStat.size > resourceEnvelope.maximumArtifactSizeBytes
+				) {
 					throw resourceLimitViolationError('artifactSize');
 				}
 				totalArtifactSizeBytes += descriptorStat.size;

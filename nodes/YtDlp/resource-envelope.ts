@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 export const RESOURCE_LIMIT = 'RESOURCE_LIMIT';
 export const REQUEST_TIMEOUT = 'REQUEST_TIMEOUT';
 export const MEBIBYTE = 1024 * 1024;
@@ -8,8 +10,6 @@ export const DEFAULT_REQUEST_TIMEOUT_MINUTES = 30;
 export const MAXIMUM_REQUEST_TIMEOUT_MINUTES = 60;
 export const DEFAULT_MAXIMUM_ARTIFACT_COUNT = 20;
 export const MAXIMUM_ARTIFACT_COUNT = 50;
-export const DEFAULT_MAXIMUM_ARTIFACT_SIZE_MIB = 128;
-export const MAXIMUM_ARTIFACT_SIZE_MIB = 256;
 export const DEFAULT_MAXIMUM_TOTAL_ARTIFACT_SIZE_MIB = 256;
 export const MAXIMUM_TOTAL_ARTIFACT_SIZE_MIB = 512;
 /**
@@ -43,17 +43,112 @@ export const TOOLCHAIN_RUNTIME_BASELINE_BYTES = 128 * MEBIBYTE;
  */
 export const YTDLP_BREAK_EXIT_CODE = 101;
 
+/**
+ * The binary data storage modes n8n itself knows. `database` enforces a configured file size
+ * limit; `filesystem` and `s3` stream to a backend that enforces none, and `default` keeps the
+ * bytes in the execution payload without a configured limit either.
+ */
+export const HOST_BINARY_DATA_MODES = ['database', 'default', 'filesystem', 's3'] as const;
+
+export type HostBinaryDataMode = (typeof HOST_BINARY_DATA_MODES)[number];
+
+/**
+ * n8n's own default for `N8N_BINARY_DATA_DATABASE_MAX_FILE_SIZE`, and its own schema maximum for
+ * it — the Postgres BYTEA hard limit. These are the values the node falls back to when the host
+ * configuration cannot be read, so an unreadable setting produces the bound n8n itself would use
+ * rather than a number the node picked.
+ */
+export const DEFAULT_DATABASE_MAX_FILE_SIZE_MIB = 512;
+export const MAXIMUM_DATABASE_MAX_FILE_SIZE_MIB = 1024;
+
+/**
+ * The host n8n binary storage configuration a derived Resource Envelope term reads its bound
+ * from. `maximumFileSizeBytes` is absent exactly when the host enforces no file size limit.
+ */
+export interface HostBinaryDataConfiguration {
+	readonly mode: HostBinaryDataMode;
+	readonly maximumFileSizeBytes?: number;
+}
+
+/**
+ * Reads one n8n setting the way n8n reads it: the environment variable, or the file a `_FILE`
+ * variable points at for Docker secret deployments. An unreadable file is not a value, so the
+ * caller falls back to n8n's own default instead of guessing.
+ */
+function readHostEnvironmentValue(
+	environment: NodeJS.ProcessEnv,
+	name: string,
+): string | undefined {
+	const value = environment[name];
+	if (value !== undefined) return value;
+	const path = environment[`${name}_FILE`];
+	if (path === undefined || path === '') return undefined;
+	try {
+		return readFileSync(path, 'utf8');
+	} catch {
+		return undefined;
+	}
+}
+
+/**
+ * n8n's own mode rule, kept intact: an explicit `N8N_DEFAULT_BINARY_DATA_MODE` wins, and with no
+ * readable mode the default is `database` in queue mode and `filesystem` in regular mode.
+ */
+function hostBinaryDataMode(environment: NodeJS.ProcessEnv): HostBinaryDataMode {
+	const configured = readHostEnvironmentValue(environment, 'N8N_DEFAULT_BINARY_DATA_MODE');
+	const modes: readonly string[] = HOST_BINARY_DATA_MODES;
+	if (configured !== undefined && modes.includes(configured)) {
+		return configured as HostBinaryDataMode;
+	}
+	return readHostEnvironmentValue(environment, 'EXECUTIONS_MODE') === 'queue'
+		? 'database'
+		: 'filesystem';
+}
+
+/**
+ * The `database` mode file size limit, in bytes. n8n compares whole MiB of the written file
+ * against this setting, so the byte bound is the configured MiB and a size above it is what n8n
+ * itself would refuse. A value n8n would reject — unparseable, or above the schema maximum it
+ * refuses to start with — is not a live configuration, so it falls back to n8n's own default.
+ *
+ * A value n8n accepts is mirrored even when it is degenerate. `N8N_BINARY_DATA_DATABASE_MAX_FILE_SIZE=`
+ * coerces to 0 for n8n too, so on that host every binary write is refused; the node reads the same
+ * bound and refuses the request before the bytes are spent instead of after the transfer fails.
+ * Substituting a friendlier number here would be the node picking a limit its host does not have.
+ */
+function databaseMaximumFileSizeBytes(environment: NodeJS.ProcessEnv): number {
+	const configured = readHostEnvironmentValue(
+		environment,
+		'N8N_BINARY_DATA_DATABASE_MAX_FILE_SIZE',
+	);
+	const configuredMiB = configured === undefined ? Number.NaN : Number(configured);
+	const maximumFileSizeMiB =
+		Number.isFinite(configuredMiB) && configuredMiB <= MAXIMUM_DATABASE_MAX_FILE_SIZE_MIB
+			? configuredMiB
+			: DEFAULT_DATABASE_MAX_FILE_SIZE_MIB;
+	return Math.floor(maximumFileSizeMiB * MEBIBYTE);
+}
+
+export function readHostBinaryDataConfiguration(
+	environment: NodeJS.ProcessEnv = process.env,
+): HostBinaryDataConfiguration {
+	const mode = hostBinaryDataMode(environment);
+	return mode === 'database'
+		? { mode, maximumFileSizeBytes: databaseMaximumFileSizeBytes(environment) }
+		: { mode };
+}
+
 export interface ResourceEnvelopeConfiguration {
 	requestTimeoutMinutes?: number;
 	maximumArtifactCount?: number;
-	maximumArtifactSizeMiB?: number;
 	maximumTotalArtifactSizeMiB?: number;
 }
 
 export interface ResourceEnvelope {
 	requestTimeoutMs: number;
 	maximumArtifactCount: number;
-	maximumArtifactSizeBytes: number;
+	/** Absent when the host enforces no file size limit, so no enforcement site applies one. */
+	maximumArtifactSizeBytes: number | undefined;
 	maximumTotalArtifactSizeBytes: number;
 	maximumWorkspaceSizeBytes: number;
 }
@@ -112,7 +207,24 @@ interface ViolableResourceEnvelopeTerm {
 	readonly configurable?: true;
 }
 
+/**
+ * A term a running request can violate whose bound belongs to the host n8n configuration or to a
+ * measured resource rather than to the node. The classification is the node's — one declaration,
+ * read by every enforcement site, exactly as for a violable term — but the number is not, so the
+ * node never substitutes one of its own: where the host carries no bound, the term carries none
+ * and nothing is enforced.
+ */
+interface DerivedResourceEnvelopeTerm {
+	readonly enforcement: 'derived';
+	readonly scope: 'execution' | 'request';
+	readonly errorCode: ResourceEnvelopeErrorCode;
+	readonly violationMessage: string;
+	/** Whose bound it is, named so the ownership is readable at the declaration. */
+	readonly derivedFrom: string;
+}
+
 type ResourceEnvelopeTermDefinition =
+	| DerivedResourceEnvelopeTerm
 	| ImposedResourceEnvelopeTerm
 	| PreflightResourceEnvelopeTerm
 	| ViolableResourceEnvelopeTerm;
@@ -164,11 +276,17 @@ export const RESOURCE_ENVELOPE_TERMS = {
 		violationMessage: 'The Download Request exceeded its Artifact count budget.',
 	},
 	artifactSize: {
-		enforcement: 'violable',
-		configurable: true,
+		// The file size bound is the host's. In `database` mode n8n refuses a binary above its own
+		// configured limit, and in `filesystem`, `s3` and in-memory modes it applies no file size
+		// limit at all — so the node reads that configuration instead of imposing a number, and
+		// enforces this term only where the host actually carries a bound.
+		enforcement: 'derived',
 		scope: 'request',
 		errorCode: RESOURCE_LIMIT,
-		violationMessage: 'The Download Request exceeded its single-Artifact size budget.',
+		derivedFrom:
+			'the host n8n binary storage configuration (N8N_DEFAULT_BINARY_DATA_MODE, ' +
+			'N8N_BINARY_DATA_DATABASE_MAX_FILE_SIZE)',
+		violationMessage: 'The Download Request exceeded the n8n binary storage file size limit.',
 	},
 	totalArtifactSize: {
 		enforcement: 'violable',
@@ -212,8 +330,22 @@ export type ViolableResourceEnvelopeTermName = {
 }[ResourceEnvelopeTerm];
 
 /**
+ * The terms whose bound belongs to the host configuration or to a measured resource. They are
+ * violated and classified like violable terms; only the ownership of the number differs.
+ */
+export type DerivedResourceEnvelopeTermName = {
+	[Term in ResourceEnvelopeTerm]: TermTable[Term]['enforcement'] extends 'derived' ? Term : never;
+}[ResourceEnvelopeTerm];
+
+/** Every term a running execution or request can violate, whoever the bound belongs to. */
+export type RuntimeViolableResourceEnvelopeTermName =
+	| DerivedResourceEnvelopeTermName
+	| ViolableResourceEnvelopeTermName;
+
+/**
  * The violable terms a workflow author may narrow. A configuration outside a term's hard cap
- * violates the Resource Envelope before any request runs.
+ * violates the Resource Envelope before any request runs. A derived term is never one of these:
+ * its bound is not the node's to offer.
  */
 export type ConfigurableResourceEnvelopeTerm = {
 	[Term in ViolableResourceEnvelopeTermName]: TermTable[Term] extends { configurable: true }
@@ -222,15 +354,15 @@ export type ConfigurableResourceEnvelopeTerm = {
 }[ViolableResourceEnvelopeTermName];
 
 /**
- * The violable terms whose declared code is `RESOURCE_LIMIT`. `resourceLimitViolationError` only
+ * The classified terms whose declared code is `RESOURCE_LIMIT`. `resourceLimitViolationError` only
  * accepts these, so a term that ADR 0026 gives its own code cannot be smuggled into a Resource
  * Limit error class by a call site.
  */
 export type ResourceLimitTerm = {
-	[Term in ViolableResourceEnvelopeTermName]: TermTable[Term]['errorCode'] extends typeof RESOURCE_LIMIT
+	[Term in RuntimeViolableResourceEnvelopeTermName]: TermTable[Term]['errorCode'] extends typeof RESOURCE_LIMIT
 		? Term
 		: never;
-}[ViolableResourceEnvelopeTermName];
+}[RuntimeViolableResourceEnvelopeTermName];
 
 /**
  * Every produced `ResourceEnvelope` field, and the term it carries. Adding a field without naming
@@ -253,10 +385,13 @@ export const RESOURCE_ENVELOPE_FIELD_TERMS: Readonly<
 };
 
 export function classifyResourceEnvelopeViolation(
-	term: ViolableResourceEnvelopeTermName,
-): ViolableResourceEnvelopeTerm {
+	term: RuntimeViolableResourceEnvelopeTermName,
+): DerivedResourceEnvelopeTerm | ViolableResourceEnvelopeTerm {
 	const definition: ResourceEnvelopeTermDefinition | undefined = RESOURCE_ENVELOPE_TERMS[term];
-	if (definition === undefined || definition.enforcement !== 'violable') {
+	if (
+		definition === undefined ||
+		(definition.enforcement !== 'derived' && definition.enforcement !== 'violable')
+	) {
 		throw new Error(`The Resource Envelope term "${term}" has no violation classification.`);
 	}
 	return definition;
@@ -290,18 +425,27 @@ export function resourceLimitViolationError(
 
 /**
  * The Resource Envelope terms that reach yt-dlp as options rather than as a post-hoc check: the
- * two imposed terms, and the single-Artifact budget, whose break filter rejects an oversized
+ * two imposed terms, and the derived file size bound, whose break filter rejects an oversized
  * format before the bytes are spent. The filter has to break rather than skip, because a skip
  * exits 0 with nothing written and reaches `validateArtifactSet` as an empty Artifact set; a
  * break exits `YTDLP_BREAK_EXIT_CODE`, which the supervisor classifies through this module. The
  * `?` suffix passes formats whose size is unknown before the download (a direct link carries no
  * `filesize`), and those fall to the Artifact size checks in `validateArtifactSet`.
+ *
+ * The bound is the host's, so a host that enforces no file size limit leaves nothing to project:
+ * the early abort path is then absent and the same term is classified post-hoc instead. Two
+ * enforcement moments of one declaration, exactly as when the extractor reports no size.
  */
 export function resourceEnvelopeOptionProfile(envelope: ResourceEnvelope): string[] {
+	const { maximumArtifactSizeBytes } = envelope;
 	return [
-		'--break-match-filters',
-		`filesize<=?${envelope.maximumArtifactSizeBytes} & ` +
-			`filesize_approx<=?${envelope.maximumArtifactSizeBytes}`,
+		...(maximumArtifactSizeBytes === undefined
+			? []
+			: [
+					'--break-match-filters',
+					`filesize<=?${maximumArtifactSizeBytes} & ` +
+						`filesize_approx<=?${maximumArtifactSizeBytes}`,
+				]),
 		'--concurrent-fragments',
 		String(RESOURCE_ENVELOPE_TERMS.fragmentConcurrency.value),
 		'--postprocessor-args',
@@ -322,6 +466,7 @@ function boundedInteger(
 
 export function createResourceEnvelope(
 	configuration: ResourceEnvelopeConfiguration,
+	host: HostBinaryDataConfiguration = readHostBinaryDataConfiguration(),
 ): ResourceEnvelope {
 	const requestTimeoutMinutes = boundedInteger(
 		configuration.requestTimeoutMinutes ?? DEFAULT_REQUEST_TIMEOUT_MINUTES,
@@ -333,11 +478,6 @@ export function createResourceEnvelope(
 		MAXIMUM_ARTIFACT_COUNT,
 		'artifactCount',
 	);
-	const maximumArtifactSizeMiB = boundedInteger(
-		configuration.maximumArtifactSizeMiB ?? DEFAULT_MAXIMUM_ARTIFACT_SIZE_MIB,
-		MAXIMUM_ARTIFACT_SIZE_MIB,
-		'artifactSize',
-	);
 	const maximumTotalArtifactSizeMiB = boundedInteger(
 		configuration.maximumTotalArtifactSizeMiB ?? DEFAULT_MAXIMUM_TOTAL_ARTIFACT_SIZE_MIB,
 		MAXIMUM_TOTAL_ARTIFACT_SIZE_MIB,
@@ -348,7 +488,9 @@ export function createResourceEnvelope(
 	return {
 		requestTimeoutMs: requestTimeoutMinutes * 60 * 1000,
 		maximumArtifactCount,
-		maximumArtifactSizeBytes: maximumArtifactSizeMiB * MEBIBYTE,
+		// Declared even when the host carries no bound, so the field-term bind stays honest and an
+		// enforcement site reads "no limit" rather than a missing field.
+		maximumArtifactSizeBytes: host.maximumFileSizeBytes,
 		maximumTotalArtifactSizeBytes,
 		maximumWorkspaceSizeBytes:
 			2 * maximumTotalArtifactSizeBytes +

@@ -35,13 +35,11 @@ import {
 } from './download';
 import {
 	DEFAULT_MAXIMUM_ARTIFACT_COUNT,
-	DEFAULT_MAXIMUM_ARTIFACT_SIZE_MIB,
 	DEFAULT_MAXIMUM_TOTAL_ARTIFACT_SIZE_MIB,
 	DEFAULT_REQUEST_TIMEOUT_MINUTES,
 	MAXIMUM_EXECUTION_DURATION_MS,
 	MAXIMUM_EXECUTION_INPUTS,
 	MAXIMUM_ARTIFACT_COUNT,
-	MAXIMUM_ARTIFACT_SIZE_MIB,
 	MAXIMUM_REQUEST_TIMEOUT_MINUTES,
 	MAXIMUM_TOTAL_ARTIFACT_SIZE_MIB,
 	RESOURCE_LIMIT,
@@ -303,11 +301,6 @@ export async function executeYtDlpNode(
 						itemIndex,
 						DEFAULT_MAXIMUM_ARTIFACT_COUNT,
 					) as number,
-					maximumArtifactSizeMiB: execution.getNodeParameter(
-						'maximumArtifactSizeMiB',
-						itemIndex,
-						DEFAULT_MAXIMUM_ARTIFACT_SIZE_MIB,
-					) as number,
 					maximumTotalArtifactSizeMiB: execution.getNodeParameter(
 						'maximumTotalArtifactSizeMiB',
 						itemIndex,
@@ -513,14 +506,6 @@ export class YtDlp implements INodeType {
 				default: DEFAULT_MAXIMUM_ARTIFACT_COUNT,
 				typeOptions: { minValue: 1, maxValue: MAXIMUM_ARTIFACT_COUNT },
 				description: 'Maximum number of Artifacts allowed for one Download Request',
-			},
-			{
-				displayName: 'Maximum Artifact Size (MiB)',
-				name: 'maximumArtifactSizeMiB',
-				type: 'number',
-				default: DEFAULT_MAXIMUM_ARTIFACT_SIZE_MIB,
-				typeOptions: { minValue: 1, maxValue: MAXIMUM_ARTIFACT_SIZE_MIB },
-				description: 'Maximum size allowed for one Artifact',
 			},
 			{
 				displayName: 'Maximum Total Artifact Size (MiB)',

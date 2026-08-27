@@ -31,7 +31,6 @@ interface NodeParameters {
 	arguments: string;
 	requestTimeoutMinutes?: number;
 	maximumArtifactCount?: number;
-	maximumArtifactSizeMiB?: number;
 	maximumTotalArtifactSizeMiB?: number;
 }
 
@@ -43,6 +42,7 @@ const createTestWorkspace = async () => ({
 const servers: Server[] = [];
 
 afterEach(async () => {
+	vi.unstubAllEnvs();
 	await Promise.all(
 		servers.splice(0).map(
 			async (server) =>
@@ -154,7 +154,6 @@ describe('yt-dlp node metadata', () => {
 			'arguments',
 			'requestTimeoutMinutes',
 			'maximumArtifactCount',
-			'maximumArtifactSizeMiB',
 			'maximumTotalArtifactSizeMiB',
 		]);
 		expect(description.credentials).toEqual([
@@ -906,6 +905,8 @@ describe('yt-dlp node adapter', () => {
 	});
 
 	it('passes accepted hard-cap request limits to the request executor', async () => {
+		vi.stubEnv('N8N_DEFAULT_BINARY_DATA_MODE', 'database');
+		vi.stubEnv('N8N_BINARY_DATA_DATABASE_MAX_FILE_SIZE', '1024');
 		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([]);
 		const context = createExecutionContext([
 			{
@@ -913,7 +914,6 @@ describe('yt-dlp node adapter', () => {
 				arguments: '',
 				requestTimeoutMinutes: 60,
 				maximumArtifactCount: 50,
-				maximumArtifactSizeMiB: 256,
 				maximumTotalArtifactSizeMiB: 512,
 			},
 		]);
@@ -926,10 +926,45 @@ describe('yt-dlp node adapter', () => {
 			{
 				requestTimeoutMs: 60 * 60 * 1000,
 				maximumArtifactCount: 50,
-				maximumArtifactSizeBytes: 256 * 1024 * 1024,
+				maximumArtifactSizeBytes: 1024 * 1024 * 1024,
 				maximumTotalArtifactSizeBytes: 512 * 1024 * 1024,
 				maximumWorkspaceSizeBytes: 1216 * 1024 * 1024,
 			},
+			expect.any(AbortSignal),
+			undefined,
+			expect.stringMatching(/\/n8n-nodes-yt-dlp\/n8n-nodes-yt-dlp-execution-/),
+		);
+	});
+
+	it.each([
+		{
+			environment: { EXECUTIONS_MODE: 'queue' },
+			maximumArtifactSizeBytes: 512 * 1024 * 1024,
+			host: 'a queue-mode host storing binary data in the database',
+		},
+		{
+			environment: { EXECUTIONS_MODE: 'regular' },
+			maximumArtifactSizeBytes: undefined,
+			host: 'a regular-mode host storing binary data on the filesystem',
+		},
+	])('derives the request file size bound from $host', async ({
+		environment,
+		maximumArtifactSizeBytes,
+	}) => {
+		// The node imposes no file size number of its own, so what reaches the request executor is
+		// whatever the host n8n configuration says — including nothing at all.
+		for (const [name, value] of Object.entries(environment)) vi.stubEnv(name, value);
+		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([]);
+		const context = createExecutionContext([
+			{ sourceUrl: 'https://example.com/video', arguments: '' },
+		]);
+
+		await executeYtDlpNode(context, startRequest);
+
+		expect(startRequest).toHaveBeenCalledWith(
+			expect.any(Object),
+			0,
+			expect.objectContaining({ maximumArtifactSizeBytes }),
 			expect.any(AbortSignal),
 			undefined,
 			expect.stringMatching(/\/n8n-nodes-yt-dlp\/n8n-nodes-yt-dlp-execution-/),
@@ -974,6 +1009,7 @@ describe('yt-dlp node adapter', () => {
 	);
 
 	it('associates an invalid Source URL with the correct input index', async () => {
+		vi.stubEnv('N8N_DEFAULT_BINARY_DATA_MODE', 'database');
 		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([]);
 		const context = createExecutionContext([
 			{ sourceUrl: 'https://example.com/valid', arguments: '--format best' },
@@ -999,7 +1035,7 @@ describe('yt-dlp node adapter', () => {
 			{
 				requestTimeoutMs: 30 * 60 * 1000,
 				maximumArtifactCount: 20,
-				maximumArtifactSizeBytes: 128 * 1024 * 1024,
+				maximumArtifactSizeBytes: 512 * 1024 * 1024,
 				maximumTotalArtifactSizeBytes: 256 * 1024 * 1024,
 				maximumWorkspaceSizeBytes: 704 * 1024 * 1024,
 			},

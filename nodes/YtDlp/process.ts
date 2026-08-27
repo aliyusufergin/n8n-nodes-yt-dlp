@@ -14,7 +14,7 @@ import {
 	MAXIMUM_REQUEST_TIMEOUT_MINUTES,
 	YTDLP_BREAK_EXIT_CODE,
 	classifyResourceEnvelopeViolation,
-	type ViolableResourceEnvelopeTermName,
+	type RuntimeViolableResourceEnvelopeTermName,
 } from './resource-envelope';
 
 export interface YtDlpSpawnContext {
@@ -168,7 +168,7 @@ const spawnProcess: SpawnProcess = (command, args, options) => spawn(command, [.
  * come from the term's classification, so the supervisor never decides either one itself.
  */
 function envelopeViolation(
-	term: ViolableResourceEnvelopeTermName,
+	term: RuntimeViolableResourceEnvelopeTermName,
 	stdoutTail: BoundedRedactedTail,
 	stderrTail: BoundedRedactedTail,
 ): YtDlpProcessError {
@@ -263,7 +263,7 @@ export async function superviseYtDlpExecutionPlan(
 	// reports comes from the term's single classification — or one of the reasons that belong to
 	// the process contract rather than the envelope.
 	type TerminationReason =
-		| Extract<ViolableResourceEnvelopeTermName, 'requestTimeout' | 'workspaceSize'>
+		| Extract<RuntimeViolableResourceEnvelopeTermName, 'requestTimeout' | 'workspaceSize'>
 		| Extract<YtDlpProcessErrorCode, 'PROCESS_OUTPUT_LIMIT'>
 		| 'CANCELLED'
 		| 'WORKSPACE_MONITOR_FAILURE';
@@ -468,8 +468,9 @@ export async function superviseYtDlpExecutionPlan(
 	if (terminationReason === 'requestTimeout' || terminationReason === 'workspaceSize') {
 		throw envelopeViolation(terminationReason, stdoutTail, stderrTail);
 	}
-	// The only break condition the option profile carries is the single-Artifact size filter
-	// `resourceEnvelopeOptionProfile` projects, so this exit code is that term being violated.
+	// The only break condition the option profile carries is the derived file size filter
+	// `resourceEnvelopeOptionProfile` projects when the host carries a bound, so this exit code is
+	// that term being violated.
 	if (exitCode === YTDLP_BREAK_EXIT_CODE) {
 		throw envelopeViolation('artifactSize', stdoutTail, stderrTail);
 	}

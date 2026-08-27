@@ -148,7 +148,6 @@ describe('Resource Envelope workspace accounting', () => {
 	it('returns the Artifact when it fits the smallest total Artifact budget', async () => {
 		const context = createExecutionContext(`${originUrl}/video.mp4`, {
 			maximumArtifactCount: 1,
-			maximumArtifactSizeMiB: 1,
 			maximumTotalArtifactSizeMiB: 1,
 		});
 
@@ -190,11 +189,10 @@ describe('Resource Envelope workspace accounting', () => {
 		expect(peakBytes).toBeGreaterThan(0);
 		expect(peakBytes).toBeLessThan(TOOLCHAIN_RUNTIME_BASELINE_BYTES);
 
-		const smallestEnvelope = createResourceEnvelope({
-			maximumArtifactCount: 1,
-			maximumArtifactSizeMiB: 1,
-			maximumTotalArtifactSizeMiB: 1,
-		});
+		const smallestEnvelope = createResourceEnvelope(
+			{ maximumArtifactCount: 1, maximumTotalArtifactSizeMiB: 1 },
+			{ mode: 'database', maximumFileSizeBytes: MEBIBYTE },
+		);
 		expect(smallestEnvelope.maximumWorkspaceSizeBytes).toBeGreaterThan(
 			peakBytes + 2 * MEBIBYTE,
 		);

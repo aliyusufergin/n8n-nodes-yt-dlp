@@ -13,7 +13,7 @@ import type {
 	INode,
 	INodeExecutionData,
 } from 'n8n-workflow';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { executeYtDlpNode } from '../nodes/YtDlp/YtDlp.node';
 import { MEBIBYTE } from '../nodes/YtDlp/resource-envelope';
@@ -382,6 +382,20 @@ beforeAll(async () => {
 	originUrl = `http://127.0.0.1:${(origin.address() as AddressInfo).port}`;
 }, 60_000);
 
+afterEach(() => {
+	vi.unstubAllEnvs();
+});
+
+/**
+ * The host n8n binary storage settings the derived file size term reads its bound from. The node
+ * has no file size number of its own any more, so a test that needs one has to say what the host
+ * is configured to enforce — and one that needs none simply leaves the host unset.
+ */
+function stubHostDatabaseFileSizeLimitMiB(maximumFileSizeMiB: number): void {
+	vi.stubEnv('N8N_DEFAULT_BINARY_DATA_MODE', 'database');
+	vi.stubEnv('N8N_BINARY_DATA_DATABASE_MAX_FILE_SIZE', String(maximumFileSizeMiB));
+}
+
 afterAll(async () => {
 	if (origin) {
 		await new Promise<void>((resolveClose) => origin.close(() => resolveClose()));
@@ -396,9 +410,9 @@ describe('real packaged media toolchain', () => {
 	// the packaged yt-dlp actually writes the Artifact, so a fixture executable that writes an
 	// oversized file directly cannot pin this: it never runs the option profile that decides
 	// whether an envelope violation is even observable. Only the real toolchain can.
-	it('classifies media over the single-Artifact budget as RESOURCE_LIMIT', async () => {
+	it('classifies media over the derived host file size limit as RESOURCE_LIMIT', async () => {
+		stubHostDatabaseFileSizeLimitMiB(1);
 		const context = createExecutionContext(`${originUrl}/oversized.mp4`, '', {
-			maximumArtifactSizeMiB: 1,
 			maximumTotalArtifactSizeMiB: 2,
 		});
 
@@ -417,8 +431,8 @@ describe('real packaged media toolchain', () => {
 		const probeBytes = (await probe.arrayBuffer()).byteLength;
 		expect(probe.headers.get('content-length')).toBeNull();
 		chunkedBytesServed = 0;
+		stubHostDatabaseFileSizeLimitMiB(1);
 		const context = createExecutionContext(`${originUrl}/chunked/oversized.mp4`, '', {
-			maximumArtifactSizeMiB: 1,
 			maximumTotalArtifactSizeMiB: 2,
 		});
 
@@ -432,6 +446,24 @@ describe('real packaged media toolchain', () => {
 		expect(chunkedBytesServed).toBeGreaterThanOrEqual(probeBytes);
 	}, 60_000);
 
+	// The mode an operator running `filesystem` or `s3` binary storage actually gets: n8n enforces
+	// no file size limit there, so neither does the node. The same media the two tests above
+	// classify as a violation is delivered here, and the option profile carries no break filter to
+	// abort it early — only the real toolchain can show that the missing filter still produces a
+	// well-formed download rather than a silent skip.
+	it('delivers media of any size when the host enforces no file size limit', async () => {
+		vi.stubEnv('N8N_DEFAULT_BINARY_DATA_MODE', 'filesystem');
+		const context = createExecutionContext(`${originUrl}/oversized.mp4`, '', {
+			maximumTotalArtifactSizeMiB: 512,
+		});
+
+		const [items] = await executeYtDlpNode(context);
+
+		expect(items).toHaveLength(1);
+		expect(items[0].json).toMatchObject({ status: 'success', mimeType: 'video/mp4' });
+		expect(items[0].json.sizeBytes).toBeGreaterThan(MEBIBYTE);
+	}, 60_000);
+
 	// The other half of the pair, and the interaction #52 actually broke: an envelope whose
 	// single-Artifact budget the media fits, so the option profile lets the download run, and
 	// whose total budget it does not, so the post-hoc Artifact checks are the site that catches
@@ -441,9 +473,9 @@ describe('real packaged media toolchain', () => {
 		// First half pins that the option profile really does admit this media at a 2 MiB
 		// single-Artifact budget. Without it the rejection below could come from the break filter
 		// and the test would stay green while the post-hoc total check was never reached.
+		stubHostDatabaseFileSizeLimitMiB(2);
 		const [admitted] = await executeYtDlpNode(
 			createExecutionContext(`${originUrl}/oversized.mp4`, '', {
-				maximumArtifactSizeMiB: 2,
 				maximumTotalArtifactSizeMiB: 512,
 			}),
 		);
@@ -451,7 +483,6 @@ describe('real packaged media toolchain', () => {
 		expect(admitted[0].json.sizeBytes).toBeGreaterThan(MEBIBYTE);
 
 		const context = createExecutionContext(`${originUrl}/oversized.mp4`, '', {
-			maximumArtifactSizeMiB: 2,
 			maximumTotalArtifactSizeMiB: 1,
 		});
 

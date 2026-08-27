@@ -93,7 +93,6 @@ authorized to download:
 | Arguments | leave empty |
 | Request Timeout (Minutes) | 30 |
 | Maximum Artifact Count | 20 |
-| Maximum Artifact Size (MiB) | 128 |
 | Maximum Total Artifact Size (MiB) | 256 |
 
 Run the workflow. A successful direct-media request produces one output item with the file under
@@ -316,11 +315,19 @@ pruning. The node does not call an internal deletion API.
 | Execution duration | — | 2 hours |
 | Request timeout | 30 minutes | 60 minutes |
 | Artifacts per request | 20 | 50 |
-| One Artifact | 128 MiB | 256 MiB |
+| One Artifact | host n8n binary storage | host n8n binary storage |
 | All final Artifacts | 256 MiB | 512 MiB |
 | Playlist entries | first 5 | 20 explicitly selected |
 | FFmpeg threads | 1 | 1 |
 | yt-dlp fragment concurrency | 1 | 1 |
+
+The single-Artifact file size limit is not the node's. It is read from the host n8n binary storage
+configuration: in `database` mode from `N8N_BINARY_DATA_DATABASE_MAX_FILE_SIZE`, whose n8n default
+is 512 MiB and whose n8n schema maximum is 1024 MiB; in `filesystem`, `s3`, and in-memory modes
+n8n applies no file size limit, and neither does the node. The mode follows n8n's own rule —
+`N8N_DEFAULT_BINARY_DATA_MODE` when it is set, otherwise `database` in queue mode and `filesystem`
+in regular mode. When that configuration cannot be read, the node falls back to n8n's own default
+instead of imposing a number of its own.
 
 Workspace usage is checked at least once per second and is capped at twice the configured final
 total plus 64 MiB. Binary transfer is sequential. Configurable limits may be lowered or raised only
