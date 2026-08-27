@@ -268,7 +268,6 @@ function workflowDefinition({
 		{
 			arguments: argumentsValue,
 			maximumArtifactCount: 20,
-			maximumArtifactSizeMiB: 128,
 			maximumTotalArtifactSizeMiB: 256,
 			requestTimeoutMinutes: 30,
 			sourceUrl,
@@ -1379,7 +1378,6 @@ async function runCapacityLane(client, progress) {
 					sourceUrl: 'http://fixture:8080/capacity-playlist',
 					ytParameters: {
 						maximumArtifactCount: 50,
-						maximumArtifactSizeMiB: 256,
 						maximumTotalArtifactSizeMiB: 512,
 						requestTimeoutMinutes: 60,
 					},
@@ -1868,8 +1866,9 @@ async function main() {
 			roundTrip: false,
 			sourceUrl: 'http://fixture:8080/oversized.mp4',
 			ytParameters: {
-				maximumArtifactSizeMiB: 1,
-				maximumTotalArtifactSizeMiB: 2,
+				// The file size bound is the host's now, so the term this lane violates is the one
+				// the workflow author still owns: the total Artifact budget.
+				maximumTotalArtifactSizeMiB: 1,
 			},
 		});
 		assert(

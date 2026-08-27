@@ -52,7 +52,9 @@ import {
 } from '../nodes/YtDlp/YtDlp.node';
 import { executeDownloadRequest } from '../nodes/YtDlp/download';
 import {
+	MEBIBYTE,
 	createResourceEnvelope,
+	type HostBinaryDataConfiguration,
 	type ResourceEnvelopeConfiguration,
 } from '../nodes/YtDlp/resource-envelope';
 
@@ -488,7 +490,10 @@ describe('download request', () => {
 				executablePath,
 				ffmpegPath: '/opt/n8n-yt-dlp/bin/ffmpeg',
 				workspaceParent,
-				resourceEnvelope: createResourceEnvelope({}),
+				resourceEnvelope: createResourceEnvelope(
+					{},
+					{ mode: 'database', maximumFileSizeBytes: 128 * MEBIBYTE },
+				),
 			},
 		);
 
@@ -518,7 +523,7 @@ describe('download request', () => {
 			'--abort-on-error',
 			'--no-progress',
 			'--break-match-filters',
-			`filesize<=?${128 * 1024 * 1024} & filesize_approx<=?${128 * 1024 * 1024}`,
+			`filesize<=?${128 * MEBIBYTE} & filesize_approx<=?${128 * MEBIBYTE}`,
 			'--concurrent-fragments',
 			'1',
 			'--postprocessor-args',
@@ -625,14 +630,53 @@ describe('download request', () => {
 		},
 	);
 
-	it.each([
-		{ configuredLimitMiB: 128, artifactSizeBytes: 128 * 1024 * 1024, accepted: true },
-		{ configuredLimitMiB: 128, artifactSizeBytes: 128 * 1024 * 1024 + 1, accepted: false },
-		{ configuredLimitMiB: 256, artifactSizeBytes: 256 * 1024 * 1024, accepted: true },
-		{ configuredLimitMiB: 256, artifactSizeBytes: 256 * 1024 * 1024 + 1, accepted: false },
+	it.each<{
+		host: HostBinaryDataConfiguration;
+		hostLimit: string;
+		artifactSizeBytes: number;
+		accepted: boolean;
+	}>([
+		{
+			host: { mode: 'database', maximumFileSizeBytes: 128 * MEBIBYTE },
+			hostLimit: '128 MiB database',
+			artifactSizeBytes: 128 * MEBIBYTE,
+			accepted: true,
+		},
+		{
+			host: { mode: 'database', maximumFileSizeBytes: 128 * MEBIBYTE },
+			hostLimit: '128 MiB database',
+			artifactSizeBytes: 128 * MEBIBYTE + 1,
+			accepted: false,
+		},
+		{
+			host: { mode: 'database', maximumFileSizeBytes: 512 * MEBIBYTE },
+			hostLimit: '512 MiB database',
+			artifactSizeBytes: 512 * MEBIBYTE,
+			accepted: true,
+		},
+		{
+			host: { mode: 'database', maximumFileSizeBytes: 512 * MEBIBYTE },
+			hostLimit: '512 MiB database',
+			artifactSizeBytes: 512 * MEBIBYTE + 1,
+			accepted: false,
+		},
+		{
+			// The host applies no file size limit in this mode, so an Artifact far above any number
+			// the node used to impose is delivered.
+			host: { mode: 'filesystem' },
+			hostLimit: 'unlimited filesystem',
+			artifactSizeBytes: 512 * MEBIBYTE,
+			accepted: true,
+		},
+		{
+			host: { mode: 's3' },
+			hostLimit: 'unlimited s3',
+			artifactSizeBytes: 512 * MEBIBYTE,
+			accepted: true,
+		},
 	])(
-		'validates a $configuredLimitMiB MiB single-Artifact limit against $artifactSizeBytes written bytes',
-		async ({ configuredLimitMiB, artifactSizeBytes, accepted }) => {
+		'validates a $hostLimit file size limit against $artifactSizeBytes written bytes',
+		async ({ host, artifactSizeBytes, accepted }) => {
 			const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-artifact-size-'));
 			temporaryDirectories.push(workspaceParent);
 			const executablePath = await createArtifactFixtureExecutable(
@@ -655,9 +699,10 @@ describe('download request', () => {
 				{
 					executablePath,
 					workspaceParent,
-					resourceEnvelope: createResourceEnvelope({
-						maximumArtifactSizeMiB: configuredLimitMiB,
-					}),
+					resourceEnvelope: createResourceEnvelope(
+						{ maximumTotalArtifactSizeMiB: 512 },
+						host,
+					),
 				},
 			);
 
@@ -734,10 +779,10 @@ describe('download request', () => {
 				{
 					executablePath,
 					workspaceParent,
-					resourceEnvelope: createResourceEnvelope({
-						maximumArtifactSizeMiB: 256,
-						maximumTotalArtifactSizeMiB: configuredLimitMiB,
-					}),
+					resourceEnvelope: createResourceEnvelope(
+						{ maximumTotalArtifactSizeMiB: configuredLimitMiB },
+						{ mode: 'database', maximumFileSizeBytes: 256 * MEBIBYTE },
+					),
 				},
 			);
 

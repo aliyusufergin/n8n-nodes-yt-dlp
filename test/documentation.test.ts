@@ -95,8 +95,13 @@ describe('public documentation', () => {
 				'## Resource Envelope': [
 					'| Request timeout | 30 minutes | 60 minutes |',
 					'| Artifacts per request | 20 | 50 |',
-					'| One Artifact | 128 MiB | 256 MiB |',
+					'| One Artifact | host n8n binary storage | host n8n binary storage |',
 					'| All final Artifacts | 256 MiB | 512 MiB |',
+					"The single-Artifact file size limit is not the node's.",
+					'`N8N_BINARY_DATA_DATABASE_MAX_FILE_SIZE`',
+					'`filesystem`, `s3`, and in-memory modes',
+					'`database` in queue mode and `filesystem`',
+					"falls back to n8n's own default",
 				],
 				'## Security boundary': [
 					'not an application-layer SSRF firewall',

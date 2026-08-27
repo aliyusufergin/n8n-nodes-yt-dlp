@@ -69,6 +69,12 @@ workloads. Never use a general temporary-directory or Docker prune as node recov
 V0.2.1 Doğrulanmış Destek requires queue mode with `database` binary storage. Queue-mode
 `filesystem` storage is unsupported and S3 is unverified.
 
+In `database` mode the file size limit the node applies to one Artifact is your
+`N8N_BINARY_DATA_DATABASE_MAX_FILE_SIZE` setting, not a number the node chose: raising it raises
+what a Download Request may deliver, and the Postgres and worker-memory capacity to carry it is
+yours to size. A request over that limit fails with `RESOURCE_LIMIT` rather than reaching binary
+storage.
+
 Monitor Postgres for:
 
 - connectivity, connection-pool saturation, query latency, locks, errors, and restarts;
