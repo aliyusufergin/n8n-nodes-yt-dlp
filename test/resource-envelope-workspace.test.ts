@@ -14,6 +14,7 @@ import { executeYtDlpNode } from '../nodes/YtDlp/YtDlp.node';
 import {
 	MEBIBYTE,
 	TOOLCHAIN_RUNTIME_BASELINE_BYTES,
+	WORKSPACE_DISK_RESERVE_BYTES,
 	createResourceEnvelope,
 } from '../nodes/YtDlp/resource-envelope';
 
@@ -48,10 +49,7 @@ async function collect(stream: Readable): Promise<Buffer> {
 	return Buffer.concat(chunks);
 }
 
-function createExecutionContext(
-	sourceUrl: string,
-	envelopeParameters: Record<string, number>,
-): IExecuteFunctions {
+function createExecutionContext(sourceUrl: string): IExecuteFunctions {
 	const node: INode = {
 		id: 'node-id',
 		name: 'yt-dlp',
@@ -70,7 +68,6 @@ function createExecutionContext(
 		getNodeParameter: vi.fn((name: string, _itemIndex: number, fallback?: unknown) => {
 			if (name === 'sourceUrl') return sourceUrl;
 			if (name === 'arguments') return '';
-			if (name in envelopeParameters) return envelopeParameters[name];
 			return fallback;
 		}),
 		helpers: {
@@ -145,11 +142,8 @@ afterAll(async () => {
 });
 
 describe('Resource Envelope workspace accounting', () => {
-	it('returns the Artifact when it fits the smallest total Artifact budget', async () => {
-		const context = createExecutionContext(`${originUrl}/video.mp4`, {
-			maximumArtifactCount: 1,
-			maximumTotalArtifactSizeMiB: 1,
-		});
+	it('returns the Artifact of a request the real toolchain runs inside its workspace', async () => {
+		const context = createExecutionContext(`${originUrl}/video.mp4`);
 
 		const [items] = await executeYtDlpNode(context);
 
@@ -163,7 +157,7 @@ describe('Resource Envelope workspace accounting', () => {
 		expect(items[0].json.sizeBytes).toBeLessThan(1024 * 1024);
 	}, 120_000);
 
-	it('keeps the pinned toolchain baseline inside the smallest configurable workspace limit', async () => {
+	it('keeps the pinned toolchain baseline inside the smallest derived workspace limit', async () => {
 		const runtimeDirectory = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-toolchain-baseline-'));
 		let peakBytes = 0;
 		try {
@@ -189,12 +183,16 @@ describe('Resource Envelope workspace accounting', () => {
 		expect(peakBytes).toBeGreaterThan(0);
 		expect(peakBytes).toBeLessThan(TOOLCHAIN_RUNTIME_BASELINE_BYTES);
 
+		// The derivation refuses any free disk that does not clear the baseline, so this is the
+		// smallest workspace bound a Download Request can be given at all.
 		const smallestEnvelope = createResourceEnvelope(
-			{ maximumArtifactCount: 1, maximumTotalArtifactSizeMiB: 1 },
-			{ mode: 'database', maximumFileSizeBytes: MEBIBYTE },
+			{},
+			{
+				binaryData: { mode: 'database', maximumFileSizeBytes: MEBIBYTE },
+				availableWorkspaceBytes:
+					TOOLCHAIN_RUNTIME_BASELINE_BYTES + WORKSPACE_DISK_RESERVE_BYTES + MEBIBYTE,
+			},
 		);
-		expect(smallestEnvelope.maximumWorkspaceSizeBytes).toBeGreaterThan(
-			peakBytes + 2 * MEBIBYTE,
-		);
+		expect(smallestEnvelope.maximumWorkspaceSizeBytes).toBeGreaterThan(peakBytes);
 	}, 60_000);
 });

@@ -1,7 +1,19 @@
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { chmod, copyFile, mkdir, open, readFile, rm, truncate, writeFile } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
+import {
+	chmod,
+	copyFile,
+	mkdir,
+	open,
+	readFile,
+	rm,
+	stat,
+	truncate,
+	writeFile,
+} from 'node:fs/promises';
 import { basename, join, resolve } from 'node:path';
+import { pipeline } from 'node:stream/promises';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
@@ -32,6 +44,13 @@ async function run(command, arguments_, options = {}) {
 
 function digest(algorithm, body) {
 	return createHash(algorithm).update(body).digest('hex');
+}
+
+/** Hashes a fixture without holding it in memory: the largest ones are hundreds of MiB. */
+async function fileDigest(algorithm, path) {
+	const hash = createHash(algorithm);
+	await pipeline(createReadStream(path), hash);
+	return hash.digest('hex');
 }
 
 await rm(generatedRoot, { force: true, recursive: true });
@@ -324,6 +343,12 @@ await Promise.all([
 ]);
 await truncate(join(fixtureRoot, 'capacity.mp4'), 256 * 1024 * 1024);
 await writeFile(join(fixtureRoot, 'oversized.mp4'), Buffer.alloc(1024 * 1024 + 4096, 0x51));
+// One byte over the file size limit n8n itself applies in `database` binary storage when the
+// operator configures none, which is the bound the node derives on this stack. The file is sparse,
+// so it costs the host no disk, and the request never transfers it: the option profile's break
+// filter reads the advertised size and aborts before the body.
+await copyFile(join(fixtureRoot, 'direct.mp4'), join(fixtureRoot, 'over-host-limit.mp4'));
+await truncate(join(fixtureRoot, 'over-host-limit.mp4'), 512 * 1024 * 1024 + 4096);
 
 const fixtureEvidence = [];
 for (const fileName of [
@@ -332,14 +357,15 @@ for (const fileName of [
 	'capacity.mp4',
 	'direct.mp4',
 	'manifest.mpd',
+	'over-host-limit.mp4',
 	'oversized.mp4',
 	'recode.mp4',
 ]) {
-	const body = await readFile(join(fixtureRoot, fileName));
+	const path = join(fixtureRoot, fileName);
 	fixtureEvidence.push({
 		fileName: basename(fileName),
-		sha256: digest('sha256', body),
-		sizeBytes: body.byteLength,
+		sha256: await fileDigest('sha256', path),
+		sizeBytes: (await stat(path)).size,
 	});
 }
 

@@ -92,8 +92,6 @@ authorized to download:
 | Source URL | Your authorized absolute `https://` media URL |
 | Arguments | leave empty |
 | Request Timeout (Minutes) | 30 |
-| Maximum Artifact Count | 20 |
-| Maximum Total Artifact Size (MiB) | 256 |
 
 Run the workflow. A successful direct-media request produces one output item with the file under
 `binary.data`; a playlist may produce several items. Every input item is a separate İndirme İsteği
@@ -309,17 +307,22 @@ pruning. The node does not call an internal deletion API.
 
 ## Resource Envelope
 
-| Limit | Default | Hard cap |
-| --- | ---: | ---: |
-| Inputs per execution | — | 20 |
-| Execution duration | — | 2 hours |
-| Request timeout | 30 minutes | 60 minutes |
-| Artifacts per request | 20 | 50 |
-| One Artifact | host n8n binary storage | host n8n binary storage |
-| All final Artifacts | 256 MiB | 512 MiB |
-| Playlist entries | first 5 | 20 explicitly selected |
-| FFmpeg threads | 1 | 1 |
-| yt-dlp fragment concurrency | 1 | 1 |
+| Limit | Owner | Value |
+| --- | --- | --- |
+| Inputs per execution | — | none |
+| Artifacts per request | — | none |
+| All final Artifacts | — | none |
+| Execution duration | host n8n | `EXECUTIONS_TIMEOUT`, clamped to `EXECUTIONS_TIMEOUT_MAX` |
+| One Artifact | host n8n binary storage | `N8N_BINARY_DATA_DATABASE_MAX_FILE_SIZE` in `database` mode |
+| Request workspace | measured free disk | free space at request start, less a 256 MiB container reserve |
+| Request timeout | node | 30 minutes, up to 60 minutes |
+| Playlist entries | node | first 5, 20 explicitly selected |
+| FFmpeg threads | node | 1 |
+| yt-dlp fragment concurrency | node | 1 |
+
+The node does not cap what you may download with numbers it picked. It imposes no limit on the
+number of inputs in an execution, on the number of Artifacts a request produces, or on their
+combined size, and it does not decide how long an execution may run.
 
 The single-Artifact file size limit is not the node's. It is read from the host n8n binary storage
 configuration: in `database` mode from `N8N_BINARY_DATA_DATABASE_MAX_FILE_SIZE`, whose n8n default
@@ -329,10 +332,18 @@ n8n applies no file size limit, and neither does the node. The mode follows n8n'
 in regular mode. When that configuration cannot be read, the node falls back to n8n's own default
 instead of imposing a number of its own.
 
-Workspace usage is checked at least once per second and is capped at twice the configured final
-total plus 64 MiB. Binary transfer is sequential. Configurable limits may be lowered or raised only
-up to the immutable hard caps. These limits bound one execution; they are not deployment sizing or
-capacity guarantees. See the [operator runbook](docs/operator-runbook.md).
+The execution duration limit is not the node's either. It is n8n's own execution timeout, resolved
+the way n8n resolves it: a workflow's own execution timeout wins over `EXECUTIONS_TIMEOUT`, and a
+positive value is clamped to `EXECUTIONS_TIMEOUT_MAX`, whose n8n default is one hour. When n8n
+imposes no execution timeout, neither does the node and a long download simply runs.
+
+Workspace usage is checked at least once per second against the free disk space measured where the
+request writes, less a reserve the node leaves for the rest of the container; a request whose free
+disk cannot hold the pinned toolchain is refused before it starts. Binary transfer is sequential.
+Capacity is the operator's responsibility: nothing bounds the total bytes one execution produces,
+and a playlist that grows over time makes the same workflow a much larger job. These limits bound
+one execution; they are not deployment sizing or capacity guarantees. See the
+[operator runbook](docs/operator-runbook.md).
 
 ## Security boundary
 

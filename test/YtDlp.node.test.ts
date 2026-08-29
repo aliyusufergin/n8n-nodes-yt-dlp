@@ -1,7 +1,8 @@
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { tmpdir } from 'node:os';
 
-import type { IExecuteFunctions, INode, OnError } from 'n8n-workflow';
+import type { IExecuteFunctions, INode, IWorkflowSettings, OnError } from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError, getNodeOutputs } from 'n8n-workflow';
 import { ToolchainAttestationError } from 'n8n-nodes-yt-dlp-platform';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -30,12 +31,16 @@ interface NodeParameters {
 	sourceUrl: string;
 	arguments: string;
 	requestTimeoutMinutes?: number;
-	maximumArtifactCount?: number;
-	maximumTotalArtifactSizeMiB?: number;
 }
 
+/**
+ * A stand-in Execution Workspace. Its path is a directory that really exists, because the node
+ * derives the workspace bound by measuring the disk the Execution Workspace sits on.
+ */
+const TEST_EXECUTION_WORKSPACE = tmpdir();
+
 const createTestWorkspace = async () => ({
-	path: '/tmp/n8n-nodes-yt-dlp-test-execution',
+	path: TEST_EXECUTION_WORKSPACE,
 	close: vi.fn(async () => {}),
 });
 
@@ -76,6 +81,7 @@ function createExecutionContext(
 	executionSignal?: AbortSignal,
 	authentication?: YtDlpAuthenticationData,
 	onError: OnError = continueOnFail ? 'continueRegularOutput' : 'stopWorkflow',
+	workflowSettings: IWorkflowSettings = {},
 ): IExecuteFunctions {
 	const node: INode = {
 		id: 'node-id',
@@ -98,6 +104,7 @@ function createExecutionContext(
 		getExecutionCancelSignal: vi.fn(() => executionSignal),
 		getInputData: vi.fn(() => parameters.map(() => ({ json: {} }))),
 		getNode: vi.fn(() => node),
+		getWorkflowSettings: vi.fn(() => workflowSettings),
 		getCredentials: vi.fn(async () => authentication ?? {}),
 		getNodeParameter: vi.fn((name: string, itemIndex: number) => parameters[itemIndex][name as keyof NodeParameters]),
 		helpers: {
@@ -149,13 +156,7 @@ describe('yt-dlp node metadata', () => {
 		const description = new YtDlp().description;
 		const propertyNames = description.properties.map(({ name }) => name);
 
-		expect(propertyNames).toEqual([
-			'sourceUrl',
-			'arguments',
-			'requestTimeoutMinutes',
-			'maximumArtifactCount',
-			'maximumTotalArtifactSizeMiB',
-		]);
+		expect(propertyNames).toEqual(['sourceUrl', 'arguments', 'requestTimeoutMinutes']);
 		expect(description.credentials).toEqual([
 			{ name: 'ytDlpAuthentication', required: false },
 		]);
@@ -428,7 +429,7 @@ describe('yt-dlp node adapter', () => {
 			controller.signal,
 		);
 		const startWorkspace = async () => ({
-			path: '/tmp/n8n-nodes-yt-dlp-test-execution',
+			path: TEST_EXECUTION_WORKSPACE,
 			close: vi.fn(async () => await Promise.reject(cleanupError)),
 		});
 
@@ -804,19 +805,9 @@ describe('yt-dlp node adapter', () => {
 		},
 	);
 
-	it('accepts exactly 20 input items', async () => {
-		const parameters = Array.from({ length: 20 }, (_, index) => ({
-			sourceUrl: `https://example.com/video-${index}`,
-			arguments: '',
-		}));
-		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([]);
-		const context = createExecutionContext(parameters, true);
-
-		await expect(executeYtDlpNode(context, startRequest)).resolves.toEqual([[]]);
-		expect(startRequest).toHaveBeenCalledTimes(20);
-	});
-
-	it('rejects 21 input items as a global Resource Envelope failure', async () => {
+	it('runs every input of an execution that used to exceed the input cap', async () => {
+		// ADR 0040: the node no longer refuses an execution for being larger than a number it
+		// picked. Twenty-one inputs is one more than the cap that used to reject the whole run.
 		const parameters = Array.from({ length: 21 }, (_, index) => ({
 			sourceUrl: `https://example.com/video-${index}`,
 			arguments: '',
@@ -824,13 +815,12 @@ describe('yt-dlp node adapter', () => {
 		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([]);
 		const context = createExecutionContext(parameters, true);
 
-		await expect(executeYtDlpNode(context, startRequest)).rejects.toMatchObject({
-			context: { errorCode: 'RESOURCE_LIMIT' },
-		});
-		expect(startRequest).not.toHaveBeenCalled();
+		await expect(executeYtDlpNode(context, startRequest)).resolves.toEqual([[]]);
+		expect(startRequest).toHaveBeenCalledTimes(21);
 	});
 
-	it('aborts an execution at the two-hour hard cap as a global failure', async () => {
+	it('aborts an execution at the host n8n execution timeout as a global failure', async () => {
+		vi.stubEnv('EXECUTIONS_TIMEOUT', '900');
 		vi.useFakeTimers();
 		let observedSignal: AbortSignal | undefined;
 		let requestStarted!: () => void;
@@ -856,7 +846,7 @@ describe('yt-dlp node adapter', () => {
 				(cause: unknown) => cause,
 			);
 			await started;
-			await vi.advanceTimersByTimeAsync(2 * 60 * 60 * 1000);
+			await vi.advanceTimersByTimeAsync(900 * 1000);
 
 			expect(observedSignal?.aborted).toBe(true);
 			const error = await execution;
@@ -867,7 +857,8 @@ describe('yt-dlp node adapter', () => {
 		}
 	});
 
-	it('starts the execution hard cap before workspace recovery', async () => {
+	it('starts the derived execution timeout before workspace recovery', async () => {
+		vi.stubEnv('EXECUTIONS_TIMEOUT', '900');
 		vi.useFakeTimers();
 		let resolveWorkspace!: (workspace: Awaited<ReturnType<typeof createTestWorkspace>>) => void;
 		const workspace = new Promise<Awaited<ReturnType<typeof createTestWorkspace>>>((resolve) => {
@@ -882,13 +873,87 @@ describe('yt-dlp node adapter', () => {
 			const execution = executeYtDlpNode(context, startRequest, async () => await workspace).catch(
 				(cause: unknown) => cause,
 			);
-			await vi.advanceTimersByTimeAsync(2 * 60 * 60 * 1000);
+			await vi.advanceTimersByTimeAsync(900 * 1000);
 			resolveWorkspace(await createTestWorkspace());
 
 			await expect(execution).resolves.toMatchObject({
 				context: { errorCode: 'RESOURCE_LIMIT' },
 			});
 			expect(startRequest).not.toHaveBeenCalled();
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it('imposes no execution duration when the host n8n configures no timeout', async () => {
+		// n8n's own default is no execution timeout, and the node adds none of its own: a download
+		// that runs for hours is bounded by what the operator configured, not by the node.
+		vi.useFakeTimers();
+		let observedSignal: AbortSignal | undefined;
+		let requestStarted!: () => void;
+		const started = new Promise<void>((resolve) => {
+			requestStarted = resolve;
+		});
+		let finishRequest!: () => void;
+		const startRequest = ((...args: unknown[]) => {
+			observedSignal = args[3] as AbortSignal | undefined;
+			requestStarted();
+			return new Promise<[]>((resolve) => {
+				finishRequest = () => resolve([]);
+			});
+		}) as DownloadRequestExecutor;
+		const context = createExecutionContext([
+			{ sourceUrl: 'https://example.com/video', arguments: '' },
+		]);
+
+		try {
+			const execution = executeYtDlpNode(context, startRequest, createTestWorkspace);
+			await started;
+			await vi.advanceTimersByTimeAsync(6 * 60 * 60 * 1000);
+
+			expect(observedSignal?.aborted).toBe(false);
+			finishRequest();
+			await expect(execution).resolves.toEqual([[]]);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it('lets the workflow execution timeout win over the instance setting, the way n8n does', async () => {
+		vi.stubEnv('EXECUTIONS_TIMEOUT', '900');
+		vi.useFakeTimers();
+		let observedSignal: AbortSignal | undefined;
+		let requestStarted!: () => void;
+		const started = new Promise<void>((resolve) => {
+			requestStarted = resolve;
+		});
+		const startRequest = ((...args: unknown[]) => {
+			observedSignal = args[3] as AbortSignal | undefined;
+			requestStarted();
+			return new Promise<[]>((resolve) => {
+				observedSignal?.addEventListener('abort', () => resolve([]), { once: true });
+			});
+		}) as DownloadRequestExecutor;
+		const context = createExecutionContext(
+			[{ sourceUrl: 'https://example.com/video', arguments: '' }],
+			true,
+			undefined,
+			undefined,
+			undefined,
+			{ executionTimeout: 60 },
+		);
+
+		try {
+			const execution = executeYtDlpNode(context, startRequest, createTestWorkspace).catch(
+				(cause: unknown) => cause,
+			);
+			await started;
+			await vi.advanceTimersByTimeAsync(60 * 1000);
+
+			expect(observedSignal?.aborted).toBe(true);
+			await expect(execution).resolves.toMatchObject({
+				context: { errorCode: 'RESOURCE_LIMIT' },
+			});
 		} finally {
 			vi.useRealTimers();
 		}
@@ -913,8 +978,6 @@ describe('yt-dlp node adapter', () => {
 				sourceUrl: 'https://example.com/video',
 				arguments: '',
 				requestTimeoutMinutes: 60,
-				maximumArtifactCount: 50,
-				maximumTotalArtifactSizeMiB: 512,
 			},
 		]);
 
@@ -925,10 +988,10 @@ describe('yt-dlp node adapter', () => {
 			0,
 			{
 				requestTimeoutMs: 60 * 60 * 1000,
-				maximumArtifactCount: 50,
 				maximumArtifactSizeBytes: 1024 * 1024 * 1024,
-				maximumTotalArtifactSizeBytes: 512 * 1024 * 1024,
-				maximumWorkspaceSizeBytes: 1216 * 1024 * 1024,
+				// The workspace bound is measured on the disk the Execution Workspace sits on, so
+				// its value belongs to the host rather than to this expectation.
+				maximumWorkspaceSizeBytes: expect.any(Number),
 			},
 			expect.any(AbortSignal),
 			undefined,
@@ -977,7 +1040,7 @@ describe('yt-dlp node adapter', () => {
 			{
 				sourceUrl: 'https://example.com/video',
 				arguments: '',
-				maximumArtifactCount: 51,
+				requestTimeoutMinutes: 61,
 			},
 		]);
 
@@ -1034,10 +1097,8 @@ describe('yt-dlp node adapter', () => {
 			0,
 			{
 				requestTimeoutMs: 30 * 60 * 1000,
-				maximumArtifactCount: 20,
 				maximumArtifactSizeBytes: 512 * 1024 * 1024,
-				maximumTotalArtifactSizeBytes: 256 * 1024 * 1024,
-				maximumWorkspaceSizeBytes: 704 * 1024 * 1024,
+				maximumWorkspaceSizeBytes: expect.any(Number),
 			},
 			expect.any(AbortSignal),
 			undefined,

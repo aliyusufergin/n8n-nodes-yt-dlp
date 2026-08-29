@@ -267,8 +267,6 @@ function workflowDefinition({
 		1,
 		{
 			arguments: argumentsValue,
-			maximumArtifactCount: 20,
-			maximumTotalArtifactSizeMiB: 256,
 			requestTimeoutMinutes: 30,
 			sourceUrl,
 			...ytParameters,
@@ -1376,11 +1374,7 @@ async function runCapacityLane(client, progress) {
 					name: `E2E capacity ${index}`,
 					roundTrip: false,
 					sourceUrl: 'http://fixture:8080/capacity-playlist',
-					ytParameters: {
-						maximumArtifactCount: 50,
-						maximumTotalArtifactSizeMiB: 512,
-						requestTimeoutMinutes: 60,
-					},
+					ytParameters: { requestTimeoutMinutes: 60 },
 				}),
 			),
 		),
@@ -1864,12 +1858,11 @@ async function main() {
 			continueOnFail: true,
 			name: 'E2E resource limit',
 			roundTrip: false,
-			sourceUrl: 'http://fixture:8080/oversized.mp4',
-			ytParameters: {
-				// The file size bound is the host's now, so the term this lane violates is the one
-				// the workflow author still owns: the total Artifact budget.
-				maximumTotalArtifactSizeMiB: 1,
-			},
+			// Every bound the node used to pick for the workflow author is gone, so the term this
+			// lane violates is the derived one: the file size limit n8n itself applies to
+			// `database` binary storage. This stack configures none, so the bound is n8n's own
+			// default and the fixture is one page over it.
+			sourceUrl: 'http://fixture:8080/over-host-limit.mp4',
 		});
 		assert(
 			resourceLimit.items[0].json.errorCode === 'RESOURCE_LIMIT' &&

@@ -1,23 +1,22 @@
 import { readFileSync } from 'node:fs';
+import { statfs } from 'node:fs/promises';
 
 export const RESOURCE_LIMIT = 'RESOURCE_LIMIT';
 export const REQUEST_TIMEOUT = 'REQUEST_TIMEOUT';
 export const MEBIBYTE = 1024 * 1024;
-export const MAXIMUM_EXECUTION_INPUTS = 20;
-export const MAXIMUM_EXECUTION_DURATION_MS = 2 * 60 * 60 * 1000;
 
 export const DEFAULT_REQUEST_TIMEOUT_MINUTES = 30;
 export const MAXIMUM_REQUEST_TIMEOUT_MINUTES = 60;
-export const DEFAULT_MAXIMUM_ARTIFACT_COUNT = 20;
-export const MAXIMUM_ARTIFACT_COUNT = 50;
-export const DEFAULT_MAXIMUM_TOTAL_ARTIFACT_SIZE_MIB = 256;
-export const MAXIMUM_TOTAL_ARTIFACT_SIZE_MIB = 512;
+
 /**
- * Slack for request-scoped bookkeeping that is not Artifact bytes: the fixed
- * `artifacts`/`temp`/`control` directories, the cookie file, and partial fragment
- * accounting while yt-dlp rewrites its temporary output.
+ * The free disk space the workspace bound leaves untouched for the rest of the container. The
+ * watchdog measures the workspace about once per second, so a request that writes faster than the
+ * sampling interval overshoots its bound by whatever it wrote in between; the reserve absorbs that
+ * overshoot instead of the container's last free bytes. It is a node constant because it protects
+ * the host, not because it caps a download: it never decides how large an Artifact may be, only how
+ * much of the disk a request may never reach.
  */
-export const WORKSPACE_HEADROOM_BYTES = 64 * MEBIBYTE;
+export const WORKSPACE_DISK_RESERVE_BYTES = 256 * MEBIBYTE;
 
 /**
  * Baseline occupancy of a Download Request workspace before a single Artifact byte is
@@ -60,6 +59,13 @@ export type HostBinaryDataMode = (typeof HOST_BINARY_DATA_MODES)[number];
  */
 export const DEFAULT_DATABASE_MAX_FILE_SIZE_MIB = 512;
 export const MAXIMUM_DATABASE_MAX_FILE_SIZE_MIB = 1024;
+
+/**
+ * n8n's own defaults for its execution timeout settings, in seconds: `-1`, meaning no timeout at
+ * all, and a one hour ceiling on whatever an instance or a workflow asks for.
+ */
+export const DEFAULT_EXECUTIONS_TIMEOUT_SECONDS = -1;
+export const DEFAULT_EXECUTIONS_TIMEOUT_MAX_SECONDS = 60 * 60;
 
 /**
  * The host n8n binary storage configuration a derived Resource Envelope term reads its bound
@@ -138,18 +144,77 @@ export function readHostBinaryDataConfiguration(
 		: { mode };
 }
 
+/**
+ * Reads one numeric n8n setting the way n8n reads it: `Number` coercion, and a value that coerces
+ * to `NaN` is one n8n warns about and ignores, so it falls back to n8n's own default rather than to
+ * a number the node picked.
+ */
+function hostNumberSetting(
+	environment: NodeJS.ProcessEnv,
+	name: string,
+	fallback: number,
+): number {
+	const configured = readHostEnvironmentValue(environment, name);
+	if (configured === undefined) return fallback;
+	const parsed = Number(configured);
+	return Number.isNaN(parsed) ? fallback : parsed;
+}
+
+/**
+ * The execution duration bound, in milliseconds, or `undefined` when the host imposes no execution
+ * timeout — in which case the node imposes none either. n8n's own resolution is kept intact: a
+ * workflow's `executionTimeout` setting wins over `EXECUTIONS_TIMEOUT`, a positive result is clamped
+ * to `EXECUTIONS_TIMEOUT_MAX`, and anything that is not positive means no timeout at all.
+ */
+export function readHostExecutionDurationMs(
+	environment: NodeJS.ProcessEnv = process.env,
+	workflowExecutionTimeoutSeconds?: number,
+): number | undefined {
+	const requestedSeconds =
+		workflowExecutionTimeoutSeconds ??
+		hostNumberSetting(environment, 'EXECUTIONS_TIMEOUT', DEFAULT_EXECUTIONS_TIMEOUT_SECONDS);
+	if (!(requestedSeconds > 0)) return undefined;
+	const seconds = Math.min(
+		requestedSeconds,
+		hostNumberSetting(
+			environment,
+			'EXECUTIONS_TIMEOUT_MAX',
+			DEFAULT_EXECUTIONS_TIMEOUT_MAX_SECONDS,
+		),
+	);
+	return seconds > 0 ? seconds * 1000 : undefined;
+}
+
+/**
+ * Everything outside the node that a derived Resource Envelope term reads its bound from: the host
+ * n8n binary storage configuration, and the free disk space measured where the Download Request
+ * workspace will be written.
+ */
+export interface HostResourceConfiguration {
+	readonly binaryData: HostBinaryDataConfiguration;
+	readonly availableWorkspaceBytes: number;
+}
+
+export async function readHostResourceConfiguration(
+	workspaceParent: string,
+	environment: NodeJS.ProcessEnv = process.env,
+): Promise<HostResourceConfiguration> {
+	const { bavail, bsize } = await statfs(workspaceParent);
+	return {
+		binaryData: readHostBinaryDataConfiguration(environment),
+		// `bavail` is what an unprivileged process may still write, which is what the request has.
+		availableWorkspaceBytes: bavail * bsize,
+	};
+}
+
 export interface ResourceEnvelopeConfiguration {
 	requestTimeoutMinutes?: number;
-	maximumArtifactCount?: number;
-	maximumTotalArtifactSizeMiB?: number;
 }
 
 export interface ResourceEnvelope {
 	requestTimeoutMs: number;
-	maximumArtifactCount: number;
 	/** Absent when the host enforces no file size limit, so no enforcement site applies one. */
 	maximumArtifactSizeBytes: number | undefined;
-	maximumTotalArtifactSizeBytes: number;
 	maximumWorkspaceSizeBytes: number;
 }
 
@@ -244,19 +309,18 @@ type ResourceEnvelopeTermDefinition =
  * `enforcement` and, for a violable term, a frozen `errorCode` from the ADR 0026 vocabulary.
  */
 export const RESOURCE_ENVELOPE_TERMS = {
-	executionInputs: {
-		enforcement: 'violable',
-		scope: 'execution',
-		errorCode: RESOURCE_LIMIT,
-		violationMessage: `The execution exceeds the ${MAXIMUM_EXECUTION_INPUTS}-item Resource Envelope.`,
-	},
 	executionDuration: {
-		enforcement: 'violable',
+		// The execution duration bound is the host's. n8n stops an execution that outruns its own
+		// timeout, so the node reads the same setting and stops the request it is running with a
+		// classified violation instead of being cut off mid-transfer. Where n8n configures no
+		// timeout, the node imposes none of its own and a long download simply runs.
+		enforcement: 'derived',
 		scope: 'execution',
 		errorCode: RESOURCE_LIMIT,
-		violationMessage:
-			`The execution exceeded the ${MAXIMUM_EXECUTION_DURATION_MS / (60 * 60 * 1000)}-hour ` +
-			'Resource Envelope.',
+		derivedFrom:
+			'the host n8n execution timeout configuration (EXECUTIONS_TIMEOUT, ' +
+			'EXECUTIONS_TIMEOUT_MAX) and the workflow execution timeout setting',
+		violationMessage: 'The execution exceeded the n8n execution timeout.',
 	},
 	requestTimeout: {
 		enforcement: 'violable',
@@ -267,13 +331,6 @@ export const RESOURCE_ENVELOPE_TERMS = {
 		// rather than rediscovered at the supervisor.
 		errorCode: REQUEST_TIMEOUT,
 		violationMessage: 'yt-dlp exceeded the request timeout.',
-	},
-	artifactCount: {
-		enforcement: 'violable',
-		configurable: true,
-		scope: 'request',
-		errorCode: RESOURCE_LIMIT,
-		violationMessage: 'The Download Request exceeded its Artifact count budget.',
 	},
 	artifactSize: {
 		// The file size bound is the host's. In `database` mode n8n refuses a binary above its own
@@ -288,18 +345,19 @@ export const RESOURCE_ENVELOPE_TERMS = {
 			'N8N_BINARY_DATA_DATABASE_MAX_FILE_SIZE)',
 		violationMessage: 'The Download Request exceeded the n8n binary storage file size limit.',
 	},
-	totalArtifactSize: {
-		enforcement: 'violable',
-		configurable: true,
-		scope: 'request',
-		errorCode: RESOURCE_LIMIT,
-		violationMessage: 'The Download Request exceeded its total Artifact size budget.',
-	},
 	workspaceSize: {
-		enforcement: 'violable',
+		// The workspace bound is no longer derivable from an Artifact budget the node picked, so it
+		// comes from the disk the request actually has: the free space measured where the workspace
+		// is written, less the reserve the node leaves for the rest of the container.
+		enforcement: 'derived',
 		scope: 'request',
 		errorCode: RESOURCE_LIMIT,
-		violationMessage: 'yt-dlp exceeded the request workspace limit.',
+		derivedFrom: 'the free disk space measured where the request workspace is written',
+		// One message for both moments the term is enforced: the free disk measured at request
+		// start cannot hold the workspace the request needs, or the running workspace grew past
+		// what that disk had. Present tense, so it is true of a request that never started.
+		violationMessage:
+			'The Download Request workspace does not fit the free disk space available to it.',
 	},
 	fragmentConcurrency: {
 		enforcement: 'imposed',
@@ -370,17 +428,16 @@ export type ResourceLimitTerm = {
  * above — so a new envelope number cannot reach an enforcement site unclassified.
  *
  * This declaration exists for that compile-time bind alone; no enforcement site reads it at run
- * time. Terms that are not produced fields — the imposed ones, and the preflight one — are bound
- * instead by the term-inventory test in `test/resource-envelope.test.ts`, which fails when the
- * table and the Resource Envelope of ADR 0019 stop agreeing.
+ * time. Terms that are not produced fields — the imposed ones, the preflight one, and the
+ * execution-scoped duration — are bound instead by the term-inventory test in
+ * `test/resource-envelope.test.ts`, which fails when the table and the Resource Envelope of
+ * ADR 0040 stop agreeing.
  */
 export const RESOURCE_ENVELOPE_FIELD_TERMS: Readonly<
 	Record<keyof ResourceEnvelope, ResourceEnvelopeTerm>
 > = {
 	requestTimeoutMs: 'requestTimeout',
-	maximumArtifactCount: 'artifactCount',
 	maximumArtifactSizeBytes: 'artifactSize',
-	maximumTotalArtifactSizeBytes: 'totalArtifactSize',
 	maximumWorkspaceSizeBytes: 'workspaceSize',
 };
 
@@ -464,37 +521,39 @@ function boundedInteger(
 	return value;
 }
 
+/**
+ * The workspace bound: the free disk the request actually has, less the reserve the node leaves for
+ * the rest of the container. The measured toolchain baseline is the floor — a workspace that cannot
+ * hold the unpacked toolchain has no room for a single Artifact byte, so the request is refused
+ * before it is spent rather than terminated once the watchdog sees the unpack.
+ */
+function workspaceSizeBytes(availableWorkspaceBytes: number): number {
+	const maximumWorkspaceSizeBytes =
+		Math.floor(availableWorkspaceBytes) - WORKSPACE_DISK_RESERVE_BYTES;
+	if (
+		!Number.isSafeInteger(maximumWorkspaceSizeBytes) ||
+		maximumWorkspaceSizeBytes <= TOOLCHAIN_RUNTIME_BASELINE_BYTES
+	) {
+		throw resourceLimitViolationError('workspaceSize');
+	}
+	return maximumWorkspaceSizeBytes;
+}
+
 export function createResourceEnvelope(
 	configuration: ResourceEnvelopeConfiguration,
-	host: HostBinaryDataConfiguration = readHostBinaryDataConfiguration(),
+	host: HostResourceConfiguration,
 ): ResourceEnvelope {
 	const requestTimeoutMinutes = boundedInteger(
 		configuration.requestTimeoutMinutes ?? DEFAULT_REQUEST_TIMEOUT_MINUTES,
 		MAXIMUM_REQUEST_TIMEOUT_MINUTES,
 		'requestTimeout',
 	);
-	const maximumArtifactCount = boundedInteger(
-		configuration.maximumArtifactCount ?? DEFAULT_MAXIMUM_ARTIFACT_COUNT,
-		MAXIMUM_ARTIFACT_COUNT,
-		'artifactCount',
-	);
-	const maximumTotalArtifactSizeMiB = boundedInteger(
-		configuration.maximumTotalArtifactSizeMiB ?? DEFAULT_MAXIMUM_TOTAL_ARTIFACT_SIZE_MIB,
-		MAXIMUM_TOTAL_ARTIFACT_SIZE_MIB,
-		'totalArtifactSize',
-	);
-	const maximumTotalArtifactSizeBytes = maximumTotalArtifactSizeMiB * MEBIBYTE;
 
 	return {
 		requestTimeoutMs: requestTimeoutMinutes * 60 * 1000,
-		maximumArtifactCount,
 		// Declared even when the host carries no bound, so the field-term bind stays honest and an
 		// enforcement site reads "no limit" rather than a missing field.
-		maximumArtifactSizeBytes: host.maximumFileSizeBytes,
-		maximumTotalArtifactSizeBytes,
-		maximumWorkspaceSizeBytes:
-			2 * maximumTotalArtifactSizeBytes +
-			TOOLCHAIN_RUNTIME_BASELINE_BYTES +
-			WORKSPACE_HEADROOM_BYTES,
+		maximumArtifactSizeBytes: host.binaryData.maximumFileSizeBytes,
+		maximumWorkspaceSizeBytes: workspaceSizeBytes(host.availableWorkspaceBytes),
 	};
 }
