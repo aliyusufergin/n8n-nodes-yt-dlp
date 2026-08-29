@@ -34,18 +34,14 @@ import {
 	executeDownloadRequest,
 } from './download';
 import {
-	DEFAULT_MAXIMUM_ARTIFACT_COUNT,
-	DEFAULT_MAXIMUM_TOTAL_ARTIFACT_SIZE_MIB,
 	DEFAULT_REQUEST_TIMEOUT_MINUTES,
-	MAXIMUM_EXECUTION_DURATION_MS,
-	MAXIMUM_EXECUTION_INPUTS,
-	MAXIMUM_ARTIFACT_COUNT,
 	MAXIMUM_REQUEST_TIMEOUT_MINUTES,
-	MAXIMUM_TOTAL_ARTIFACT_SIZE_MIB,
 	RESOURCE_LIMIT,
 	YtDlpExecutionResourceLimitError,
 	YtDlpRequestResourceLimitError,
 	createResourceEnvelope,
+	readHostExecutionDurationMs,
+	readHostResourceConfiguration,
 	resourceLimitViolationError,
 	type ResourceEnvelope,
 	type ResourceLimitTerm,
@@ -249,11 +245,27 @@ export async function executeYtDlpNode(
 
 	externalSignal?.addEventListener('abort', cancelExecution, { once: true });
 	if (externalSignal?.aborted === true) cancelExecution();
-	const executionTimer = setTimeout(() => {
-		executionTerminationReason ??= 'timeout';
-		executionController.abort();
-	}, MAXIMUM_EXECUTION_DURATION_MS);
-	executionTimer.unref?.();
+	// The execution duration bound is the host's: n8n's own execution timeout, resolved the way n8n
+	// resolves it. Where n8n imposes no timeout the node starts no timer, so a long download is
+	// bounded by what the operator configured and by nothing the node chose.
+	//
+	// n8n starts its own timer at execution start and this one starts when the node does, so on a
+	// timed-out execution n8n's stop normally arrives first and the request ends as a cancellation.
+	// The node cannot read n8n's deadline — `executionTimeoutTimestamp` is on
+	// `IWorkflowExecuteAdditionalData`, not on the node's `IExecuteFunctions` — so this timer is
+	// the backstop that carries the classification when the host's stop does not reach the worker.
+	const executionDurationMs = readHostExecutionDurationMs(
+		process.env,
+		execution.getWorkflowSettings?.()?.executionTimeout,
+	);
+	let executionTimer: NodeJS.Timeout | undefined;
+	if (executionDurationMs !== undefined) {
+		executionTimer = setTimeout(() => {
+			executionTerminationReason ??= 'timeout';
+			executionController.abort();
+		}, executionDurationMs);
+		executionTimer.unref?.();
+	}
 
 	try {
 		if (startRequest === undefined) {
@@ -280,9 +292,6 @@ export async function executeYtDlpNode(
 		}
 		executionWorkspace = await startWorkspace();
 		throwIfExecutionTerminated(execution, executionTerminationReason);
-		if (items.length > MAXIMUM_EXECUTION_INPUTS) {
-			throw executionResourceLimitError(execution, 'executionInputs');
-		}
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			const requestStartedAt = Date.now();
 			try {
@@ -290,23 +299,18 @@ export async function executeYtDlpNode(
 				const argumentsValue = execution.getNodeParameter('arguments', itemIndex, '') as string;
 				const request = createDownloadRequest(sourceUrl, argumentsValue);
 				const plan = createYtDlpExecutionPlan(request);
-				const resourceEnvelope = createResourceEnvelope({
-					requestTimeoutMinutes: execution.getNodeParameter(
-						'requestTimeoutMinutes',
-						itemIndex,
-						DEFAULT_REQUEST_TIMEOUT_MINUTES,
-					) as number,
-					maximumArtifactCount: execution.getNodeParameter(
-						'maximumArtifactCount',
-						itemIndex,
-						DEFAULT_MAXIMUM_ARTIFACT_COUNT,
-					) as number,
-					maximumTotalArtifactSizeMiB: execution.getNodeParameter(
-						'maximumTotalArtifactSizeMiB',
-						itemIndex,
-						DEFAULT_MAXIMUM_TOTAL_ARTIFACT_SIZE_MIB,
-					) as number,
-				});
+				// The derived bounds are read where the request runs: the workspace disk is measured
+				// on the Execution Workspace the request is about to write into.
+				const resourceEnvelope = createResourceEnvelope(
+					{
+						requestTimeoutMinutes: execution.getNodeParameter(
+							'requestTimeoutMinutes',
+							itemIndex,
+							DEFAULT_REQUEST_TIMEOUT_MINUTES,
+						) as number,
+					},
+					await readHostResourceConfiguration(executionWorkspace.path),
+				);
 
 				const authentication =
 					execution.getNode().credentials?.ytDlpAuthentication === undefined
@@ -498,22 +502,6 @@ export class YtDlp implements INodeType {
 				default: DEFAULT_REQUEST_TIMEOUT_MINUTES,
 				typeOptions: { minValue: 1, maxValue: MAXIMUM_REQUEST_TIMEOUT_MINUTES },
 				description: 'Maximum time allowed for one Download Request',
-			},
-			{
-				displayName: 'Maximum Artifact Count',
-				name: 'maximumArtifactCount',
-				type: 'number',
-				default: DEFAULT_MAXIMUM_ARTIFACT_COUNT,
-				typeOptions: { minValue: 1, maxValue: MAXIMUM_ARTIFACT_COUNT },
-				description: 'Maximum number of Artifacts allowed for one Download Request',
-			},
-			{
-				displayName: 'Maximum Total Artifact Size (MiB)',
-				name: 'maximumTotalArtifactSizeMiB',
-				type: 'number',
-				default: DEFAULT_MAXIMUM_TOTAL_ARTIFACT_SIZE_MIB,
-				typeOptions: { minValue: 1, maxValue: MAXIMUM_TOTAL_ARTIFACT_SIZE_MIB },
-				description: 'Maximum combined final Artifact size for one Download Request',
 			},
 		],
 	};

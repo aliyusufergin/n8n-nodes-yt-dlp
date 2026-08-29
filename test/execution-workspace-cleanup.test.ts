@@ -7,7 +7,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { executeYtDlpNode, type DownloadRequestExecutor } from '../nodes/YtDlp/YtDlp.node';
 import { YtDlpProcessError, YtDlpProcessTerminationError } from '../nodes/YtDlp/process';
-import { MAXIMUM_EXECUTION_INPUTS } from '../nodes/YtDlp/resource-envelope';
 import {
 	EXECUTION_WORKSPACE_MARKER,
 	EXECUTION_WORKSPACE_PREFIX,
@@ -200,24 +199,6 @@ describe('owned Execution Workspace cleanup', () => {
 		).rejects.toBe(failure);
 
 		expect(observed.markerSeen).toEqual([true]);
-		await expectRemoved(ownedPaths[0], temporaryDirectory);
-	});
-
-	it('removes the owned Execution Workspace when the input count exceeds the Resource Envelope', async () => {
-		const temporaryDirectory = await createTemporaryDirectory();
-		const { startWorkspace, ownedPaths } = trackExecutionWorkspaces(temporaryDirectory);
-		const { startRequest, observed } = observeRequests(succeed);
-
-		await expect(
-			executeYtDlpNode(
-				createExecutionContext(MAXIMUM_EXECUTION_INPUTS + 1),
-				startRequest,
-				startWorkspace,
-			),
-		).rejects.toMatchObject({ context: { errorCode: 'RESOURCE_LIMIT' } });
-
-		expect(observed.workspaceParents).toEqual([]);
-		expect(ownedPaths).toHaveLength(1);
 		await expectRemoved(ownedPaths[0], temporaryDirectory);
 	});
 

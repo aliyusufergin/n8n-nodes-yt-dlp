@@ -71,7 +71,6 @@ function contentType(pathname: string): string {
 function createExecutionContext(
 	sourceUrl: string,
 	argumentsValue: string,
-	envelopeParameters: Readonly<Record<string, number>> = {},
 ): IExecuteFunctions {
 	const node: INode = {
 		id: 'node-id',
@@ -91,7 +90,7 @@ function createExecutionContext(
 		getNodeParameter: vi.fn((name: string, _itemIndex: number, fallback?: unknown) => {
 			if (name === 'sourceUrl') return sourceUrl;
 			if (name === 'arguments') return argumentsValue;
-			return envelopeParameters[name] ?? fallback;
+			return fallback;
 		}),
 		helpers: {
 			prepareBinaryData: vi.fn(
@@ -412,9 +411,7 @@ describe('real packaged media toolchain', () => {
 	// whether an envelope violation is even observable. Only the real toolchain can.
 	it('classifies media over the derived host file size limit as RESOURCE_LIMIT', async () => {
 		stubHostDatabaseFileSizeLimitMiB(1);
-		const context = createExecutionContext(`${originUrl}/oversized.mp4`, '', {
-			maximumTotalArtifactSizeMiB: 2,
-		});
+		const context = createExecutionContext(`${originUrl}/oversized.mp4`, '');
 
 		await expect(executeYtDlpNode(context)).rejects.toMatchObject({
 			context: { errorCode: 'RESOURCE_LIMIT', itemIndex: 0 },
@@ -432,9 +429,7 @@ describe('real packaged media toolchain', () => {
 		expect(probe.headers.get('content-length')).toBeNull();
 		chunkedBytesServed = 0;
 		stubHostDatabaseFileSizeLimitMiB(1);
-		const context = createExecutionContext(`${originUrl}/chunked/oversized.mp4`, '', {
-			maximumTotalArtifactSizeMiB: 2,
-		});
+		const context = createExecutionContext(`${originUrl}/chunked/oversized.mp4`, '');
 
 		const error = await executeYtDlpNode(context).catch((cause: unknown) => cause);
 
@@ -453,9 +448,7 @@ describe('real packaged media toolchain', () => {
 	// well-formed download rather than a silent skip.
 	it('delivers media of any size when the host enforces no file size limit', async () => {
 		vi.stubEnv('N8N_DEFAULT_BINARY_DATA_MODE', 'filesystem');
-		const context = createExecutionContext(`${originUrl}/oversized.mp4`, '', {
-			maximumTotalArtifactSizeMiB: 512,
-		});
+		const context = createExecutionContext(`${originUrl}/oversized.mp4`, '');
 
 		const [items] = await executeYtDlpNode(context);
 
@@ -464,31 +457,20 @@ describe('real packaged media toolchain', () => {
 		expect(items[0].json.sizeBytes).toBeGreaterThan(MEBIBYTE);
 	}, 60_000);
 
-	// The other half of the pair, and the interaction #52 actually broke: an envelope whose
-	// single-Artifact budget the media fits, so the option profile lets the download run, and
-	// whose total budget it does not, so the post-hoc Artifact checks are the site that catches
-	// it. Running the option profile and the validation together is the point — each on its own
-	// stays green while the two disagree about what the violation is called.
-	it('classifies media the option profile admits but the total budget rejects as RESOURCE_LIMIT', async () => {
-		// First half pins that the option profile really does admit this media at a 2 MiB
-		// single-Artifact budget. Without it the rejection below could come from the break filter
-		// and the test would stay green while the post-hoc total check was never reached.
+	// The delivered half of the same pair: an Artifact the option profile admits at a budget the
+	// host really carries, run through the post-hoc Artifact checks that used to disagree with it.
+	// Running the option profile and the validation together is the point — each on its own stays
+	// green while the two disagree about what a violation is called.
+	it('delivers media the option profile admits at the derived host file size limit', async () => {
 		stubHostDatabaseFileSizeLimitMiB(2);
-		const [admitted] = await executeYtDlpNode(
-			createExecutionContext(`${originUrl}/oversized.mp4`, '', {
-				maximumTotalArtifactSizeMiB: 512,
-			}),
+
+		const [items] = await executeYtDlpNode(
+			createExecutionContext(`${originUrl}/oversized.mp4`, ''),
 		);
-		expect(admitted).toHaveLength(1);
-		expect(admitted[0].json.sizeBytes).toBeGreaterThan(MEBIBYTE);
 
-		const context = createExecutionContext(`${originUrl}/oversized.mp4`, '', {
-			maximumTotalArtifactSizeMiB: 1,
-		});
-
-		await expect(executeYtDlpNode(context)).rejects.toMatchObject({
-			context: { errorCode: 'RESOURCE_LIMIT', itemIndex: 0 },
-		});
+		expect(items).toHaveLength(1);
+		expect(items[0].json).toMatchObject({ status: 'success', mimeType: 'video/mp4' });
+		expect(items[0].json.sizeBytes).toBeGreaterThan(MEBIBYTE);
 	}, 120_000);
 
 	it('merges separate synthetic formats into one Artifact with video and audio streams', async () => {

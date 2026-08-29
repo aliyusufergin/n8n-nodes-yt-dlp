@@ -1,8 +1,9 @@
 # Operator runbook
 
 This node relies on n8n and the worker platform for capacity, queue, storage, and health
-monitoring. Its Resource Envelope limits one execution; those hard caps are not sizing guidance
-for a deployment.
+monitoring. Its Resource Envelope limits one execution, and most of those limits are read from your
+own n8n configuration rather than chosen by the node; none of them is sizing guidance for a
+deployment.
 
 The v0.2.1 supported topology is official n8n Docker Linux x64, queue mode, `database` binary
 storage, and worker concurrency 1. Set `N8N_REINSTALL_MISSING_PACKAGES=true` on every worker as a
@@ -28,8 +29,8 @@ capacity, or node execution readiness.
 
 If queue depth or latency grows, stop admitting new download work before increasing worker
 concurrency. Check worker CPU/RSS, event-loop lag, temp free space, Postgres, Redis, and binary
-growth together. Do not raise the node Resource Envelope hard caps to treat a deployment capacity
-problem.
+growth together. Do not raise the settings the node derives its Resource Envelope from — the binary
+storage file size limit or the execution timeout — to treat a deployment capacity problem.
 
 ## Container and host monitoring
 
@@ -75,6 +76,11 @@ what a Download Request may deliver, and the Postgres and worker-memory capacity
 yours to size. A request over that limit fails with `RESOURCE_LIMIT` rather than reaching binary
 storage.
 
+The node bounds neither the number of inputs in an execution, nor the number of Artifacts a request
+produces, nor their combined size, so nothing caps the total bytes one execution writes to binary
+storage. Size that capacity from your own workload: one playlist URL that returns eight entries
+today may return eight hundred later, and the same workflow then becomes a much larger job.
+
 Monitor Postgres for:
 
 - connectivity, connection-pool saturation, query latency, locks, errors, and restarts;
@@ -100,7 +106,7 @@ classifies worker concurrency 10 as unsafe on its exact four-CPU, 16 GB disposab
 the ten concurrent worst-allowed requests completed; seven were lost to `BINARY_TRANSFER_FAILED`
 and one to an unclassified failure, and event-loop lag peaked at 2.68 seconds against a one-second
 gate. Keep the v0.2.1 supported scope at worker concurrency 1 until a lower-concurrency disposable
-lane passes. Do not raise the node Resource Envelope hard caps.
+lane passes. Do not raise the settings the node derives its Resource Envelope from.
 
 The verdict is stable across the spread rather than resting on one run. The same anchor's node
 0.2.0 record, [n8n 2.34.5 / node 0.2.0](capacity/n8n-2.34.5-node-0.2.0.json), completed all ten
@@ -184,7 +190,8 @@ code.
 | Node missing on one worker | Remove the worker from traffic. Check its exact three-package state and install/update event history. Confirm `N8N_REINSTALL_MISSING_PACKAGES=true`; restart or recreate only that worker if recovery is required, then run a real node probe. |
 | Toolchain/global invariant failure | Stop routing work to the worker. Do not install a `PATH` tool, modify package bytes, run chmod, or enable runtime downloads. Compare exact package state and recreate the affected worker from the supported image. |
 | Queue backlog or event-loop lag | Pause new download work. Check per-worker CPU/RSS, temp, Postgres, Redis, and binary growth. Keep concurrency at 1; scale only after equivalent disposable evidence. |
-| `RESOURCE_LIMIT` or `REQUEST_TIMEOUT` | Check the input and configured request limits. Reduce the request or split inputs. Do not increase a field above its hard cap. |
+| `RESOURCE_LIMIT` | The bound belongs to your deployment, not to the node: check `N8N_BINARY_DATA_DATABASE_MAX_FILE_SIZE` for an oversized Artifact, `EXECUTIONS_TIMEOUT`/`EXECUTIONS_TIMEOUT_MAX` for a long execution, and free disk on the worker for a workspace violation. Raise the setting the request outgrew, or split the request. |
+| `REQUEST_TIMEOUT` | Check the configured Request Timeout on the node. Raise it up to its hard cap, or split the request. |
 | `BINARY_TRANSFER_FAILED` | Check Postgres health, free storage, database limits, and pruning. No Artifact Item was published for that request, but monitor for unreferenced writes until public execution hard-delete/pruning completes. |
 | Cancellation or timeout appears stuck | Check the worker for the managed yt-dlp/FFmpeg/Deno process group and wait through the bounded SIGTERM/SIGKILL closure period. A termination invariant failure stops the execution globally. |
 | Temp usage remains after a crash | Use the verified stale sweep below. If the node cannot run or the sweep fails, use targeted worker recreation. |

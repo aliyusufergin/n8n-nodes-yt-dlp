@@ -22,6 +22,7 @@ import { YtDlpProcessTerminationError, superviseYtDlpExecutionPlan } from './pro
 import {
 	YtDlpRequestResourceLimitError,
 	createResourceEnvelope,
+	readHostResourceConfiguration,
 	resourceEnvelopeOptionProfile,
 	resourceLimitViolationError,
 	type ResourceEnvelope,
@@ -157,15 +158,11 @@ async function validateArtifactSet(
 	resourceEnvelope: ResourceEnvelope,
 ): Promise<ValidatedArtifact[]> {
 	const artifacts: ValidatedArtifact[] = [];
-	let totalArtifactSizeBytes = 0;
 	try {
 		await assertDirectoryIdentity(directory);
 		const descriptorDirectoryPath = descriptorPath(directory);
 		const artifactNames = (await readdir(descriptorDirectoryPath)).sort();
 		if (artifactNames.length === 0) throw invalidArtifactSet();
-		if (artifactNames.length > resourceEnvelope.maximumArtifactCount) {
-			throw resourceLimitViolationError('artifactCount');
-		}
 
 		for (const fileName of artifactNames) {
 			await assertDirectoryIdentity(directory);
@@ -197,10 +194,6 @@ async function validateArtifactSet(
 					descriptorStat.size > resourceEnvelope.maximumArtifactSizeBytes
 				) {
 					throw resourceLimitViolationError('artifactSize');
-				}
-				totalArtifactSizeBytes += descriptorStat.size;
-				if (totalArtifactSizeBytes > resourceEnvelope.maximumTotalArtifactSizeBytes) {
-					throw resourceLimitViolationError('totalArtifactSize');
 				}
 				await assertDirectoryIdentity(directory);
 				artifacts.push({ fileName, fileHandle, stat: descriptorStat });
@@ -311,10 +304,13 @@ export async function executeDownloadRequest(
 	itemIndex: number,
 	options: DownloadRequestOptions,
 ): Promise<INodeExecutionData[]> {
-	const resourceEnvelope = options.resourceEnvelope ?? createResourceEnvelope({});
-	const workspace = await mkdtemp(
-		join(options.workspaceParent ?? tmpdir(), 'n8n-nodes-yt-dlp-'),
-	);
+	const workspaceParent = options.workspaceParent ?? tmpdir();
+	// The workspace bound is derived from the disk the request will actually write to, so it is
+	// measured where that workspace is about to be created.
+	const resourceEnvelope =
+		options.resourceEnvelope ??
+		createResourceEnvelope({}, await readHostResourceConfiguration(workspaceParent));
+	const workspace = await mkdtemp(join(workspaceParent, 'n8n-nodes-yt-dlp-'));
 	const artifactsDirectory = join(workspace, 'artifacts');
 	const tempDirectory = join(workspace, 'temp');
 	const controlDirectory = join(workspace, 'control');

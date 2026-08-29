@@ -54,9 +54,18 @@ import { executeDownloadRequest } from '../nodes/YtDlp/download';
 import {
 	MEBIBYTE,
 	createResourceEnvelope,
+	readHostResourceConfiguration,
 	type HostBinaryDataConfiguration,
+	type HostResourceConfiguration,
 	type ResourceEnvelopeConfiguration,
 } from '../nodes/YtDlp/resource-envelope';
+
+/** Free disk space that clears the toolchain baseline and the container reserve many times over. */
+const AVAILABLE_WORKSPACE_BYTES = 64 * 1024 * MEBIBYTE;
+
+function hostResources(binaryData: HostBinaryDataConfiguration): HostResourceConfiguration {
+	return { binaryData, availableWorkspaceBytes: AVAILABLE_WORKSPACE_BYTES };
+}
 
 const temporaryDirectories: string[] = [];
 const servers: Server[] = [];
@@ -436,7 +445,7 @@ describe('download request', () => {
 			proxyUrl: `http://proxy-user:proxy-password@proxy-${outcome.replace(/\s/g, '-')}.test`,
 		};
 		const resourceEnvelope = {
-			...createResourceEnvelope({}),
+			...createResourceEnvelope({}, hostResources({ mode: 'filesystem' })),
 			requestTimeoutMs: outcome === 'timeout' ? 25 : 60_000,
 		};
 
@@ -492,7 +501,7 @@ describe('download request', () => {
 				workspaceParent,
 				resourceEnvelope: createResourceEnvelope(
 					{},
-					{ mode: 'database', maximumFileSizeBytes: 128 * MEBIBYTE },
+					hostResources({ mode: 'database', maximumFileSizeBytes: 128 * MEBIBYTE }),
 				),
 			},
 		);
@@ -545,11 +554,13 @@ describe('download request', () => {
 	it('classifies a real workspace overshoot as an indexed request failure', async () => {
 		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-workspace-envelope-'));
 		temporaryDirectories.push(workspaceParent);
-		// Derived from the envelope so a change to the workspace formula cannot silently turn
-		// this into a test that no longer overshoots anything.
+		// Derived from the same measurement the node makes, so a change to the workspace formula
+		// cannot silently turn this into a test that no longer overshoots anything. The file is
+		// sparse, so the overshoot costs apparent size rather than disk.
 		const overshootBytes =
-			createResourceEnvelope({ maximumTotalArtifactSizeMiB: 1 }).maximumWorkspaceSizeBytes +
-			1024 * 1024;
+			createResourceEnvelope({}, await readHostResourceConfiguration(workspaceParent))
+				.maximumWorkspaceSizeBytes +
+			1024 * MEBIBYTE;
 		const executablePath = await createArtifactFixtureExecutable(
 			workspaceParent,
 			`await fs.writeFile(join(artifacts, '000001-video.mp4'), 'valid');\n` +
@@ -557,12 +568,7 @@ describe('download request', () => {
 				`await fs.truncate(join(temp, 'overshoot.part'), ${overshootBytes});\n`,
 		);
 		const prepareBinaryData = vi.fn();
-		const context = createExecutionContext(
-			'https://example.com/video',
-			prepareBinaryData,
-			undefined,
-			{ maximumTotalArtifactSizeMiB: 1 },
-		);
+		const context = createExecutionContext('https://example.com/video', prepareBinaryData);
 		const startRequest = createDownloadRequestExecutor(
 			context,
 			executablePath,
@@ -580,55 +586,35 @@ describe('download request', () => {
 	// single-Artifact budget. These cases pin `validateArtifactSet` against an already-written
 	// Artifact set and nothing beyond it; the seam that runs the option profile and the
 	// validation together is `test/real-toolchain.test.ts`. See `docs/agents/test-adapters.md`.
-	it.each([
-		{ configuredLimit: 20, artifactCount: 20, accepted: true },
-		{ configuredLimit: 20, artifactCount: 21, accepted: false },
-		{ configuredLimit: 50, artifactCount: 50, accepted: true },
-		{ configuredLimit: 50, artifactCount: 51, accepted: false },
-	])(
-		'validates $configuredLimit configured Artifacts against $artifactCount written files',
-		async ({ configuredLimit, artifactCount, accepted }) => {
-			const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-artifact-count-'));
-			temporaryDirectories.push(workspaceParent);
-			const executablePath = await createArtifactFixtureExecutable(
-				workspaceParent,
-				`for (let index = 1; index <= ${artifactCount}; index++) {\n` +
-					`  await fs.writeFile(join(artifacts, String(index).padStart(6, '0') + '-file.mp4'), 'x');\n` +
-					`}\n`,
-			);
-			const prepareBinaryData = vi.fn(async () => ({
-				data: 'stored',
-				mimeType: 'video/mp4',
-			}));
-			const context = createExecutionContext(
-				'https://example.com/playlist',
-				prepareBinaryData,
-			);
-			const request = executeDownloadRequest(
-				context,
-				{ argv: ['--', 'https://example.com/playlist'] },
-				0,
-				{
-					executablePath,
-					workspaceParent,
-					resourceEnvelope: createResourceEnvelope({
-						maximumArtifactCount: configuredLimit,
-					}),
-				},
-			);
+	it('delivers every Artifact of a request that used to exceed the Artifact count cap', async () => {
+		// ADR 0040: the node no longer refuses a Download Request for producing more files than a
+		// number it picked. Fifty-one is one more than the cap that used to reject the request.
+		const artifactCount = 51;
+		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-artifact-count-'));
+		temporaryDirectories.push(workspaceParent);
+		const executablePath = await createArtifactFixtureExecutable(
+			workspaceParent,
+			`for (let index = 1; index <= ${artifactCount}; index++) {\n` +
+				`  await fs.writeFile(join(artifacts, String(index).padStart(6, '0') + '-file.mp4'), 'x');\n` +
+				`}\n`,
+		);
+		const prepareBinaryData = vi.fn(async () => ({ data: 'stored', mimeType: 'video/mp4' }));
+		const context = createExecutionContext('https://example.com/playlist', prepareBinaryData);
 
-			if (accepted) {
-				await expect(request).resolves.toHaveLength(artifactCount);
-				expect(prepareBinaryData).toHaveBeenCalledTimes(artifactCount);
-			} else {
-				await expect(request).rejects.toMatchObject({
-					name: 'YtDlpRequestResourceLimitError',
-					code: 'RESOURCE_LIMIT',
-				});
-				expect(prepareBinaryData).not.toHaveBeenCalled();
-			}
-		},
-	);
+		const items = await executeDownloadRequest(
+			context,
+			{ argv: ['--', 'https://example.com/playlist'] },
+			0,
+			{
+				executablePath,
+				workspaceParent,
+				resourceEnvelope: createResourceEnvelope({}, hostResources({ mode: 'filesystem' })),
+			},
+		);
+
+		expect(items).toHaveLength(artifactCount);
+		expect(prepareBinaryData).toHaveBeenCalledTimes(artifactCount);
+	});
 
 	it.each<{
 		host: HostBinaryDataConfiguration;
@@ -699,10 +685,7 @@ describe('download request', () => {
 				{
 					executablePath,
 					workspaceParent,
-					resourceEnvelope: createResourceEnvelope(
-						{ maximumTotalArtifactSizeMiB: 512 },
-						host,
-					),
+					resourceEnvelope: createResourceEnvelope({}, hostResources(host)),
 				},
 			);
 
@@ -719,85 +702,42 @@ describe('download request', () => {
 		},
 	);
 
-	it.each([
-		{
-			configuredLimitMiB: 256,
-			artifactSizesBytes: [100 * 1024 * 1024, 100 * 1024 * 1024, 56 * 1024 * 1024],
-			accepted: true,
-		},
-		{
-			configuredLimitMiB: 256,
-			artifactSizesBytes: [
-				100 * 1024 * 1024,
-				100 * 1024 * 1024,
-				56 * 1024 * 1024 + 1,
-			],
-			accepted: false,
-		},
-		{
-			configuredLimitMiB: 512,
-			artifactSizesBytes: [200 * 1024 * 1024, 200 * 1024 * 1024, 112 * 1024 * 1024],
-			accepted: true,
-		},
-		{
-			configuredLimitMiB: 512,
-			artifactSizesBytes: [
-				200 * 1024 * 1024,
-				200 * 1024 * 1024,
-				112 * 1024 * 1024 + 1,
-			],
-			accepted: false,
-		},
-	])(
-		'validates a $configuredLimitMiB MiB final-total limit against written Artifacts',
-		async ({ configuredLimitMiB, artifactSizesBytes, accepted }) => {
-			const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-total-size-'));
-			temporaryDirectories.push(workspaceParent);
-			const fixtureSource = artifactSizesBytes
-				.map(
-					(size, index) =>
-						`await fs.writeFile(join(artifacts, '${String(index + 1).padStart(6, '0')}-file.mp4'), '');\n` +
-						`await fs.truncate(join(artifacts, '${String(index + 1).padStart(6, '0')}-file.mp4'), ${size});\n`,
-				)
-				.join('');
-			const executablePath = await createArtifactFixtureExecutable(
-				workspaceParent,
-				fixtureSource,
-			);
-			const prepareBinaryData = vi.fn(async () => ({
-				data: 'stored',
-				mimeType: 'video/mp4',
-			}));
-			const context = createExecutionContext(
-				'https://example.com/playlist',
-				prepareBinaryData,
-			);
-			const request = executeDownloadRequest(
-				context,
-				{ argv: ['--', 'https://example.com/playlist'] },
-				0,
-				{
-					executablePath,
-					workspaceParent,
-					resourceEnvelope: createResourceEnvelope(
-						{ maximumTotalArtifactSizeMiB: configuredLimitMiB },
-						{ mode: 'database', maximumFileSizeBytes: 256 * MEBIBYTE },
-					),
-				},
-			);
+	it('delivers Artifacts whose combined size used to exceed the total size cap', async () => {
+		// ADR 0040: the node no longer bounds the combined final size of a request. These sparse
+		// Artifacts total 1.5 GiB, three times the cap that used to reject them, and the host in
+		// this mode carries no file size bound of its own either.
+		const artifactSizesBytes = [512 * MEBIBYTE, 512 * MEBIBYTE, 512 * MEBIBYTE];
+		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-total-size-'));
+		temporaryDirectories.push(workspaceParent);
+		const executablePath = await createArtifactFixtureExecutable(
+			workspaceParent,
+			artifactSizesBytes
+				.map((size, index) => {
+					const name = `${String(index + 1).padStart(6, '0')}-file.mp4`;
+					return (
+						`await fs.writeFile(join(artifacts, '${name}'), '');\n` +
+						`await fs.truncate(join(artifacts, '${name}'), ${size});\n`
+					);
+				})
+				.join(''),
+		);
+		const prepareBinaryData = vi.fn(async () => ({ data: 'stored', mimeType: 'video/mp4' }));
+		const context = createExecutionContext('https://example.com/playlist', prepareBinaryData);
 
-			if (accepted) {
-				await expect(request).resolves.toHaveLength(artifactSizesBytes.length);
-				expect(prepareBinaryData).toHaveBeenCalledTimes(artifactSizesBytes.length);
-			} else {
-				await expect(request).rejects.toMatchObject({
-					name: 'YtDlpRequestResourceLimitError',
-					code: 'RESOURCE_LIMIT',
-				});
-				expect(prepareBinaryData).not.toHaveBeenCalled();
-			}
-		},
-	);
+		const items = await executeDownloadRequest(
+			context,
+			{ argv: ['--', 'https://example.com/playlist'] },
+			0,
+			{
+				executablePath,
+				workspaceParent,
+				resourceEnvelope: createResourceEnvelope({}, hostResources({ mode: 'filesystem' })),
+			},
+		);
+
+		expect(items).toHaveLength(artifactSizesBytes.length);
+		expect(prepareBinaryData).toHaveBeenCalledTimes(artifactSizesBytes.length);
+	});
 
 	it('returns every Artifact Item in deterministic basename order', async () => {
 		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-multi-test-'));

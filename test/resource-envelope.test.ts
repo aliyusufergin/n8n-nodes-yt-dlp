@@ -11,26 +11,46 @@ import {
 	RESOURCE_ENVELOPE_FIELD_TERMS,
 	RESOURCE_ENVELOPE_TERMS,
 	RESOURCE_LIMIT,
+	TOOLCHAIN_RUNTIME_BASELINE_BYTES,
+	WORKSPACE_DISK_RESERVE_BYTES,
 	YtDlpRequestResourceLimitError,
 	classifyResourceEnvelopeViolation,
 	createResourceEnvelope,
 	readHostBinaryDataConfiguration,
+	readHostExecutionDurationMs,
+	readHostResourceConfiguration,
 	resourceEnvelopeOptionProfile,
 	resourceLimitViolationError,
-	type HostBinaryDataConfiguration,
+	type HostResourceConfiguration,
 	type ResourceEnvelope,
 	type ResourceEnvelopeConfiguration,
 	type ResourceEnvelopeTerm,
 } from '../nodes/YtDlp/resource-envelope';
 
+/** Free disk space that comfortably clears the toolchain baseline and the container reserve. */
+const AVAILABLE_WORKSPACE_BYTES = 8 * 1024 * MEBIBYTE;
+
 /** A host that stores binary data outside the database, so it enforces no file size limit. */
-const FILESYSTEM_HOST: HostBinaryDataConfiguration = { mode: 'filesystem' };
+const FILESYSTEM_HOST: HostResourceConfiguration = {
+	binaryData: { mode: 'filesystem' },
+	availableWorkspaceBytes: AVAILABLE_WORKSPACE_BYTES,
+};
 
 /** A host running n8n's own `database` mode default. */
-const DATABASE_HOST: HostBinaryDataConfiguration = {
-	mode: 'database',
-	maximumFileSizeBytes: DEFAULT_DATABASE_MAX_FILE_SIZE_MIB * MEBIBYTE,
+const DATABASE_HOST: HostResourceConfiguration = {
+	binaryData: {
+		mode: 'database',
+		maximumFileSizeBytes: DEFAULT_DATABASE_MAX_FILE_SIZE_MIB * MEBIBYTE,
+	},
+	availableWorkspaceBytes: AVAILABLE_WORKSPACE_BYTES,
 };
+
+function databaseHost(maximumFileSizeBytes: number): HostResourceConfiguration {
+	return {
+		binaryData: { mode: 'database', maximumFileSizeBytes },
+		availableWorkspaceBytes: AVAILABLE_WORKSPACE_BYTES,
+	};
+}
 
 /**
  * The request failure vocabulary ADR 0026 freezes. A Resource Envelope term may only classify
@@ -48,49 +68,64 @@ const FROZEN_REQUEST_FAILURE_CODES = [
 	'BINARY_TRANSFER_FAILED',
 ] as const;
 
+const temporaryDirectories: string[] = [];
+
+afterAll(async () => {
+	await Promise.all(
+		temporaryDirectories.map(
+			async (directory) => await rm(directory, { force: true, recursive: true }),
+		),
+	);
+});
+
+/** A host setting delivered as a Docker secret file, the way n8n also accepts one. */
+async function environmentFile(name: string, content: string): Promise<string> {
+	const directory = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-host-configuration-'));
+	temporaryDirectories.push(directory);
+	const path = join(directory, name);
+	await writeFile(path, content);
+	return path;
+}
+
 describe('Resource Envelope policy', () => {
 	it('uses the accepted request defaults', () => {
 		expect(createResourceEnvelope({}, DATABASE_HOST)).toEqual({
 			requestTimeoutMs: 30 * 60 * 1000,
-			maximumArtifactCount: 20,
 			maximumArtifactSizeBytes: 512 * MEBIBYTE,
-			maximumTotalArtifactSizeBytes: 256 * MEBIBYTE,
-			maximumWorkspaceSizeBytes: 704 * MEBIBYTE,
+			maximumWorkspaceSizeBytes: AVAILABLE_WORKSPACE_BYTES - WORKSPACE_DISK_RESERVE_BYTES,
 		});
 	});
 
 	it('accepts every immutable hard boundary', () => {
-		expect(
-			createResourceEnvelope(
-				{
-					requestTimeoutMinutes: 60,
-					maximumArtifactCount: 50,
-					maximumTotalArtifactSizeMiB: 512,
-				},
-				DATABASE_HOST,
-			),
-		).toEqual({
+		expect(createResourceEnvelope({ requestTimeoutMinutes: 60 }, DATABASE_HOST)).toEqual({
 			requestTimeoutMs: 60 * 60 * 1000,
-			maximumArtifactCount: 50,
 			maximumArtifactSizeBytes: 512 * MEBIBYTE,
-			maximumTotalArtifactSizeBytes: 512 * MEBIBYTE,
-			maximumWorkspaceSizeBytes: 1216 * MEBIBYTE,
+			maximumWorkspaceSizeBytes: AVAILABLE_WORKSPACE_BYTES - WORKSPACE_DISK_RESERVE_BYTES,
 		});
 	});
 
-	it.each([
-		{ requestTimeoutMinutes: 61 },
-		{ maximumArtifactCount: 51 },
-		{ maximumTotalArtifactSizeMiB: 513 },
-		{ requestTimeoutMinutes: 0 },
-		{ maximumArtifactCount: 1.5 },
-	])('rejects an invalid or above-hard-cap request configuration: %o', (configuration) => {
-		expect(() => createResourceEnvelope(configuration, DATABASE_HOST)).toThrowError(
-			expect.objectContaining<Partial<YtDlpRequestResourceLimitError>>({
-				code: RESOURCE_LIMIT,
-				name: 'YtDlpRequestResourceLimitError',
-			}),
-		);
+	it.each([{ requestTimeoutMinutes: 61 }, { requestTimeoutMinutes: 0 }])(
+		'rejects an invalid or above-hard-cap request configuration: %o',
+		(configuration) => {
+			expect(() => createResourceEnvelope(configuration, DATABASE_HOST)).toThrowError(
+				expect.objectContaining<Partial<YtDlpRequestResourceLimitError>>({
+					code: RESOURCE_LIMIT,
+					name: 'YtDlpRequestResourceLimitError',
+				}),
+			);
+		},
+	);
+
+	it('no longer offers the Artifact count and total size bounds the node picked', () => {
+		// Locality, compile time: the caps the node chose for the workflow author are gone, so the
+		// configuration surface that carried them is gone too rather than silently ignored.
+		// @ts-expect-error -- 'maximumArtifactCount' is no longer a Resource Envelope term.
+		const artifactCount: ResourceEnvelopeConfiguration = { maximumArtifactCount: 20 };
+		// @ts-expect-error -- 'maximumTotalArtifactSizeMiB' is no longer a Resource Envelope term.
+		const totalArtifactSize: ResourceEnvelopeConfiguration = { maximumTotalArtifactSizeMiB: 256 };
+
+		expect(artifactCount).toBeDefined();
+		expect(totalArtifactSize).toBeDefined();
 	});
 
 	it('carries no file size bound when the host enforces none', () => {
@@ -102,9 +137,9 @@ describe('Resource Envelope policy', () => {
 	});
 
 	it('derives the file size bound from the host configuration', () => {
-		expect(
-			createResourceEnvelope({}, { mode: 'database', maximumFileSizeBytes: 1024 * MEBIBYTE }),
-		).toMatchObject({ maximumArtifactSizeBytes: 1024 * MEBIBYTE });
+		expect(createResourceEnvelope({}, databaseHost(1024 * MEBIBYTE))).toMatchObject({
+			maximumArtifactSizeBytes: 1024 * MEBIBYTE,
+		});
 	});
 
 	it('does not let the workflow author narrow a derived term', () => {
@@ -117,25 +152,130 @@ describe('Resource Envelope policy', () => {
 	});
 });
 
-describe('host n8n binary data configuration', () => {
-	const temporaryDirectories: string[] = [];
+describe('derived workspace bound', () => {
+	it('derives the workspace bound from the measured free disk space', () => {
+		expect(
+			createResourceEnvelope(
+				{},
+				{ binaryData: { mode: 'filesystem' }, availableWorkspaceBytes: 4 * 1024 * MEBIBYTE },
+			).maximumWorkspaceSizeBytes,
+		).toBe(4 * 1024 * MEBIBYTE - WORKSPACE_DISK_RESERVE_BYTES);
+	});
 
-	afterAll(async () => {
-		await Promise.all(
-			temporaryDirectories.map(
-				async (directory) => await rm(directory, { force: true, recursive: true }),
+	it('leaves the container reserve outside the bound whatever the free space is', () => {
+		// The watchdog samples the workspace about once per second, so the reserve is what keeps a
+		// fast download from filling the container's disk between two samples.
+		for (const availableWorkspaceBytes of [1024 * MEBIBYTE, 64 * 1024 * MEBIBYTE]) {
+			const envelope = createResourceEnvelope(
+				{},
+				{ binaryData: { mode: 'filesystem' }, availableWorkspaceBytes },
+			);
+
+			expect(availableWorkspaceBytes - envelope.maximumWorkspaceSizeBytes).toBe(
+				WORKSPACE_DISK_RESERVE_BYTES,
+			);
+		}
+	});
+
+	it('refuses a request whose free disk cannot hold the pinned toolchain', () => {
+		// A workspace that cannot even hold the unpacked toolchain has no room for an Artifact, so
+		// the request is refused before the bytes are spent rather than terminated mid-download.
+		expect(() =>
+			createResourceEnvelope(
+				{},
+				{
+					binaryData: { mode: 'filesystem' },
+					availableWorkspaceBytes:
+						TOOLCHAIN_RUNTIME_BASELINE_BYTES + WORKSPACE_DISK_RESERVE_BYTES,
+				},
 			),
+		).toThrowError(
+			expect.objectContaining<Partial<YtDlpRequestResourceLimitError>>({
+				code: RESOURCE_LIMIT,
+				name: 'YtDlpRequestResourceLimitError',
+			}),
 		);
 	});
 
-	async function environmentFile(name: string, content: string): Promise<string> {
-		const directory = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-host-configuration-'));
-		temporaryDirectories.push(directory);
-		const path = join(directory, name);
-		await writeFile(path, content);
-		return path;
-	}
+	it('measures the free disk space where the request workspace is written', async () => {
+		const host = await readHostResourceConfiguration(tmpdir(), {});
 
+		expect(host.binaryData).toEqual({ mode: 'filesystem' });
+		expect(host.availableWorkspaceBytes).toBeGreaterThan(0);
+	});
+});
+
+describe('host n8n execution timeout', () => {
+	it.each([
+		{
+			environment: {},
+			workflowTimeoutSeconds: undefined,
+			expected: undefined,
+			why: 'n8n imposes no execution timeout by default, so the node imposes none either',
+		},
+		{
+			environment: { EXECUTIONS_TIMEOUT: '0' },
+			workflowTimeoutSeconds: undefined,
+			expected: undefined,
+			why: 'a non-positive setting is n8n\u2019s way of saying there is no timeout',
+		},
+		{
+			environment: { EXECUTIONS_TIMEOUT: '900' },
+			workflowTimeoutSeconds: undefined,
+			expected: 900 * 1000,
+			why: 'the configured timeout is the bound',
+		},
+		{
+			environment: { EXECUTIONS_TIMEOUT: '99999' },
+			workflowTimeoutSeconds: undefined,
+			expected: 60 * 60 * 1000,
+			why: 'n8n clamps a configured timeout to EXECUTIONS_TIMEOUT_MAX, whose default is an hour',
+		},
+		{
+			environment: { EXECUTIONS_TIMEOUT: '99999', EXECUTIONS_TIMEOUT_MAX: '7200' },
+			workflowTimeoutSeconds: undefined,
+			expected: 7200 * 1000,
+			why: 'the operator-raised ceiling is the one n8n clamps to',
+		},
+		{
+			environment: { EXECUTIONS_TIMEOUT: 'not-a-number' },
+			workflowTimeoutSeconds: undefined,
+			expected: undefined,
+			why: 'an unreadable setting falls back to n8n\u2019s own default, not to a node number',
+		},
+		{
+			environment: { EXECUTIONS_TIMEOUT: '900' },
+			workflowTimeoutSeconds: 120,
+			expected: 120 * 1000,
+			why: 'a workflow-level timeout wins over the instance setting, the way n8n resolves it',
+		},
+		{
+			environment: {},
+			workflowTimeoutSeconds: 120,
+			expected: 120 * 1000,
+			why: 'a workflow-level timeout applies even when the instance sets none',
+		},
+		{
+			environment: { EXECUTIONS_TIMEOUT: '900' },
+			workflowTimeoutSeconds: 0,
+			expected: undefined,
+			why: 'a workflow that asks for no timeout gets none, the way n8n resolves it',
+		},
+	])(
+		'derives $expected ms when the host says $why',
+		({ environment, workflowTimeoutSeconds, expected }) => {
+			expect(readHostExecutionDurationMs(environment, workflowTimeoutSeconds)).toBe(expected);
+		},
+	);
+
+	it('reads a Docker secret file the way n8n reads it', async () => {
+		const path = await environmentFile('executions-timeout', '600\n');
+
+		expect(readHostExecutionDurationMs({ EXECUTIONS_TIMEOUT_FILE: path })).toBe(600 * 1000);
+	});
+});
+
+describe('host n8n binary data configuration', () => {
 	it.each([
 		{
 			environment: {},
@@ -264,20 +404,22 @@ describe('Resource Envelope violation classification', () => {
 		}
 	});
 
-	it('declares exactly the Resource Envelope of ADR 0019', () => {
+	it('declares the Resource Envelope of ADR 0040, less the two terms still in flight', () => {
 		// The tripwire for terms that are not produced envelope fields: the imposed ones and the
 		// preflight one are bound by nothing at compile time, so widening the Resource Envelope
 		// without classifying the new term fails here instead of silently reaching a call site.
+		//
+		// ADR 0040 also removes `requestTimeout` and `playlistEntries`, and both are still here:
+		// the request timeout becomes no-progress detection in #115 and the playlist cap goes with
+		// playlist expansion in #117. Until then this list is the ADR plus those two, and it is
+		// this line that has to change when they land.
 		expect(Object.keys(RESOURCE_ENVELOPE_TERMS).sort()).toEqual([
-			'artifactCount',
 			'artifactSize',
 			'executionDuration',
-			'executionInputs',
 			'ffmpegThreads',
 			'fragmentConcurrency',
 			'playlistEntries',
 			'requestTimeout',
-			'totalArtifactSize',
 			'workspaceSize',
 		]);
 	});
@@ -303,23 +445,34 @@ describe('Resource Envelope violation classification', () => {
 		}
 	});
 
-	it('classifies the file size term as derived from the host configuration', () => {
-		const definition = RESOURCE_ENVELOPE_TERMS.artifactSize;
+	it.each([
+		{ term: 'artifactSize', owner: 'N8N_BINARY_DATA_DATABASE_MAX_FILE_SIZE' },
+		{ term: 'executionDuration', owner: 'EXECUTIONS_TIMEOUT' },
+		{ term: 'workspaceSize', owner: 'free disk space' },
+	] as const)('classifies $term as derived from $owner', ({ term, owner }) => {
+		const definition = RESOURCE_ENVELOPE_TERMS[term];
 
 		expect(definition.enforcement).toBe('derived');
-		expect(definition.derivedFrom).toContain('N8N_BINARY_DATA_DATABASE_MAX_FILE_SIZE');
+		expect(definition.derivedFrom).toContain(owner);
 	});
 
-	it.each([
-		'artifactCount',
-		'artifactSize',
-		'totalArtifactSize',
-		'workspaceSize',
-		'executionInputs',
-		'executionDuration',
-	] as const)('classifies a violated %s as RESOURCE_LIMIT', (term) => {
-		expect(classifyResourceEnvelopeViolation(term).errorCode).toBe(RESOURCE_LIMIT);
+	it('imposes only the protection constants ADR 0040 keeps', () => {
+		// ADR 0040 keeps exactly two imposed terms — both protection that does not limit what a
+		// user may download, both deferred to #107. Every other bound that limits capability is
+		// the host's or a measured resource's. The request timeout and the playlist selection cap
+		// are not imposed terms and are not this test's subject; they move in #115 and #117.
+		for (const [term, definition] of Object.entries(RESOURCE_ENVELOPE_TERMS)) {
+			if (definition.enforcement !== 'imposed') continue;
+			expect(['fragmentConcurrency', 'ffmpegThreads']).toContain(term);
+		}
 	});
+
+	it.each(['artifactSize', 'workspaceSize', 'executionDuration'] as const)(
+		'classifies a violated %s as RESOURCE_LIMIT',
+		(term) => {
+			expect(classifyResourceEnvelopeViolation(term).errorCode).toBe(RESOURCE_LIMIT);
+		},
+	);
 
 	it('keeps the frozen REQUEST_TIMEOUT code for the request timeout term', () => {
 		// ADR 0026 freezes `REQUEST_TIMEOUT` as its own request failure code, so this one envelope
@@ -330,7 +483,7 @@ describe('Resource Envelope violation classification', () => {
 
 	it.each([
 		{ term: 'artifactSize', name: 'YtDlpRequestResourceLimitError' },
-		{ term: 'executionInputs', name: 'YtDlpExecutionResourceLimitError' },
+		{ term: 'executionDuration', name: 'YtDlpExecutionResourceLimitError' },
 	] as const)('builds a $name for a violated $term', ({ term, name }) => {
 		const error = resourceLimitViolationError(term);
 
@@ -339,10 +492,7 @@ describe('Resource Envelope violation classification', () => {
 	});
 
 	it('projects the terms that reach yt-dlp as options', () => {
-		const envelope = createResourceEnvelope(
-			{},
-			{ mode: 'database', maximumFileSizeBytes: MEBIBYTE },
-		);
+		const envelope = createResourceEnvelope({}, databaseHost(MEBIBYTE));
 
 		expect(resourceEnvelopeOptionProfile(envelope)).toEqual([
 			'--break-match-filters',
