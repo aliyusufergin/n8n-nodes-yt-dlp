@@ -10,8 +10,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 import type { YtDlpExecutionPlan } from './arguments';
 import {
-	DEFAULT_REQUEST_TIMEOUT_MINUTES,
-	MAXIMUM_REQUEST_TIMEOUT_MINUTES,
+	NO_PROGRESS_LIMIT_MS,
 	YTDLP_BREAK_EXIT_CODE,
 	classifyResourceEnvelopeViolation,
 	type RuntimeViolableResourceEnvelopeTermName,
@@ -22,18 +21,23 @@ export interface YtDlpSpawnContext {
 }
 
 export interface YtDlpSupervisorContext extends YtDlpSpawnContext {
+	/**
+	 * How long the process may make no progress before its group is terminated. It is the node's
+	 * own protection constant, carried on the Resource Envelope rather than chosen here, and no
+	 * workflow parameter reaches it: the only production caller passes the envelope's value.
+	 */
+	noProgressLimitMs?: number;
 	redactValues?: readonly string[];
 	signal?: AbortSignal;
 	stdinData?: string;
-	timeoutMs?: number;
 	workspaceLimitBytes?: number;
 }
 
 export const PROCESS_STREAM_TAIL_BYTES = 64 * 1024;
 export const PROCESS_OUTPUT_LIMIT_BYTES = 8 * 1024 * 1024;
-export const DEFAULT_REQUEST_TIMEOUT_MS = DEFAULT_REQUEST_TIMEOUT_MINUTES * 60 * 1000;
-export const MAXIMUM_REQUEST_TIMEOUT_MS = MAXIMUM_REQUEST_TIMEOUT_MINUTES * 60 * 1000;
 export const PROCESS_TERMINATION_GRACE_MS = 5_000;
+/** The largest delay `setTimeout` honours; anything above it is clamped to a single millisecond. */
+export const MAXIMUM_TIMER_DELAY_MS = 2_147_483_647;
 export const WORKSPACE_POLL_INTERVAL_MS = 1_000;
 export type YtDlpProcessErrorCode =
 	| 'PROCESS_OUTPUT_LIMIT'
@@ -244,9 +248,16 @@ export async function superviseYtDlpExecutionPlan(
 	const isCancelled = (): boolean => context.signal?.aborted === true;
 	if (isCancelled()) throw new YtDlpProcessCancellationError();
 
-	const timeoutMs = context.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
-	if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > MAXIMUM_REQUEST_TIMEOUT_MS) {
-		throw new Error('The request timeout is outside the supported range.');
+	const noProgressLimitMs = context.noProgressLimitMs ?? NO_PROGRESS_LIMIT_MS;
+	if (
+		!Number.isInteger(noProgressLimitMs) ||
+		noProgressLimitMs < 1 ||
+		noProgressLimitMs > MAXIMUM_TIMER_DELAY_MS
+	) {
+		// A delay above the timer maximum is clamped to a millisecond by `setTimeout`, which would
+		// leave the watchdog re-arming forever and never reaching its deadline — stall protection
+		// silently off. Refusing the value keeps that from being expressible.
+		throw new Error('The no-progress limit is outside the supported range.');
 	}
 	if (
 		context.workspaceLimitBytes !== undefined &&
@@ -263,7 +274,7 @@ export async function superviseYtDlpExecutionPlan(
 	// reports comes from the term's single classification — or one of the reasons that belong to
 	// the process contract rather than the envelope.
 	type TerminationReason =
-		| Extract<RuntimeViolableResourceEnvelopeTermName, 'requestTimeout' | 'workspaceSize'>
+		| Extract<RuntimeViolableResourceEnvelopeTermName, 'noProgress' | 'workspaceSize'>
 		| Extract<YtDlpProcessErrorCode, 'PROCESS_OUTPUT_LIMIT'>
 		| 'CANCELLED'
 		| 'WORKSPACE_MONITOR_FAILURE';
@@ -346,12 +357,27 @@ export async function superviseYtDlpExecutionPlan(
 		else terminationReason ??= reason;
 		void startTermination();
 	};
+	// A process that is doing something moves one of the two signals the supervisor already
+	// carries: it writes to stdout or stderr, or the size of its workspace changes. Under
+	// `--no-progress` a running download is silent, so the workspace is normally the one that
+	// moves; a change in either direction counts, because a fragment merge that deletes what it
+	// consumed is progress too. The accepted cost of counting both directions: a process looping
+	// over write-then-delete of the same bytes reads as working. Requiring the workspace to pass
+	// its own high-water mark would close that and open a worse one — a re-encode that shrinks the
+	// workspace for minutes would read as stalled and be killed mid-download.
+	let lastProgressAt = Date.now();
+	let lastWorkspaceSize: number | undefined;
+	const recordProgress = (): void => {
+		lastProgressAt = Date.now();
+	};
 	let workspaceMonitorError: Error | undefined;
 	let workspaceMeasurementRunning = false;
 	let workspaceMeasurementPending = false;
 	let latestWorkspaceMeasurement = Promise.resolve();
+	// The workspace is measured whether or not a bound applies to it: the measurement is the
+	// progress signal as well as the enforcement of the derived workspace term, and a request that
+	// carries no bound still has to be watched for a stall.
 	const measureWorkspace = (): void => {
-		if (context.workspaceLimitBytes === undefined) return;
 		if (workspaceMeasurementRunning) {
 			workspaceMeasurementPending = true;
 			return;
@@ -359,8 +385,15 @@ export async function superviseYtDlpExecutionPlan(
 		workspaceMeasurementRunning = true;
 		latestWorkspaceMeasurement = (async () => {
 			try {
-				const size = await workspaceApparentSize(context.cwd, context.workspaceLimitBytes!);
-				if (size > context.workspaceLimitBytes!) requestTermination('workspaceSize');
+				const limitBytes = context.workspaceLimitBytes ?? Number.MAX_SAFE_INTEGER;
+				const size = await workspaceApparentSize(context.cwd, limitBytes);
+				if (size !== lastWorkspaceSize) {
+					lastWorkspaceSize = size;
+					recordProgress();
+				}
+				if (context.workspaceLimitBytes !== undefined && size > context.workspaceLimitBytes) {
+					requestTermination('workspaceSize');
+				}
 			} catch (error) {
 				workspaceMonitorError =
 					error instanceof Error ? error : new Error('The workspace could not be measured.');
@@ -381,6 +414,7 @@ export async function superviseYtDlpExecutionPlan(
 	const consumeOutput = (tail: BoundedRedactedTail, chunk: Buffer | string): void => {
 		const value = Buffer.from(chunk);
 		tail.append(value);
+		recordProgress();
 		outputBytes += value.length;
 		if (outputBytes > PROCESS_OUTPUT_LIMIT_BYTES) requestTermination('PROCESS_OUTPUT_LIMIT');
 	};
@@ -406,7 +440,20 @@ export async function superviseYtDlpExecutionPlan(
 	const stdinFinished = settleStream(child.stdin, true);
 	const stdoutFinished = settleStream(child.stdout);
 	const stderrFinished = settleStream(child.stderr);
-	const timeoutTimer = setTimeout(() => requestTermination('requestTimeout'), timeoutMs);
+	// The stall watchdog re-arms itself for whatever is left of the window after the last observed
+	// progress, so it fires exactly when the process has been still for the whole of it rather than
+	// on a fixed tick.
+	let noProgressTimer: NodeJS.Timeout | undefined;
+	const armStallWatchdog = (): void => {
+		const remainingMs = lastProgressAt + noProgressLimitMs - Date.now();
+		if (remainingMs <= 0) {
+			requestTermination('noProgress');
+			return;
+		}
+		noProgressTimer = setTimeout(armStallWatchdog, remainingMs);
+		noProgressTimer.unref?.();
+	};
+	armStallWatchdog();
 	const abortHandler = (): void => requestTermination('CANCELLED');
 	context.signal?.addEventListener('abort', abortHandler, { once: true });
 	if (isCancelled()) requestTermination('CANCELLED');
@@ -440,7 +487,7 @@ export async function superviseYtDlpExecutionPlan(
 	} finally {
 		clearInterval(workspaceTimer);
 		workspaceMeasurementPending = false;
-		clearTimeout(timeoutTimer);
+		clearTimeout(noProgressTimer);
 		context.signal?.removeEventListener('abort', abortHandler);
 	}
 	const [[exitCode, signal], stdinError, stdoutError, stderrError] = lifecycle;
@@ -465,7 +512,7 @@ export async function superviseYtDlpExecutionPlan(
 			stderrTail.finish(),
 		);
 	}
-	if (terminationReason === 'requestTimeout' || terminationReason === 'workspaceSize') {
+	if (terminationReason === 'noProgress' || terminationReason === 'workspaceSize') {
 		throw envelopeViolation(terminationReason, stdoutTail, stderrTail);
 	}
 	// The only break condition the option profile carries is the derived file size filter

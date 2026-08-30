@@ -2,6 +2,8 @@ import { readFile } from 'node:fs/promises';
 
 import { describe, expect, it } from 'vitest';
 
+import { NO_PROGRESS_LIMIT_MS } from '../nodes/YtDlp/resource-envelope';
+
 function sectionContent(markdown: string, heading: string): string {
 	const sectionStart = markdown.indexOf(`${heading}\n`);
 	if (sectionStart === -1) return '';
@@ -106,6 +108,10 @@ describe('public documentation', () => {
 					'`EXECUTIONS_TIMEOUT_MAX`',
 					'free disk space measured where the',
 					'refused before it starts',
+					'| Request duration | — | none |',
+					'A request has no duration limit, but a stuck one is still stopped.',
+					'rather than elapsed time',
+					'its process group terminated with `REQUEST_TIMEOUT`',
 					"Capacity is the operator's responsibility",
 				],
 				'## Security boundary': [
@@ -122,6 +128,16 @@ describe('public documentation', () => {
 				],
 			}),
 		).toEqual([]);
+	});
+
+	it('documents the no-progress limit the node actually enforces', async () => {
+		// The number in the Resource Envelope table is the node constant, not a paraphrase of it:
+		// widening the limit without saying so in the README fails here.
+		const readme = await readFile('README.md', 'utf8');
+
+		expect(readme).toContain(
+			`terminated after ${NO_PROGRESS_LIMIT_MS / 60_000} minutes without progress`,
+		);
 	});
 
 	it('provides an actionable operator monitoring and recovery runbook', async () => {
@@ -161,6 +177,7 @@ describe('public documentation', () => {
 					'`N8N_REINSTALL_MISSING_PACKAGES=true`',
 					'`BINARY_TRANSFER_FAILED`',
 					'Do not install a `PATH` tool',
+					'There is no request duration limit to raise',
 				],
 				'## Recover stale workspaces': [
 					'At execution',

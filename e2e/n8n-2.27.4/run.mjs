@@ -243,7 +243,6 @@ function workflowDefinition({
 	onError = continueOnFail ? 'continueRegularOutput' : undefined,
 	roundTrip = true,
 	sourceUrl,
-	ytParameters = {},
 }) {
 	const triggerName = activeWebhookPath ? 'Webhook' : 'Manual Trigger';
 	const trigger = activeWebhookPath
@@ -267,9 +266,7 @@ function workflowDefinition({
 		1,
 		{
 			arguments: argumentsValue,
-			requestTimeoutMinutes: 30,
 			sourceUrl,
-			...ytParameters,
 		},
 		[260, 0],
 		{
@@ -1374,7 +1371,6 @@ async function runCapacityLane(client, progress) {
 					name: `E2E capacity ${index}`,
 					roundTrip: false,
 					sourceUrl: 'http://fixture:8080/capacity-playlist',
-					ytParameters: { requestTimeoutMinutes: 60 },
 				}),
 			),
 		),
@@ -1578,14 +1574,15 @@ async function main() {
 		'--',
 		'test/process.test.ts',
 		'-t',
-		'terminates output floods above the combined eight MiB limit|terminates a Process Group when workspace apparent size overshoots|times out after a TERM-cooperative leader creates an ignored-SIGTERM descendant',
+		'terminates output floods above the combined eight MiB limit|terminates a Process Group when workspace apparent size overshoots|terminates a stalled TERM-cooperative leader with an ignored-SIGTERM descendant|leaves a slow but progressing download running past the no-progress limit',
 	]);
 	evidence.scenarios.processBoundary = {
 		evidenceSource: 'controlled process seam',
 		outcome: 'pass',
 		processDescendants: 'terminated',
 		processOutputFlood: 'terminated',
-		requestTimeout: 'terminated',
+		progressingDownload: 'survived',
+		stalledProcess: 'terminated',
 		workspaceDiskOvershoot: 'terminated',
 	};
 

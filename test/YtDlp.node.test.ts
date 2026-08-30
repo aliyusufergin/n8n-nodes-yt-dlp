@@ -23,14 +23,16 @@ import {
 	YtDlpProcessError,
 	YtDlpProcessTerminationError,
 } from '../nodes/YtDlp/process';
-import { YtDlpRequestResourceLimitError } from '../nodes/YtDlp/resource-envelope';
+import {
+	NO_PROGRESS_LIMIT_MS,
+	YtDlpRequestResourceLimitError,
+} from '../nodes/YtDlp/resource-envelope';
 import { InvalidSourceUrlError } from '../nodes/YtDlp/source-url';
 import { WorkspaceCleanupError } from '../nodes/YtDlp/workspace';
 
 interface NodeParameters {
 	sourceUrl: string;
 	arguments: string;
-	requestTimeoutMinutes?: number;
 }
 
 /**
@@ -156,7 +158,9 @@ describe('yt-dlp node metadata', () => {
 		const description = new YtDlp().description;
 		const propertyNames = description.properties.map(({ name }) => name);
 
-		expect(propertyNames).toEqual(['sourceUrl', 'arguments', 'requestTimeoutMinutes']);
+		// The request duration cap is gone with ADR 0040, and with it the only node property that
+		// let a workflow author narrow a Resource Envelope term.
+		expect(propertyNames).toEqual(['sourceUrl', 'arguments']);
 		expect(description.credentials).toEqual([
 			{ name: 'ytDlpAuthentication', required: false },
 		]);
@@ -969,16 +973,12 @@ describe('yt-dlp node adapter', () => {
 		expect(startRequest).not.toHaveBeenCalled();
 	});
 
-	it('passes accepted hard-cap request limits to the request executor', async () => {
+	it('passes the derived request limits to the request executor', async () => {
 		vi.stubEnv('N8N_DEFAULT_BINARY_DATA_MODE', 'database');
 		vi.stubEnv('N8N_BINARY_DATA_DATABASE_MAX_FILE_SIZE', '1024');
 		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([]);
 		const context = createExecutionContext([
-			{
-				sourceUrl: 'https://example.com/video',
-				arguments: '',
-				requestTimeoutMinutes: 60,
-			},
+			{ sourceUrl: 'https://example.com/video', arguments: '' },
 		]);
 
 		await executeYtDlpNode(context, startRequest);
@@ -987,7 +987,7 @@ describe('yt-dlp node adapter', () => {
 			expect.any(Object),
 			0,
 			{
-				requestTimeoutMs: 60 * 60 * 1000,
+				noProgressLimitMs: NO_PROGRESS_LIMIT_MS,
 				maximumArtifactSizeBytes: 1024 * 1024 * 1024,
 				// The workspace bound is measured on the disk the Execution Workspace sits on, so
 				// its value belongs to the host rather than to this expectation.
@@ -1032,22 +1032,6 @@ describe('yt-dlp node adapter', () => {
 			undefined,
 			expect.stringMatching(/\/n8n-nodes-yt-dlp\/n8n-nodes-yt-dlp-execution-/),
 		);
-	});
-
-	it('classifies above-hard-cap request limits as an indexed request failure', async () => {
-		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([]);
-		const context = createExecutionContext([
-			{
-				sourceUrl: 'https://example.com/video',
-				arguments: '',
-				requestTimeoutMinutes: 61,
-			},
-		]);
-
-		await expect(executeYtDlpNode(context, startRequest)).rejects.toMatchObject({
-			context: { errorCode: 'RESOURCE_LIMIT', itemIndex: 0 },
-		});
-		expect(startRequest).not.toHaveBeenCalled();
 	});
 
 	it.each([
@@ -1096,7 +1080,7 @@ describe('yt-dlp node adapter', () => {
 			},
 			0,
 			{
-				requestTimeoutMs: 30 * 60 * 1000,
+				noProgressLimitMs: NO_PROGRESS_LIMIT_MS,
 				maximumArtifactSizeBytes: 512 * 1024 * 1024,
 				maximumWorkspaceSizeBytes: expect.any(Number),
 			},

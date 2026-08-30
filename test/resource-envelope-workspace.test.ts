@@ -185,14 +185,11 @@ describe('Resource Envelope workspace accounting', () => {
 
 		// The derivation refuses any free disk that does not clear the baseline, so this is the
 		// smallest workspace bound a Download Request can be given at all.
-		const smallestEnvelope = createResourceEnvelope(
-			{},
-			{
-				binaryData: { mode: 'database', maximumFileSizeBytes: MEBIBYTE },
-				availableWorkspaceBytes:
-					TOOLCHAIN_RUNTIME_BASELINE_BYTES + WORKSPACE_DISK_RESERVE_BYTES + MEBIBYTE,
-			},
-		);
+		const smallestEnvelope = createResourceEnvelope({
+			binaryData: { mode: 'database', maximumFileSizeBytes: MEBIBYTE },
+			availableWorkspaceBytes:
+				TOOLCHAIN_RUNTIME_BASELINE_BYTES + WORKSPACE_DISK_RESERVE_BYTES + MEBIBYTE,
+		});
 		expect(smallestEnvelope.maximumWorkspaceSizeBytes).toBeGreaterThan(peakBytes);
 	}, 60_000);
 });
