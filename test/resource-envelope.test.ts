@@ -7,6 +7,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import {
 	DEFAULT_DATABASE_MAX_FILE_SIZE_MIB,
 	MEBIBYTE,
+	NO_PROGRESS_LIMIT_MS,
 	REQUEST_TIMEOUT,
 	RESOURCE_ENVELOPE_FIELD_TERMS,
 	RESOURCE_ENVELOPE_TERMS,
@@ -23,7 +24,6 @@ import {
 	resourceLimitViolationError,
 	type HostResourceConfiguration,
 	type ResourceEnvelope,
-	type ResourceEnvelopeConfiguration,
 	type ResourceEnvelopeTerm,
 } from '../nodes/YtDlp/resource-envelope';
 
@@ -88,77 +88,48 @@ async function environmentFile(name: string, content: string): Promise<string> {
 }
 
 describe('Resource Envelope policy', () => {
-	it('uses the accepted request defaults', () => {
-		expect(createResourceEnvelope({}, DATABASE_HOST)).toEqual({
-			requestTimeoutMs: 30 * 60 * 1000,
+	it('uses the accepted request bounds', () => {
+		expect(createResourceEnvelope(DATABASE_HOST)).toEqual({
+			noProgressLimitMs: NO_PROGRESS_LIMIT_MS,
 			maximumArtifactSizeBytes: 512 * MEBIBYTE,
 			maximumWorkspaceSizeBytes: AVAILABLE_WORKSPACE_BYTES - WORKSPACE_DISK_RESERVE_BYTES,
 		});
 	});
 
-	it('accepts every immutable hard boundary', () => {
-		expect(createResourceEnvelope({ requestTimeoutMinutes: 60 }, DATABASE_HOST)).toEqual({
-			requestTimeoutMs: 60 * 60 * 1000,
-			maximumArtifactSizeBytes: 512 * MEBIBYTE,
-			maximumWorkspaceSizeBytes: AVAILABLE_WORKSPACE_BYTES - WORKSPACE_DISK_RESERVE_BYTES,
-		});
-	});
+	it('takes no configuration from the workflow author at all', () => {
+		// Locality, compile time: every bound that limits what a user may download belongs to the
+		// host or to a measured resource, and the one node-owned number left is protection the
+		// workflow author does not get to widen. There is no configuration surface left for a
+		// removed cap to be ignored in silently — the request duration cap included.
+		// @ts-expect-error -- the Resource Envelope is derived, not configured.
+		const configured = () => createResourceEnvelope({ requestTimeoutMinutes: 60 }, DATABASE_HOST);
 
-	it.each([{ requestTimeoutMinutes: 61 }, { requestTimeoutMinutes: 0 }])(
-		'rejects an invalid or above-hard-cap request configuration: %o',
-		(configuration) => {
-			expect(() => createResourceEnvelope(configuration, DATABASE_HOST)).toThrowError(
-				expect.objectContaining<Partial<YtDlpRequestResourceLimitError>>({
-					code: RESOURCE_LIMIT,
-					name: 'YtDlpRequestResourceLimitError',
-				}),
-			);
-		},
-	);
-
-	it('no longer offers the Artifact count and total size bounds the node picked', () => {
-		// Locality, compile time: the caps the node chose for the workflow author are gone, so the
-		// configuration surface that carried them is gone too rather than silently ignored.
-		// @ts-expect-error -- 'maximumArtifactCount' is no longer a Resource Envelope term.
-		const artifactCount: ResourceEnvelopeConfiguration = { maximumArtifactCount: 20 };
-		// @ts-expect-error -- 'maximumTotalArtifactSizeMiB' is no longer a Resource Envelope term.
-		const totalArtifactSize: ResourceEnvelopeConfiguration = { maximumTotalArtifactSizeMiB: 256 };
-
-		expect(artifactCount).toBeDefined();
-		expect(totalArtifactSize).toBeDefined();
+		expect(configured).toBeDefined();
 	});
 
 	it('carries no file size bound when the host enforces none', () => {
 		// The node does not substitute a number of its own for a limit the host does not have:
 		// in `filesystem` and `s3` modes n8n applies no file size limit, so neither does the node.
-		expect(createResourceEnvelope({}, FILESYSTEM_HOST)).toMatchObject({
+		expect(createResourceEnvelope(FILESYSTEM_HOST)).toMatchObject({
 			maximumArtifactSizeBytes: undefined,
 		});
 	});
 
 	it('derives the file size bound from the host configuration', () => {
-		expect(createResourceEnvelope({}, databaseHost(1024 * MEBIBYTE))).toMatchObject({
+		expect(createResourceEnvelope(databaseHost(1024 * MEBIBYTE))).toMatchObject({
 			maximumArtifactSizeBytes: 1024 * MEBIBYTE,
 		});
 	});
 
-	it('does not let the workflow author narrow a derived term', () => {
-		// Locality, compile time: a derived term's bound belongs to the host, so it is not part of
-		// the configuration surface a workflow author may set.
-		// @ts-expect-error -- 'maximumArtifactSizeMiB' is not a Resource Envelope configuration field.
-		const configuration: ResourceEnvelopeConfiguration = { maximumArtifactSizeMiB: 1 };
-
-		expect(configuration).toBeDefined();
-	});
 });
 
 describe('derived workspace bound', () => {
 	it('derives the workspace bound from the measured free disk space', () => {
 		expect(
-			createResourceEnvelope(
-				{},
-				{ binaryData: { mode: 'filesystem' }, availableWorkspaceBytes: 4 * 1024 * MEBIBYTE },
-			).maximumWorkspaceSizeBytes,
+			createResourceEnvelope({
+				binaryData: { mode: 'filesystem' },
+				availableWorkspaceBytes: 4 * 1024 * MEBIBYTE,
+			}).maximumWorkspaceSizeBytes,
 		).toBe(4 * 1024 * MEBIBYTE - WORKSPACE_DISK_RESERVE_BYTES);
 	});
 
@@ -166,10 +137,10 @@ describe('derived workspace bound', () => {
 		// The watchdog samples the workspace about once per second, so the reserve is what keeps a
 		// fast download from filling the container's disk between two samples.
 		for (const availableWorkspaceBytes of [1024 * MEBIBYTE, 64 * 1024 * MEBIBYTE]) {
-			const envelope = createResourceEnvelope(
-				{},
-				{ binaryData: { mode: 'filesystem' }, availableWorkspaceBytes },
-			);
+			const envelope = createResourceEnvelope({
+				binaryData: { mode: 'filesystem' },
+				availableWorkspaceBytes,
+			});
 
 			expect(availableWorkspaceBytes - envelope.maximumWorkspaceSizeBytes).toBe(
 				WORKSPACE_DISK_RESERVE_BYTES,
@@ -181,14 +152,10 @@ describe('derived workspace bound', () => {
 		// A workspace that cannot even hold the unpacked toolchain has no room for an Artifact, so
 		// the request is refused before the bytes are spent rather than terminated mid-download.
 		expect(() =>
-			createResourceEnvelope(
-				{},
-				{
-					binaryData: { mode: 'filesystem' },
-					availableWorkspaceBytes:
-						TOOLCHAIN_RUNTIME_BASELINE_BYTES + WORKSPACE_DISK_RESERVE_BYTES,
-				},
-			),
+			createResourceEnvelope({
+				binaryData: { mode: 'filesystem' },
+				availableWorkspaceBytes: TOOLCHAIN_RUNTIME_BASELINE_BYTES + WORKSPACE_DISK_RESERVE_BYTES,
+			}),
 		).toThrowError(
 			expect.objectContaining<Partial<YtDlpRequestResourceLimitError>>({
 				code: RESOURCE_LIMIT,
@@ -397,7 +364,7 @@ describe('host n8n binary data configuration', () => {
 describe('Resource Envelope violation classification', () => {
 	it('names a declared term for every ResourceEnvelope field', () => {
 		expect(Object.keys(RESOURCE_ENVELOPE_FIELD_TERMS).sort()).toEqual(
-			Object.keys(createResourceEnvelope({}, FILESYSTEM_HOST)).sort(),
+			Object.keys(createResourceEnvelope(FILESYSTEM_HOST)).sort(),
 		);
 		for (const term of Object.values(RESOURCE_ENVELOPE_FIELD_TERMS)) {
 			expect(RESOURCE_ENVELOPE_TERMS).toHaveProperty(term);
@@ -409,17 +376,17 @@ describe('Resource Envelope violation classification', () => {
 		// preflight one are bound by nothing at compile time, so widening the Resource Envelope
 		// without classifying the new term fails here instead of silently reaching a call site.
 		//
-		// ADR 0040 also removes `requestTimeout` and `playlistEntries`, and both are still here:
-		// the request timeout becomes no-progress detection in #115 and the playlist cap goes with
-		// playlist expansion in #117. Until then this list is the ADR plus those two, and it is
-		// this line that has to change when they land.
+		// ADR 0040 also removes `playlistEntries`, and it is still here: the playlist cap goes with
+		// playlist expansion in #117. Until then this list is the ADR plus that one, and it is this
+		// line that has to change when it lands. The request timeout already became no-progress
+		// detection in #115, which is why `noProgress` is a term here and `requestTimeout` is not.
 		expect(Object.keys(RESOURCE_ENVELOPE_TERMS).sort()).toEqual([
 			'artifactSize',
 			'executionDuration',
 			'ffmpegThreads',
 			'fragmentConcurrency',
+			'noProgress',
 			'playlistEntries',
-			'requestTimeout',
 			'workspaceSize',
 		]);
 	});
@@ -459,8 +426,9 @@ describe('Resource Envelope violation classification', () => {
 	it('imposes only the protection constants ADR 0040 keeps', () => {
 		// ADR 0040 keeps exactly two imposed terms — both protection that does not limit what a
 		// user may download, both deferred to #107. Every other bound that limits capability is
-		// the host's or a measured resource's. The request timeout and the playlist selection cap
-		// are not imposed terms and are not this test's subject; they move in #115 and #117.
+		// the host's or a measured resource's. No-progress detection is node-owned protection too,
+		// but a running process violates it, so it is violable rather than imposed. The playlist
+		// selection cap is not an imposed term either, and it moves in #117.
 		for (const [term, definition] of Object.entries(RESOURCE_ENVELOPE_TERMS)) {
 			if (definition.enforcement !== 'imposed') continue;
 			expect(['fragmentConcurrency', 'ffmpegThreads']).toContain(term);
@@ -474,11 +442,12 @@ describe('Resource Envelope violation classification', () => {
 		},
 	);
 
-	it('keeps the frozen REQUEST_TIMEOUT code for the request timeout term', () => {
+	it('keeps the frozen REQUEST_TIMEOUT code for the no-progress term', () => {
 		// ADR 0026 freezes `REQUEST_TIMEOUT` as its own request failure code, so this one envelope
-		// term does not classify as RESOURCE_LIMIT. The table is the place that exception is
-		// declared; no enforcement site gets to decide it again.
-		expect(classifyResourceEnvelopeViolation('requestTimeout').errorCode).toBe(REQUEST_TIMEOUT);
+		// term does not classify as RESOURCE_LIMIT. ADR 0040 changes what triggers it — a process
+		// that stopped moving rather than one that ran long — and not the code it carries. The
+		// table is the place that exception is declared; no enforcement site decides it again.
+		expect(classifyResourceEnvelopeViolation('noProgress').errorCode).toBe(REQUEST_TIMEOUT);
 	});
 
 	it.each([
@@ -492,7 +461,7 @@ describe('Resource Envelope violation classification', () => {
 	});
 
 	it('projects the terms that reach yt-dlp as options', () => {
-		const envelope = createResourceEnvelope({}, databaseHost(MEBIBYTE));
+		const envelope = createResourceEnvelope(databaseHost(MEBIBYTE));
 
 		expect(resourceEnvelopeOptionProfile(envelope)).toEqual([
 			'--break-match-filters',
@@ -508,7 +477,7 @@ describe('Resource Envelope violation classification', () => {
 		// Without a host bound there is no number to project and no violation to classify: the
 		// early abort path is simply absent. The post-hoc path still classifies through this term
 		// when a bound does exist and the extractor withheld the size before the download.
-		expect(resourceEnvelopeOptionProfile(createResourceEnvelope({}, FILESYSTEM_HOST))).toEqual([
+		expect(resourceEnvelopeOptionProfile(createResourceEnvelope(FILESYSTEM_HOST))).toEqual([
 			'--concurrent-fragments',
 			'1',
 			'--postprocessor-args',
@@ -526,10 +495,10 @@ describe('Resource Envelope violation classification', () => {
 	it('rejects a field-term map that leaves a field unnamed', () => {
 		// Locality, compile time: adding a field to `ResourceEnvelope` without naming its term
 		// fails to satisfy this Interface, and the term it names must exist in the table above.
-		const incomplete = { requestTimeoutMs: 'requestTimeout' } as const;
+		const incomplete = { noProgressLimitMs: 'noProgress' } as const;
 		// @ts-expect-error -- a field map missing a term does not satisfy the field-term Interface.
 		const mapping: Record<keyof ResourceEnvelope, ResourceEnvelopeTerm> = incomplete;
 
-		expect(mapping.requestTimeoutMs).toBe('requestTimeout');
+		expect(mapping.noProgressLimitMs).toBe('noProgress');
 	});
 });

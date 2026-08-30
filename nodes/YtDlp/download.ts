@@ -309,7 +309,7 @@ export async function executeDownloadRequest(
 	// measured where that workspace is about to be created.
 	const resourceEnvelope =
 		options.resourceEnvelope ??
-		createResourceEnvelope({}, await readHostResourceConfiguration(workspaceParent));
+		createResourceEnvelope(await readHostResourceConfiguration(workspaceParent));
 	const workspace = await mkdtemp(join(workspaceParent, 'n8n-nodes-yt-dlp-'));
 	const artifactsDirectory = join(workspace, 'artifacts');
 	const tempDirectory = join(workspace, 'temp');
@@ -348,7 +348,7 @@ export async function executeDownloadRequest(
 				redactValues: authenticationTransport.redactValues,
 				signal: options.signal ?? execution.getExecutionCancelSignal(),
 				stdinData: authenticationTransport.secretConfig,
-				timeoutMs: resourceEnvelope.requestTimeoutMs,
+				noProgressLimitMs: resourceEnvelope.noProgressLimitMs,
 				workspaceLimitBytes: resourceEnvelope.maximumWorkspaceSizeBytes,
 			}).catch((error: unknown) => {
 				if (error instanceof YtDlpProcessTerminationError && !error.processClosed) {

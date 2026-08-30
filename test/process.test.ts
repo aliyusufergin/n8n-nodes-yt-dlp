@@ -7,10 +7,15 @@ import type { ChildProcessWithoutNullStreams } from 'node:child_process';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createYtDlpExecutionPlan } from '../nodes/YtDlp/arguments';
-import { YTDLP_BREAK_EXIT_CODE } from '../nodes/YtDlp/resource-envelope';
 import {
+	NO_PROGRESS_LIMIT_MS,
+	YTDLP_BREAK_EXIT_CODE,
+} from '../nodes/YtDlp/resource-envelope';
+import {
+	MAXIMUM_TIMER_DELAY_MS,
 	PROCESS_OUTPUT_LIMIT_BYTES,
 	PROCESS_STREAM_TAIL_BYTES,
+	WORKSPACE_POLL_INTERVAL_MS,
 	YtDlpProcessError,
 	spawnYtDlpExecutionPlan,
 	superviseYtDlpExecutionPlan,
@@ -193,7 +198,7 @@ describe('yt-dlp process boundary', () => {
 			superviseYtDlpExecutionPlan(
 				executablePath,
 				{ argv: [] },
-				{ cwd: workspace, timeoutMs: 1_500, workspaceLimitBytes: 1024 * 1024 },
+				{ cwd: workspace, noProgressLimitMs: 1_500, workspaceLimitBytes: 1024 * 1024 },
 			),
 		).rejects.toMatchObject({ code: 'RESOURCE_LIMIT' });
 	});
@@ -222,7 +227,7 @@ describe('yt-dlp process boundary', () => {
 			superviseYtDlpExecutionPlan(
 				executablePath,
 				{ argv: [] },
-				{ cwd: workspace, timeoutMs: 1_000, workspaceLimitBytes: 64 * 1024 * 1024 },
+				{ cwd: workspace, noProgressLimitMs: 1_000, workspaceLimitBytes: 64 * 1024 * 1024 },
 			),
 		).resolves.toBeUndefined();
 		expect(disappearanceObserved).toBe(true);
@@ -260,8 +265,8 @@ describe('yt-dlp process boundary', () => {
 		}
 	});
 
-	it('times out before a delayed descendant can start', async () => {
-		const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-timeout-'));
+	it('terminates a stalled process before a delayed descendant can start', async () => {
+		const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-no-progress-'));
 		temporaryDirectories.push(workspace);
 		const executablePath = join(workspace, 'controlled-executable');
 		const descendantStartedPath = join(workspace, 'descendant-started');
@@ -279,16 +284,16 @@ describe('yt-dlp process boundary', () => {
 			superviseYtDlpExecutionPlan(
 				executablePath,
 				{ argv: [] },
-				{ cwd: workspace, timeoutMs: 25 },
+				{ cwd: workspace, noProgressLimitMs: 25 },
 			),
 		).rejects.toMatchObject({ code: 'REQUEST_TIMEOUT' });
 		await expect(readFile(descendantStartedPath)).rejects.toMatchObject({ code: 'ENOENT' });
 	});
 
 	it(
-		'times out after a TERM-cooperative leader creates an ignored-SIGTERM descendant',
+		'terminates a stalled TERM-cooperative leader with an ignored-SIGTERM descendant',
 		async () => {
-			const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-descendant-timeout-'));
+			const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-descendant-no-progress-'));
 			temporaryDirectories.push(workspace);
 			const executablePath = join(workspace, 'controlled-executable');
 			const pidPath = join(workspace, 'pids');
@@ -305,18 +310,108 @@ describe('yt-dlp process boundary', () => {
 			const supervision = superviseYtDlpExecutionPlan(
 				executablePath,
 				{ argv: [] },
-				{ cwd: workspace, timeoutMs: 500 },
+				{ cwd: workspace, noProgressLimitMs: 500 },
 			);
 			const pids = await waitForPidFile(pidPath);
-			const timeoutObservedAt = Date.now();
+			const terminationObservedAt = Date.now();
 
 			await expect(supervision).rejects.toMatchObject({ code: 'REQUEST_TIMEOUT' });
 
-			expect(Date.now() - timeoutObservedAt).toBeGreaterThanOrEqual(4_900);
+			expect(Date.now() - terminationObservedAt).toBeGreaterThanOrEqual(4_900);
 			await waitForProcessesToDisappear(pids);
 		},
 		12_000,
 	);
+
+	it(
+		'leaves a slow but progressing download running past the no-progress limit',
+		async () => {
+			// The production progress signal: yt-dlp runs under `--no-progress`, so a running
+			// download says nothing on either stream and only its workspace grows. The fixture
+			// writes for longer than the limit it is watched against, and survives. The limit is
+			// several sampling intervals wide, as the node's own is: at one or two the assertion
+			// would turn on a single late timer callback rather than on the behaviour.
+			const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-slow-progress-'));
+			temporaryDirectories.push(workspace);
+			const executablePath = join(workspace, 'controlled-executable');
+			await writeFile(
+				executablePath,
+				`#!${process.execPath}\n` +
+					`const { appendFileSync } = require('node:fs');\n` +
+					`const { join } = require('node:path');\n` +
+					`const target = join(process.cwd(), 'artifact');\n` +
+					`let writes = 0;\n` +
+					`const timer = setInterval(() => {\n` +
+					`  appendFileSync(target, 'x'.repeat(64 * 1024));\n` +
+					`  if (++writes === 80) clearInterval(timer);\n` +
+					`}, 100);\n`,
+				{ mode: 0o700 },
+			);
+
+			await expect(
+				superviseYtDlpExecutionPlan(
+					executablePath,
+					{ argv: [] },
+					{
+						cwd: workspace,
+						noProgressLimitMs: 5 * WORKSPACE_POLL_INTERVAL_MS,
+						workspaceLimitBytes: 64 * 1024 * 1024,
+					},
+				),
+			).resolves.toBeUndefined();
+		},
+		20_000,
+	);
+
+	it('leaves a process that keeps writing output running past the no-progress limit', async () => {
+		// The second progress signal: a process that writes nothing to its workspace but keeps
+		// talking is working too, so the drained streams count as progress on their own.
+		const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-output-progress-'));
+		temporaryDirectories.push(workspace);
+		const executablePath = join(workspace, 'controlled-executable');
+		await writeFile(
+			executablePath,
+			`#!${process.execPath}\n` +
+				`let lines = 0;\n` +
+				`const timer = setInterval(() => {\n` +
+				`  process.stderr.write('[download] still working\\n');\n` +
+				`  if (++lines === 20) clearInterval(timer);\n` +
+				`}, 50);\n`,
+			{ mode: 0o700 },
+		);
+
+		await expect(
+			superviseYtDlpExecutionPlan(
+				executablePath,
+				{ argv: [] },
+				{ cwd: workspace, noProgressLimitMs: 300 },
+			),
+		).resolves.toBeUndefined();
+	});
+
+	it.each([0, 1.5, MAXIMUM_TIMER_DELAY_MS + 1])(
+		'refuses a no-progress limit of %s before spawning anything',
+		async (noProgressLimitMs) => {
+			// A limit above the timer maximum is the dangerous one: `setTimeout` would clamp it to a
+			// millisecond and the watchdog would re-arm forever without ever reaching its deadline.
+			const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-invalid-limit-'));
+			temporaryDirectories.push(workspace);
+
+			await expect(
+				superviseYtDlpExecutionPlan(
+					join(workspace, 'controlled-executable'),
+					{ argv: [] },
+					{ cwd: workspace, noProgressLimitMs },
+				),
+			).rejects.toThrowError('The no-progress limit is outside the supported range.');
+		},
+	);
+
+	it('keeps the node no-progress limit far wider than the workspace sampling interval', () => {
+		// A silent download only moves the workspace signal, and the workspace is sampled about
+		// once per second, so a stall has to be hundreds of missed samples rather than one.
+		expect(NO_PROGRESS_LIMIT_MS).toBeGreaterThanOrEqual(60 * WORKSPACE_POLL_INTERVAL_MS);
+	});
 
 	it('treats a process-group signal failure as a global invariant', async () => {
 		const workspace = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-signal-failure-'));
@@ -337,7 +432,7 @@ describe('yt-dlp process boundary', () => {
 				superviseYtDlpExecutionPlan(
 					executablePath,
 					{ argv: [] },
-					{ cwd: workspace, timeoutMs: 25 },
+					{ cwd: workspace, noProgressLimitMs: 25 },
 				),
 			).rejects.toMatchObject({
 				name: 'YtDlpProcessTerminationError',

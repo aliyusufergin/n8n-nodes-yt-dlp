@@ -34,8 +34,6 @@ import {
 	executeDownloadRequest,
 } from './download';
 import {
-	DEFAULT_REQUEST_TIMEOUT_MINUTES,
-	MAXIMUM_REQUEST_TIMEOUT_MINUTES,
 	RESOURCE_LIMIT,
 	YtDlpExecutionResourceLimitError,
 	YtDlpRequestResourceLimitError,
@@ -74,7 +72,7 @@ const REQUEST_FAILURE_MESSAGES = {
 	INVALID_SOURCE_URL: 'The Source URL is invalid.',
 	INVALID_ARGUMENTS: 'The Arguments value is invalid.',
 	YTDLP_FAILED: 'yt-dlp could not complete the Download Request.',
-	REQUEST_TIMEOUT: 'The Download Request exceeded its timeout.',
+	REQUEST_TIMEOUT: 'The Download Request stopped making progress.',
 	PROCESS_OUTPUT_LIMIT: 'The Download Request exceeded the process output limit.',
 	RESOURCE_LIMIT: 'The Download Request exceeded its Resource Envelope.',
 	INVALID_ARTIFACT_SET: 'The Download Request produced an invalid Artifact set.',
@@ -302,13 +300,6 @@ export async function executeYtDlpNode(
 				// The derived bounds are read where the request runs: the workspace disk is measured
 				// on the Execution Workspace the request is about to write into.
 				const resourceEnvelope = createResourceEnvelope(
-					{
-						requestTimeoutMinutes: execution.getNodeParameter(
-							'requestTimeoutMinutes',
-							itemIndex,
-							DEFAULT_REQUEST_TIMEOUT_MINUTES,
-						) as number,
-					},
 					await readHostResourceConfiguration(executionWorkspace.path),
 				);
 
@@ -494,14 +485,6 @@ export class YtDlp implements INodeType {
 					rows: 3,
 				},
 				description: 'Supported yt-dlp options, without the Source URL',
-			},
-			{
-				displayName: 'Request Timeout (Minutes)',
-				name: 'requestTimeoutMinutes',
-				type: 'number',
-				default: DEFAULT_REQUEST_TIMEOUT_MINUTES,
-				typeOptions: { minValue: 1, maxValue: MAXIMUM_REQUEST_TIMEOUT_MINUTES },
-				description: 'Maximum time allowed for one Download Request',
 			},
 		],
 	};

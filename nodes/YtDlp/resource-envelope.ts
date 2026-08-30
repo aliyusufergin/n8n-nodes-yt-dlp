@@ -5,8 +5,20 @@ export const RESOURCE_LIMIT = 'RESOURCE_LIMIT';
 export const REQUEST_TIMEOUT = 'REQUEST_TIMEOUT';
 export const MEBIBYTE = 1024 * 1024;
 
-export const DEFAULT_REQUEST_TIMEOUT_MINUTES = 30;
-export const MAXIMUM_REQUEST_TIMEOUT_MINUTES = 60;
+/**
+ * How long a Download Request may make no progress at all before the supervisor terminates its
+ * Process Group. It is not a bound on how long a request may take: a download that keeps moving
+ * runs as long as it needs to, and only a process that has stopped moving is stopped. It is a node
+ * constant because it protects the worker slot a hung process would hold forever, not because it
+ * decides what a user may download.
+ *
+ * Progress is read from the two signals the supervisor already carries: bytes on the child's
+ * stdout and stderr, and a change in the measured workspace size. yt-dlp runs under
+ * `--no-progress`, so a running download is normally silent and the workspace is the signal that
+ * carries it; the workspace is sampled about once per second, so this bound is many sampling
+ * intervals wide — a stalled process has to miss hundreds of samples, not one.
+ */
+export const NO_PROGRESS_LIMIT_MS = 5 * 60 * 1000;
 
 /**
  * The free disk space the workspace bound leaves untouched for the rest of the container. The
@@ -207,12 +219,8 @@ export async function readHostResourceConfiguration(
 	};
 }
 
-export interface ResourceEnvelopeConfiguration {
-	requestTimeoutMinutes?: number;
-}
-
 export interface ResourceEnvelope {
-	requestTimeoutMs: number;
+	noProgressLimitMs: number;
 	/** Absent when the host enforces no file size limit, so no enforcement site applies one. */
 	maximumArtifactSizeBytes: number | undefined;
 	maximumWorkspaceSizeBytes: number;
@@ -268,8 +276,6 @@ interface ViolableResourceEnvelopeTerm {
 	readonly scope: 'execution' | 'request';
 	readonly errorCode: ResourceEnvelopeErrorCode;
 	readonly violationMessage: string;
-	/** Set when the workflow author may narrow the term, so its bound is range-checked too. */
-	readonly configurable?: true;
 }
 
 /**
@@ -322,15 +328,18 @@ export const RESOURCE_ENVELOPE_TERMS = {
 			'EXECUTIONS_TIMEOUT_MAX) and the workflow execution timeout setting',
 		violationMessage: 'The execution exceeded the n8n execution timeout.',
 	},
-	requestTimeout: {
+	noProgress: {
+		// The bound this term carries is the node's, and it is protection rather than capability:
+		// ADR 0040 splits "this download may take at most this long" off from "this process is
+		// stuck", removes the first and keeps the second, watching progress instead of elapsed
+		// time. ADR 0026 freezes `REQUEST_TIMEOUT` as its own request failure code, so this is the
+		// one envelope term that does not classify as RESOURCE_LIMIT, and the trigger changing
+		// does not change the code. The exception is declared here rather than rediscovered at
+		// the supervisor.
 		enforcement: 'violable',
-		configurable: true,
 		scope: 'request',
-		// ADR 0026 freezes `REQUEST_TIMEOUT` as its own request failure code, so this is the one
-		// envelope term that does not classify as RESOURCE_LIMIT. The exception is declared here
-		// rather than rediscovered at the supervisor.
 		errorCode: REQUEST_TIMEOUT,
-		violationMessage: 'yt-dlp exceeded the request timeout.',
+		violationMessage: 'yt-dlp stopped making progress.',
 	},
 	artifactSize: {
 		// The file size bound is the host's. In `database` mode n8n refuses a binary above its own
@@ -401,17 +410,6 @@ export type RuntimeViolableResourceEnvelopeTermName =
 	| ViolableResourceEnvelopeTermName;
 
 /**
- * The violable terms a workflow author may narrow. A configuration outside a term's hard cap
- * violates the Resource Envelope before any request runs. A derived term is never one of these:
- * its bound is not the node's to offer.
- */
-export type ConfigurableResourceEnvelopeTerm = {
-	[Term in ViolableResourceEnvelopeTermName]: TermTable[Term] extends { configurable: true }
-		? Term
-		: never;
-}[ViolableResourceEnvelopeTermName];
-
-/**
  * The classified terms whose declared code is `RESOURCE_LIMIT`. `resourceLimitViolationError` only
  * accepts these, so a term that ADR 0026 gives its own code cannot be smuggled into a Resource
  * Limit error class by a call site.
@@ -436,7 +434,7 @@ export type ResourceLimitTerm = {
 export const RESOURCE_ENVELOPE_FIELD_TERMS: Readonly<
 	Record<keyof ResourceEnvelope, ResourceEnvelopeTerm>
 > = {
-	requestTimeoutMs: 'requestTimeout',
+	noProgressLimitMs: 'noProgress',
 	maximumArtifactSizeBytes: 'artifactSize',
 	maximumWorkspaceSizeBytes: 'workspaceSize',
 };
@@ -452,23 +450,6 @@ export function classifyResourceEnvelopeViolation(
 		throw new Error(`The Resource Envelope term "${term}" has no violation classification.`);
 	}
 	return definition;
-}
-
-/**
- * Asking for a bound outside a term's hard cap is a violation of the Resource Envelope itself,
- * not of the running request, so it is always `RESOURCE_LIMIT` — including for `requestTimeout`,
- * whose runtime expiry carries the separate frozen `REQUEST_TIMEOUT` code. That is one decision
- * for every configurable term, declared here instead of at `createResourceEnvelope`.
- */
-export function resourceEnvelopeConfigurationError(
-	term: ConfigurableResourceEnvelopeTerm,
-): YtDlpRequestResourceLimitError {
-	// A configurable term is a violable term, and this lookup keeps that true at run time as well
-	// as in the type: a term the table stops classifying cannot keep a configuration bound.
-	classifyResourceEnvelopeViolation(term);
-	return new YtDlpRequestResourceLimitError(
-		`The configured ${term} is outside the Resource Envelope.`,
-	);
 }
 
 export function resourceLimitViolationError(
@@ -510,17 +491,6 @@ export function resourceEnvelopeOptionProfile(envelope: ResourceEnvelope): strin
 	];
 }
 
-function boundedInteger(
-	value: number,
-	maximum: number,
-	term: ConfigurableResourceEnvelopeTerm,
-): number {
-	if (!Number.isInteger(value) || value < 1 || value > maximum) {
-		throw resourceEnvelopeConfigurationError(term);
-	}
-	return value;
-}
-
 /**
  * The workspace bound: the free disk the request actually has, less the reserve the node leaves for
  * the rest of the container. The measured toolchain baseline is the floor — a workspace that cannot
@@ -539,18 +509,14 @@ function workspaceSizeBytes(availableWorkspaceBytes: number): number {
 	return maximumWorkspaceSizeBytes;
 }
 
-export function createResourceEnvelope(
-	configuration: ResourceEnvelopeConfiguration,
-	host: HostResourceConfiguration,
-): ResourceEnvelope {
-	const requestTimeoutMinutes = boundedInteger(
-		configuration.requestTimeoutMinutes ?? DEFAULT_REQUEST_TIMEOUT_MINUTES,
-		MAXIMUM_REQUEST_TIMEOUT_MINUTES,
-		'requestTimeout',
-	);
-
+/**
+ * The Resource Envelope one Download Request runs inside. It takes no configuration: every bound
+ * that limits what a user may download belongs to the host or to a measured resource, and the one
+ * node-owned number left is protection the workflow author does not get to widen.
+ */
+export function createResourceEnvelope(host: HostResourceConfiguration): ResourceEnvelope {
 	return {
-		requestTimeoutMs: requestTimeoutMinutes * 60 * 1000,
+		noProgressLimitMs: NO_PROGRESS_LIMIT_MS,
 		// Declared even when the host carries no bound, so the field-term bind stays honest and an
 		// enforcement site reads "no limit" rather than a missing field.
 		maximumArtifactSizeBytes: host.binaryData.maximumFileSizeBytes,

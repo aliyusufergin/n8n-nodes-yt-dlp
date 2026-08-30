@@ -57,7 +57,6 @@ import {
 	readHostResourceConfiguration,
 	type HostBinaryDataConfiguration,
 	type HostResourceConfiguration,
-	type ResourceEnvelopeConfiguration,
 } from '../nodes/YtDlp/resource-envelope';
 
 /** Free disk space that clears the toolchain baseline and the container reserve many times over. */
@@ -172,7 +171,6 @@ function createExecutionContext(
 	sourceUrl: string,
 	prepareBinaryData: (data: Buffer | Readable, fileName?: string, mimeType?: string) => Promise<IBinaryData>,
 	signal?: AbortSignal,
-	resourceConfiguration: ResourceEnvelopeConfiguration = {},
 ): IExecuteFunctions {
 	const node: INode = {
 		id: 'node-id',
@@ -191,7 +189,7 @@ function createExecutionContext(
 		getNodeParameter: vi.fn((name: string, _itemIndex: number, fallback?: unknown) => {
 			if (name === 'sourceUrl') return sourceUrl;
 			if (name === 'arguments') return '';
-			return resourceConfiguration[name as keyof ResourceEnvelopeConfiguration] ?? fallback;
+			return fallback;
 		}),
 		getExecutionCancelSignal: vi.fn(() => signal),
 		helpers: { prepareBinaryData },
@@ -401,7 +399,7 @@ describe('download request', () => {
 	it.each([
 		{ outcome: 'Secret Config parse failure', expected: { code: 'YTDLP_FAILED' } },
 		{ outcome: 'process failure', expected: { code: 'YTDLP_FAILED' } },
-		{ outcome: 'timeout', expected: { code: 'REQUEST_TIMEOUT' } },
+		{ outcome: 'stall', expected: { code: 'REQUEST_TIMEOUT' } },
 		{ outcome: 'cancellation', expected: { name: 'YtDlpProcessCancellationError' } },
 		{ outcome: 'binary transfer failure', expected: { code: 'BINARY_TRANSFER_FAILED' } },
 	])('removes sentinel secrets after $outcome', async ({ outcome, expected }) => {
@@ -445,8 +443,8 @@ describe('download request', () => {
 			proxyUrl: `http://proxy-user:proxy-password@proxy-${outcome.replace(/\s/g, '-')}.test`,
 		};
 		const resourceEnvelope = {
-			...createResourceEnvelope({}, hostResources({ mode: 'filesystem' })),
-			requestTimeoutMs: outcome === 'timeout' ? 25 : 60_000,
+			...createResourceEnvelope(hostResources({ mode: 'filesystem' })),
+			noProgressLimitMs: outcome === 'stall' ? 25 : 60_000,
 		};
 
 		const request = executeDownloadRequest(
@@ -500,7 +498,6 @@ describe('download request', () => {
 				ffmpegPath: '/opt/n8n-yt-dlp/bin/ffmpeg',
 				workspaceParent,
 				resourceEnvelope: createResourceEnvelope(
-					{},
 					hostResources({ mode: 'database', maximumFileSizeBytes: 128 * MEBIBYTE }),
 				),
 			},
@@ -558,7 +555,7 @@ describe('download request', () => {
 		// cannot silently turn this into a test that no longer overshoots anything. The file is
 		// sparse, so the overshoot costs apparent size rather than disk.
 		const overshootBytes =
-			createResourceEnvelope({}, await readHostResourceConfiguration(workspaceParent))
+			createResourceEnvelope(await readHostResourceConfiguration(workspaceParent))
 				.maximumWorkspaceSizeBytes +
 			1024 * MEBIBYTE;
 		const executablePath = await createArtifactFixtureExecutable(
@@ -608,7 +605,7 @@ describe('download request', () => {
 			{
 				executablePath,
 				workspaceParent,
-				resourceEnvelope: createResourceEnvelope({}, hostResources({ mode: 'filesystem' })),
+				resourceEnvelope: createResourceEnvelope(hostResources({ mode: 'filesystem' })),
 			},
 		);
 
@@ -685,7 +682,7 @@ describe('download request', () => {
 				{
 					executablePath,
 					workspaceParent,
-					resourceEnvelope: createResourceEnvelope({}, hostResources(host)),
+					resourceEnvelope: createResourceEnvelope(hostResources(host)),
 				},
 			);
 
@@ -731,7 +728,7 @@ describe('download request', () => {
 			{
 				executablePath,
 				workspaceParent,
-				resourceEnvelope: createResourceEnvelope({}, hostResources({ mode: 'filesystem' })),
+				resourceEnvelope: createResourceEnvelope(hostResources({ mode: 'filesystem' })),
 			},
 		);
 
