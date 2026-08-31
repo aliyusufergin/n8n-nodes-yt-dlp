@@ -142,9 +142,9 @@ multiline input, positional tokens, a `--` terminator, short-option clusters, an
 values are rejected. The limits are 16 KiB for the complete field, 256 tokens, and 8 KiB for one
 token.
 
-## V1 Argument Allowlist
+## V2 Argument Allowlist
 
-The exact v1 allowlist is:
+The current V2 allowlist is:
 
 | Purpose | Accepted options |
 | --- | --- |
@@ -154,6 +154,7 @@ The exact v1 allowlist is:
 | Thumbnails | `--write-thumbnail`, `--convert-thumbnails`, `--embed-thumbnail` |
 | Audio | `-x`, `--extract-audio`, `--audio-format`, `--audio-quality` |
 | Video/post-processing | `--remux-video`, `--recode-video`, `--embed-metadata`, `--embed-chapters`, `--no-embed-chapters` |
+| Network politeness | `--limit-rate`, `--retries`, `--fragment-retries`, `--socket-timeout` |
 
 The exact value and relationship rules are:
 
@@ -181,6 +182,12 @@ The exact value and relationship rules are:
   `source>target` rules using `aac`, `aiff`, `alac`, `avi`, `flac`, `flv`, `gif`, `m4a`, `mka`,
   `mkv`, `mov`, `mp3`, `mp4`, `ogg`, `opus`, `vorbis`, `wav`, or `webm`.
 - `--embed-chapters` and `--no-embed-chapters` conflict.
+- `--limit-rate` accepts decimal byte rates from `1K` through `1G`, with an optional uppercase
+  `K`, `M`, or `G` suffix. A value without a suffix is bytes per second.
+- `--retries` and `--fragment-retries` accept integers from `0` through `100`; yt-dlp's
+  `infinite` is rejected so a request cannot retry forever.
+- `--socket-timeout` accepts decimal seconds from `0.1` through `300`. Exponent notation and
+  non-finite values are rejected.
 
 Aliases are canonicalized, and every canonical option may appear only once. Unknown, duplicated,
 conflicting, value-invalid, and dependency-incomplete options fail before process start. Boolean

@@ -61,9 +61,10 @@ describe('public documentation', () => {
 					'is literal.',
 					'256 tokens',
 				],
-				'## V1 Argument Allowlist': [
+				'## V2 Argument Allowlist': [
 					'`-f`, `--format`, `-S`, `--format-sort`',
 					'`--remux-video`, `--recode-video`, `--embed-metadata`, `--embed-chapters`, `--no-embed-chapters`',
+					'`--limit-rate`, `--retries`, `--fragment-retries`, `--socket-timeout`',
 					'`--merge-output-format` accepts',
 					'`avi`, `flv`, `mkv`,',
 					'`mov`, `mp4`, `webm`',
@@ -72,6 +73,10 @@ describe('public documentation', () => {
 					'`--convert-thumbnails` and `--embed-thumbnail` require `--write-thumbnail`',
 					'`--audio-format` and `--audio-quality` require `--extract-audio`',
 					'`--remux-video` and `--recode-video` conflict',
+					'`--limit-rate` accepts decimal byte rates from `1K` through `1G`',
+					'`--retries` and `--fragment-retries` accept integers from `0` through `100`',
+					'`infinite` is rejected',
+					'`--socket-timeout` accepts decimal seconds from `0.1` through `300`',
 				],
 				'## Authentication': [
 					'**YT-DLP Authentication**',
