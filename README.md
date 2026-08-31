@@ -93,8 +93,9 @@ authorized to download:
 | Arguments | leave empty |
 
 Run the workflow. A successful direct-media request produces one output item with the file under
-`binary.data`; a playlist may produce several items. Every input item is a separate İndirme İsteği
-(Download Request), while a playlist URL remains one request. Inputs are processed sequentially.
+`binary.data`; a playlist produces several. An input item carrying a playlist source opens into one
+İndirme İsteği (Download Request) per entry, and every request — expanded or not — is processed
+sequentially and is atomic on its own.
 
 The repository release gate uses only project-generated synthetic media served by its disposable,
 network-local fixture origin. That fixture URL is intentionally not a public example. Replace it
@@ -120,6 +121,34 @@ Source URL is separate from Arguments. It must be an absolute `http:` or `https:
 userinfo such as `user:password@host`, contain no control characters or surrounding whitespace,
 and be at most 16 KiB in UTF-8. Search prefixes, bare searches, local/data/stream URLs, batch input,
 and local info JSON are rejected before yt-dlp starts.
+
+## Playlist expansion
+
+A Source URL that turns out to be a playlist is not downloaded as one request. The node reads the
+entry list once, then opens the input item into one independent Download Request per entry. Each
+request runs in its own workspace, under its own limits, and is atomic on its own: an entry the
+host refuses — geo-restricted, removed, members-only — fails only its own request and does not
+invalidate the Artifacts of the entries around it. With **Continue On Fail** on, that entry becomes
+a Failure Item between the Artifact Items of its neighbours; with it off, the refusal ends the
+execution as any other request failure does.
+
+Every entry address the listing produces goes through the same Source URL validation a URL you
+typed does: absolute `http:`/`https:`, no userinfo, no control characters, at most 16 KiB. An entry
+address that does not pass produces no Download Request, and the entries around it are unaffected.
+
+Output items stay linked to the input item the playlist came from, so `pairedItem` still points at
+the source input however far it expanded. How many requests the input items opened into is reported
+in the execution summary log as `inputCount` and `requestCount`.
+
+Write `--no-playlist` to pin an input item to a single video; the node then reads no entry list at
+all. `--playlist-items` selects which entries the listing covers, and the selection is spent there —
+it is not repeated on the per-entry requests it produced. The default selection still applies: with
+no `--playlist-items` of your own the node adds `--playlist-items 1:5`, so an unselected playlist
+opens into at most its first five entries.
+
+Reading the entry list costs one extra yt-dlp metadata pass per input item. It downloads nothing —
+`--simulate --flat-playlist` — and runs once per input item, not once per entry, but a source that
+turns out not to be a playlist pays it too.
 
 ## Arguments Grammar
 

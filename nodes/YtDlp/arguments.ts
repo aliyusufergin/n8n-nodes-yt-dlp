@@ -422,3 +422,55 @@ export function createYtDlpExecutionPlan(request: DownloadRequest): YtDlpExecuti
 		: ['--playlist-items', '1:5'];
 	return { argv: [...playlistArguments, ...argv, '--', request.sourceUrl] };
 }
+
+/**
+ * The options that decide which entries of a playlist source a request covers. Playlist
+ * Genişletmesi applies them once, while the entry list is read, and keeps them off the requests
+ * that listing produces: an entry is one video, so a selection over a list means nothing to it.
+ */
+const playlistSelectionOptions = new Set([
+	'--playlist-items',
+	'--yes-playlist',
+	'--no-playlist',
+]);
+
+export interface PlaylistSelection {
+	/** The selection options, in the order the plan carries them. */
+	selectionArgv: string[];
+	/** Everything else the plan carries, so a request born from an entry keeps it. */
+	entryArgv: string[];
+	sourceUrl: string;
+	/** True when the Arguments pinned the request to a single video, so no entry list is read. */
+	pinnedToSingleVideo: boolean;
+}
+
+/**
+ * Splits an execution plan into the part that selects playlist entries and the part that applies
+ * to whatever is downloaded. The arity of every option is read from the allowlist that produced
+ * the plan, so this never re-decides how many argv slots an option occupies.
+ */
+export function readPlaylistSelection(plan: YtDlpExecutionPlan): PlaylistSelection {
+	const separatorIndex = plan.argv.lastIndexOf('--');
+	const sourceUrl = separatorIndex === -1 ? undefined : plan.argv[separatorIndex + 1];
+	if (sourceUrl === undefined) throw new Error('The execution plan has no Source URL separator.');
+
+	const selectionArgv: string[] = [];
+	const entryArgv: string[] = [];
+	let pinnedToSingleVideo = false;
+
+	for (let index = 0; index < separatorIndex; index++) {
+		const name = plan.argv[index];
+		const definition = definitionsByName.get(name);
+		if (definition === undefined || definition.canonicalName !== name) {
+			throw new Error('The execution plan carries an option the allowlist does not define.');
+		}
+		const width = definition.valueValidator === undefined ? 1 : 2;
+		const option = plan.argv.slice(index, index + width);
+		if (option.length !== width) throw new Error('The execution plan option has no value.');
+		(playlistSelectionOptions.has(name) ? selectionArgv : entryArgv).push(...option);
+		if (name === '--no-playlist') pinnedToSingleVideo = true;
+		index += width - 1;
+	}
+
+	return { selectionArgv, entryArgv, sourceUrl, pinnedToSingleVideo };
+}

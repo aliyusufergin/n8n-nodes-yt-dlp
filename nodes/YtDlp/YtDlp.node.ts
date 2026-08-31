@@ -19,6 +19,7 @@ import {
 	createYtDlpExecutionPlan,
 	type YtDlpExecutionPlan,
 } from './arguments';
+import { expandPlaylistRequest } from './playlist-expansion';
 import {
 	parseAuthenticationCredential,
 	type YtDlpAuthenticationData,
@@ -63,6 +64,18 @@ export type DownloadRequestExecutor = (
 	authentication?: YtDlpAuthenticationData,
 	workspaceParent?: string,
 ) => Promise<INodeExecutionData[]>;
+
+/**
+ * Opens one input item's Source URL into the Download Requests it stands for. A playlist source
+ * becomes one plan per entry; anything else stays the single plan the author wrote.
+ */
+export type PlaylistExpander = (
+	plan: YtDlpExecutionPlan,
+	resourceEnvelope: ResourceEnvelope,
+	signal: AbortSignal,
+	authentication?: YtDlpAuthenticationData,
+	workspaceParent?: string,
+) => Promise<YtDlpExecutionPlan[]>;
 
 export type ExecutionWorkspaceFactory = () => Promise<ExecutionWorkspace>;
 
@@ -213,10 +226,13 @@ export async function executeYtDlpNode(
 	startRequest: DownloadRequestExecutor | undefined = undefined,
 	startWorkspace: ExecutionWorkspaceFactory = createExecutionWorkspace,
 	resolveToolchain: ToolchainResolver = getVerifiedToolchain,
+	expandRequest: PlaylistExpander | undefined = undefined,
 ): Promise<INodeExecutionData[][]> {
 	const executionStartedAt = Date.now();
 	const items = execution.getInputData();
 	const outputItems: INodeExecutionData[] = [];
+	/** How many Download Requests the input items opened into, for the execution summary. */
+	let requestCount = 0;
 	// n8n owns the error output: for `continueErrorOutput` its engine overwrites the last main
 	// output with the items it recognises as errors on the earlier outputs, so a node cannot
 	// write that branch itself. The Failure Item is not an engine-recognised error shape, so the
@@ -265,6 +281,88 @@ export async function executeYtDlpNode(
 		executionTimer.unref?.();
 	}
 
+	/**
+	 * Classifies one failed Download Request. A typed request failure belongs to that request
+	 * alone: under `Continue On Fail` it becomes a Failure Item and the execution carries on with
+	 * the next request, so one entry of a Playlist Genişletmesi failing leaves the Artifacts of the
+	 * requests around it standing. Anything else ends the execution.
+	 */
+	const failRequest = (error: unknown, itemIndex: number, startedAt: number): void => {
+		let effectiveError = error;
+		if (
+			!(error instanceof WorkspaceCleanupError) &&
+			!(error instanceof YtDlpProcessTerminationError)
+		) {
+			try {
+				throwIfExecutionTerminated(execution, executionTerminationReason);
+			} catch (terminationError) {
+				effectiveError = terminationError;
+			}
+		}
+		const cancelled =
+			!(effectiveError instanceof WorkspaceCleanupError) &&
+			!(effectiveError instanceof YtDlpProcessTerminationError) &&
+			(executionTerminationReason === 'cancelled' ||
+				effectiveError instanceof YtDlpProcessCancellationError);
+		const errorCode = requestFailureCode(effectiveError);
+		if (cancelled) {
+			logRequestTerminal(execution, 'warn', {
+				artifactCount: 0,
+				durationMs: durationSince(startedAt),
+				errorCode: 'CANCELLED',
+				finalBytes: 0,
+				inputIndex: itemIndex,
+				outcome: 'cancelled',
+			});
+			throw effectiveError;
+		}
+		if (errorCode !== undefined) {
+			hadRequestFailure = true;
+			logRequestTerminal(execution, 'warn', {
+				artifactCount: 0,
+				durationMs: durationSince(startedAt),
+				errorCode,
+				finalBytes: 0,
+				inputIndex: itemIndex,
+				outcome: 'failure',
+			});
+			if (execution.continueOnFail()) {
+				outputItems.push({
+					json: {
+						status: 'error',
+						errorCode,
+						errorMessage: requestFailureMessage(errorCode, effectiveError),
+					},
+					pairedItem: { item: itemIndex },
+				});
+				return;
+			}
+
+			const cause =
+				effectiveError instanceof Error
+					? effectiveError
+					: new Error(requestFailureMessage(errorCode, effectiveError));
+			const nodeError = new NodeOperationError(execution.getNode(), cause, {
+				description: errorCode,
+				itemIndex,
+			});
+			nodeError.context.errorCode = errorCode;
+			throw nodeError;
+		}
+
+		logRequestTerminal(execution, 'error', {
+			artifactCount: 0,
+			durationMs: durationSince(startedAt),
+			errorCode: globalErrorCode(effectiveError),
+			finalBytes: 0,
+			inputIndex: itemIndex,
+			outcome: 'global_failure',
+		});
+		throw effectiveError instanceof Error
+			? effectiveError
+			: new Error('Unexpected request failure.');
+	};
+
 	try {
 		if (startRequest === undefined) {
 			await resolveToolchain();
@@ -287,11 +385,31 @@ export async function executeYtDlpNode(
 					workspaceParent,
 				});
 			};
+			expandRequest ??= async (plan, resourceEnvelope, signal, authentication, workspaceParent) => {
+				const toolchain = await resolveToolchain();
+				return await expandPlaylistRequest(plan, {
+					authentication,
+					denoPath: toolchain.deno,
+					executablePath: toolchain.ytDlp,
+					ffmpegPath: toolchain.ffmpeg,
+					resourceEnvelope,
+					signal,
+					workspaceParent,
+				});
+			};
+		} else {
+			// Producing the requests and running them is one seam. A caller that brings its own
+			// executor brings the plans it runs with it, so the node does not read an entry list
+			// through a toolchain that caller deliberately did not supply.
+			expandRequest ??= async (plan) => [plan];
 		}
 		executionWorkspace = await startWorkspace();
 		throwIfExecutionTerminated(execution, executionTerminationReason);
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
-			const requestStartedAt = Date.now();
+			const expansionStartedAt = Date.now();
+			let requestPlans: YtDlpExecutionPlan[];
+			let resourceEnvelope: ResourceEnvelope;
+			let authentication: YtDlpAuthenticationData | undefined;
 			try {
 				const sourceUrl = execution.getNodeParameter('sourceUrl', itemIndex);
 				const argumentsValue = execution.getNodeParameter('arguments', itemIndex, '') as string;
@@ -299,109 +417,57 @@ export async function executeYtDlpNode(
 				const plan = createYtDlpExecutionPlan(request);
 				// The derived bounds are read where the request runs: the workspace disk is measured
 				// on the Execution Workspace the request is about to write into.
-				const resourceEnvelope = createResourceEnvelope(
+				resourceEnvelope = createResourceEnvelope(
 					await readHostResourceConfiguration(executionWorkspace.path),
 				);
 
-				const authentication =
+				authentication =
 					execution.getNode().credentials?.ytDlpAuthentication === undefined
 						? undefined
 						: parseAuthenticationCredential(
 								await execution.getCredentials('ytDlpAuthentication', itemIndex),
 							);
 
-				const requestOutput = await startRequest(
+				// One input item is one Source URL, and a playlist source opens it into one
+				// independent Download Request per entry. The entry list is read once, here.
+				requestPlans = await expandRequest(
 					plan,
-					itemIndex,
 					resourceEnvelope,
 					executionController.signal,
 					authentication,
 					executionWorkspace.path,
 				);
 				throwIfExecutionTerminated(execution, executionTerminationReason);
-				const totals = artifactTotals(requestOutput);
-				logRequestTerminal(execution, 'debug', {
-					artifactCount: totals.artifactCount,
-					durationMs: durationSince(requestStartedAt),
-					finalBytes: totals.finalBytes,
-					inputIndex: itemIndex,
-					outcome: 'success',
-				});
-				outputItems.push(...requestOutput);
 			} catch (error) {
-				let effectiveError = error;
-				if (
-					!(error instanceof WorkspaceCleanupError) &&
-					!(error instanceof YtDlpProcessTerminationError)
-				) {
-					try {
-						throwIfExecutionTerminated(execution, executionTerminationReason);
-					} catch (terminationError) {
-						effectiveError = terminationError;
-					}
-				}
-				const cancelled =
-					!(effectiveError instanceof WorkspaceCleanupError) &&
-					!(effectiveError instanceof YtDlpProcessTerminationError) &&
-					(executionTerminationReason === 'cancelled' ||
-						effectiveError instanceof YtDlpProcessCancellationError);
-				const errorCode = requestFailureCode(effectiveError);
-				if (cancelled) {
-					logRequestTerminal(execution, 'warn', {
-						artifactCount: 0,
-						durationMs: durationSince(requestStartedAt),
-						errorCode: 'CANCELLED',
-						finalBytes: 0,
-						inputIndex: itemIndex,
-						outcome: 'cancelled',
-					});
-					throw effectiveError;
-				}
-				if (errorCode !== undefined) {
-					hadRequestFailure = true;
-					logRequestTerminal(execution, 'warn', {
-						artifactCount: 0,
-						durationMs: durationSince(requestStartedAt),
-						errorCode,
-						finalBytes: 0,
-						inputIndex: itemIndex,
-						outcome: 'failure',
-					});
-					if (execution.continueOnFail()) {
-						outputItems.push({
-							json: {
-								status: 'error',
-								errorCode,
-								errorMessage: requestFailureMessage(errorCode, effectiveError),
-							},
-							pairedItem: { item: itemIndex },
-						});
-						continue;
-					}
+				failRequest(error, itemIndex, expansionStartedAt);
+				continue;
+			}
+			requestCount += requestPlans.length;
 
-					const cause =
-						effectiveError instanceof Error
-							? effectiveError
-							: new Error(requestFailureMessage(errorCode, effectiveError));
-					const nodeError = new NodeOperationError(execution.getNode(), cause, {
-						description: errorCode,
+			for (const requestPlan of requestPlans) {
+				const requestStartedAt = Date.now();
+				try {
+					const requestOutput = await startRequest(
+						requestPlan,
 						itemIndex,
+						resourceEnvelope,
+						executionController.signal,
+						authentication,
+						executionWorkspace.path,
+					);
+					throwIfExecutionTerminated(execution, executionTerminationReason);
+					const totals = artifactTotals(requestOutput);
+					logRequestTerminal(execution, 'debug', {
+						artifactCount: totals.artifactCount,
+						durationMs: durationSince(requestStartedAt),
+						finalBytes: totals.finalBytes,
+						inputIndex: itemIndex,
+						outcome: 'success',
 					});
-					nodeError.context.errorCode = errorCode;
-					throw nodeError;
+					outputItems.push(...requestOutput);
+				} catch (error) {
+					failRequest(error, itemIndex, requestStartedAt);
 				}
-
-				logRequestTerminal(execution, 'error', {
-					artifactCount: 0,
-					durationMs: durationSince(requestStartedAt),
-					errorCode: globalErrorCode(effectiveError),
-					finalBytes: 0,
-					inputIndex: itemIndex,
-					outcome: 'global_failure',
-				});
-				throw effectiveError instanceof Error
-					? effectiveError
-					: new Error('Unexpected request failure.');
 			}
 		}
 	} catch (error) {
@@ -432,6 +498,11 @@ export async function executeYtDlpNode(
 			artifactCount: totals.artifactCount,
 			durationMs: durationSince(executionStartedAt),
 			finalBytes: totals.finalBytes,
+			// How large the job actually was. One input item is not one Download Request any more:
+			// a playlist source opens into one request per entry, and the two counts together are
+			// where an operator reads how far an input item expanded.
+			inputCount: items.length,
+			requestCount,
 			outcome:
 				executionError !== undefined
 					? cancelled

@@ -79,7 +79,12 @@ const MIME_TYPES: Readonly<Record<string, string>> = {
 	'.webp': 'image/webp',
 };
 
-export interface DownloadRequestOptions {
+/**
+ * How the node invokes the pinned toolchain for one unit of work. A Download Request and the
+ * listing a Playlist Genişletmesi reads are the same invocation in this respect: same executable,
+ * same Challenge Runtime, same envelope, same cancellation, same workspace parent.
+ */
+export interface YtDlpInvocationOptions {
 	authentication?: YtDlpAuthenticationData;
 	denoPath?: string;
 	executablePath: string;
@@ -87,6 +92,31 @@ export interface DownloadRequestOptions {
 	resourceEnvelope?: ResourceEnvelope;
 	signal?: AbortSignal;
 	workspaceParent?: string;
+}
+
+/**
+ * The flags every yt-dlp invocation the node makes carries, a download and a listing alike: no
+ * user config, no self-update, no plugin directories, no remote components, and only the pinned
+ * Challenge Runtime and packaged FFmpeg. It lives in one place so a second invocation cannot
+ * quietly run under a weaker profile than the first — the drift class of #52, applied to the
+ * security boundary rather than to a Resource Envelope term.
+ */
+export function ytDlpInvocationHardening(options: YtDlpInvocationOptions): string[] {
+	return [
+		'--ignore-config',
+		'--config-locations',
+		'-',
+		'--no-update',
+		'--no-plugin-dirs',
+		'--no-js-runtimes',
+		'--js-runtimes',
+		`deno:${options.denoPath ?? join(dirname(options.executablePath), 'deno')}`,
+		'--no-remote-components',
+		'--ffmpeg-location',
+		options.ffmpegPath ?? join(dirname(options.executablePath), 'ffmpeg'),
+		'--abort-on-error',
+		'--no-progress',
+	];
 }
 
 interface ValidatedArtifact {
@@ -258,8 +288,7 @@ function createWorkspacePlan(
 	artifactsDirectory: string,
 	tempDirectory: string,
 	resourceEnvelope: ResourceEnvelope,
-	denoPath: string,
-	ffmpegPath: string,
+	options: YtDlpInvocationOptions,
 ): YtDlpExecutionPlan {
 	const sourceSeparatorIndex = plan.argv.lastIndexOf('--');
 	if (sourceSeparatorIndex < 0) throw new Error('The execution plan has no Source URL separator.');
@@ -267,19 +296,7 @@ function createWorkspacePlan(
 	return {
 		argv: [
 			...plan.argv.slice(0, sourceSeparatorIndex),
-			'--ignore-config',
-			'--config-locations',
-			'-',
-			'--no-update',
-			'--no-plugin-dirs',
-			'--no-js-runtimes',
-			'--js-runtimes',
-			`deno:${denoPath}`,
-			'--no-remote-components',
-			'--ffmpeg-location',
-			ffmpegPath,
-			'--abort-on-error',
-			'--no-progress',
+			...ytDlpInvocationHardening(options),
 			// The Resource Envelope terms that reach yt-dlp as options. The projection lives with the
 			// classification of the terms it enforces, so the option profile and the code a violation
 			// reports cannot drift apart the way they did in #52.
@@ -302,7 +319,7 @@ export async function executeDownloadRequest(
 	execution: IExecuteFunctions,
 	plan: YtDlpExecutionPlan,
 	itemIndex: number,
-	options: DownloadRequestOptions,
+	options: YtDlpInvocationOptions,
 ): Promise<INodeExecutionData[]> {
 	const workspaceParent = options.workspaceParent ?? tmpdir();
 	// The workspace bound is derived from the disk the request will actually write to, so it is
@@ -335,8 +352,7 @@ export async function executeDownloadRequest(
 			artifactsDirectory,
 			tempDirectory,
 			resourceEnvelope,
-			options.denoPath ?? join(dirname(options.executablePath), 'deno'),
-			options.ffmpegPath ?? join(dirname(options.executablePath), 'ffmpeg'),
+			options,
 		);
 		const authenticationTransport = await createAuthenticationTransport(
 			controlDirectory,

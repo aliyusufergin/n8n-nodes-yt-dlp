@@ -53,6 +53,14 @@ describe('public documentation', () => {
 					'project-generated synthetic media',
 				],
 				'## Source URL': ['absolute `http:` or `https:` URL', 'Search prefixes'],
+				'## Playlist expansion': [
+					'one independent Download Request per entry',
+					'does not\ninvalidate the Artifacts of the entries around it',
+					'the same Source URL validation',
+					'produces no Download Request',
+					'`inputCount` and `requestCount`',
+					'`--no-playlist` to pin an input item to a single video',
+				],
 				'## Arguments Grammar': [
 					'no environment, command, tilde, brace, or glob expansion',
 					'Outside quotes, backslash may escape only a space, tab, single quote, double quote,',
