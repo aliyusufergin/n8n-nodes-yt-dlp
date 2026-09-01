@@ -50,7 +50,10 @@ import {
 	executeYtDlpNode,
 	type DownloadRequestExecutor,
 } from '../nodes/YtDlp/YtDlp.node';
+import { createYtDlpExecutionPlan } from '../nodes/YtDlp/arguments';
 import { executeDownloadRequest } from '../nodes/YtDlp/download';
+import { expandPlaylistRequest } from '../nodes/YtDlp/playlist-expansion';
+import { MAX_SOURCE_URL_BYTES } from '../nodes/YtDlp/source-url';
 import {
 	MEBIBYTE,
 	createResourceEnvelope,
@@ -1293,5 +1296,201 @@ describe('download request', () => {
 			],
 		]);
 		expect(await readdir(workspaceParent)).toEqual([]);
+	}, 30_000);
+});
+
+
+describe('Playlist Genişletmesi listing', () => {
+	/**
+	 * The hardening a listing reaches the network under. It is the same set a Download Request
+	 * carries and comes from the same definition, so a listing cannot quietly run under a weaker
+	 * profile than the download it precedes.
+	 */
+	const REQUIRED_HARDENING = [
+		'--ignore-config',
+		'--no-update',
+		'--no-plugin-dirs',
+		'--no-js-runtimes',
+		'--no-remote-components',
+		'--abort-on-error',
+	];
+
+	/**
+	 * A fixture yt-dlp that answers a listing the way the packaged one does: the entry template is
+	 * written once per video, and the `playlist:` scoped template is written once for a playlist
+	 * source and never for a single video. It refuses a listing plan that would download or that
+	 * arrives without the invocation hardening a Download Request carries, so the Adapter cannot be
+	 * more forgiving than the executable it stands in for.
+	 */
+	async function createListingExecutable(
+		directory: string,
+		playlists: Readonly<Record<string, readonly string[]>>,
+	): Promise<string> {
+		const executablePath = join(directory, 'controlled-listing-yt-dlp');
+		await writeFile(
+			executablePath,
+			`#!${process.execPath}\n` +
+				`const fs = require('node:fs/promises');\n` +
+				`void (async () => {\n` +
+				`const argv = process.argv.slice(2);\n` +
+				`if (!argv.includes('--simulate') || !argv.includes('--flat-playlist')) {\n` +
+				`  throw new Error('a listing must not download');\n` +
+				`}\n` +
+				`for (const flag of ${JSON.stringify(REQUIRED_HARDENING)}) {\n` +
+				`  if (!argv.includes(flag)) throw new Error('a listing must carry ' + flag);\n` +
+				`}\n` +
+				`const playlists = ${JSON.stringify(playlists)};\n` +
+				`const source = argv[argv.length - 1];\n` +
+				`const entries = playlists[source];\n` +
+				`for (const [index, value] of argv.entries()) {\n` +
+				`  if (value !== '--print-to-file') continue;\n` +
+				`  const [template, path] = [argv[index + 1], argv[index + 2]];\n` +
+				`  if (template.startsWith('playlist:')) {\n` +
+				`    if (entries !== undefined) await fs.writeFile(path, String(entries.length) + '\\n');\n` +
+				`    continue;\n` +
+				`  }\n` +
+				`  await fs.appendFile(path, (entries ?? [source]).map((entry) => entry + '\\n').join(''));\n` +
+				`}\n` +
+				`})().catch((error) => { console.error(error); process.exitCode = 1; });\n`,
+			{ mode: 0o700 },
+		);
+		return executablePath;
+	}
+
+	async function createListingWorkspace(): Promise<string> {
+		const workspaceParent = await mkdtemp(join(tmpdir(), 'n8n-yt-dlp-listing-test-'));
+		temporaryDirectories.push(workspaceParent);
+		return workspaceParent;
+	}
+
+	it('opens a playlist source into one Download Request per listed entry', async () => {
+		const workspaceParent = await createListingWorkspace();
+		const executablePath = await createListingExecutable(workspaceParent, {
+			'https://example.com/playlist': [
+				'https://example.com/entry-one',
+				'https://example.com/entry-two',
+			],
+		});
+
+		const plans = await expandPlaylistRequest(
+			createYtDlpExecutionPlan({
+				sourceUrl: 'https://example.com/playlist',
+				arguments: '--format best --playlist-items 1-2',
+			}),
+			{ executablePath, workspaceParent },
+		);
+
+		expect(plans).toEqual([
+			{
+				argv: ['--format', 'best', '--no-playlist', '--', 'https://example.com/entry-one'],
+			},
+			{
+				argv: ['--format', 'best', '--no-playlist', '--', 'https://example.com/entry-two'],
+			},
+		]);
+		expect(await readdir(workspaceParent)).toEqual(['controlled-listing-yt-dlp']);
+	}, 30_000);
+
+	it('leaves a source that is not a playlist as the single request the author wrote', async () => {
+		const workspaceParent = await createListingWorkspace();
+		const executablePath = await createListingExecutable(workspaceParent, {});
+		const plan = createYtDlpExecutionPlan({
+			sourceUrl: 'https://example.com/video',
+			arguments: '--format best',
+		});
+
+		const plans = await expandPlaylistRequest(plan, { executablePath, workspaceParent });
+
+		// The listing prints the media address of a single video too. Expanding on that address
+		// would hand the request a URL the author never wrote and drop the extractor that found it,
+		// so the absence of the playlist marker has to leave the plan untouched.
+		expect(plans).toEqual([plan]);
+	}, 30_000);
+
+	it('reads no listing for a request the Arguments pinned to a single video', async () => {
+		const workspaceParent = await createListingWorkspace();
+		const executablePath = join(workspaceParent, 'must-not-run');
+		const plan = createYtDlpExecutionPlan({
+			sourceUrl: 'https://example.com/playlist',
+			arguments: '--no-playlist',
+		});
+
+		await expect(
+			expandPlaylistRequest(plan, { executablePath, workspaceParent }),
+		).resolves.toEqual([plan]);
+		expect(await readdir(workspaceParent)).toEqual([]);
+	});
+
+	it('produces no Download Request for a listed address the Source URL contract rejects', async () => {
+		const workspaceParent = await createListingWorkspace();
+		const executablePath = await createListingExecutable(workspaceParent, {
+			'https://example.com/playlist': [
+				'https://example.com/entry-one',
+				'file:///etc/passwd',
+				'ytsearch:entry',
+				'https://example.com/entry-two',
+			],
+		});
+
+		const plans = await expandPlaylistRequest(
+			createYtDlpExecutionPlan({
+				sourceUrl: 'https://example.com/playlist',
+				arguments: '',
+			}),
+			{ executablePath, workspaceParent },
+		);
+
+		expect(plans.map(({ argv }) => argv[argv.length - 1])).toEqual([
+			'https://example.com/entry-one',
+			'https://example.com/entry-two',
+		]);
+	}, 30_000);
+
+	// The listing is bounded by the Source URL budget rather than by an entry count, so a line no
+	// Source URL could be is dropped without taking the entries around it with it.
+	it('drops a listed address longer than a Source URL and keeps its neighbours', async () => {
+		const workspaceParent = await createListingWorkspace();
+		const overlong = `https://example.com/${'a'.repeat(MAX_SOURCE_URL_BYTES)}`;
+		const executablePath = await createListingExecutable(workspaceParent, {
+			'https://example.com/playlist': [
+				'https://example.com/entry-one',
+				overlong,
+				'https://example.com/entry-two',
+			],
+		});
+
+		const plans = await expandPlaylistRequest(
+			createYtDlpExecutionPlan({
+				sourceUrl: 'https://example.com/playlist',
+				arguments: '',
+			}),
+			{ executablePath, workspaceParent },
+		);
+
+		expect(plans.map(({ argv }) => argv[argv.length - 1])).toEqual([
+			'https://example.com/entry-one',
+			'https://example.com/entry-two',
+		]);
+	}, 30_000);
+
+	it('fails the listing the way a failed Download Request fails', async () => {
+		const workspaceParent = await createListingWorkspace();
+		const executablePath = join(workspaceParent, 'failing-yt-dlp');
+		await writeFile(
+			executablePath,
+			`#!${process.execPath}\nprocess.exitCode = 1;\n`,
+			{ mode: 0o700 },
+		);
+
+		await expect(
+			expandPlaylistRequest(
+				createYtDlpExecutionPlan({
+					sourceUrl: 'https://example.com/playlist',
+					arguments: '',
+				}),
+				{ executablePath, workspaceParent },
+			),
+		).rejects.toMatchObject({ code: 'YTDLP_FAILED' });
+		expect(await readdir(workspaceParent)).toEqual(['failing-yt-dlp']);
 	}, 30_000);
 });

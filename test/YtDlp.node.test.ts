@@ -2,7 +2,14 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 
-import type { IExecuteFunctions, INode, IWorkflowSettings, OnError } from 'n8n-workflow';
+import type {
+	IBinaryData,
+	IExecuteFunctions,
+	INode,
+	INodeExecutionData,
+	IWorkflowSettings,
+	OnError,
+} from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError, getNodeOutputs } from 'n8n-workflow';
 import { ToolchainAttestationError } from 'n8n-nodes-yt-dlp-platform';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -11,6 +18,7 @@ import {
 	YtDlp,
 	executeYtDlpNode,
 	type DownloadRequestExecutor,
+	type PlaylistExpander,
 } from '../nodes/YtDlp/YtDlp.node';
 import type { YtDlpAuthenticationData } from '../nodes/YtDlp/authentication';
 import { InvalidArgumentsError } from '../nodes/YtDlp/arguments';
@@ -245,6 +253,8 @@ describe('yt-dlp node adapter', () => {
 			durationMs: expect.any(Number),
 			executionId: 'execution-id',
 			finalBytes: 123,
+			inputCount: 1,
+			requestCount: 1,
 			outcome: 'success',
 			packageVersion: '0.2.1',
 			schemaVersion: 1,
@@ -1156,5 +1166,239 @@ describe('yt-dlp node adapter', () => {
 			context: { errorCode: 'INVALID_ARGUMENTS', itemIndex: 0 },
 		});
 		expect(startRequest).not.toHaveBeenCalled();
+	});
+});
+
+describe('Playlist Genişletmesi', () => {
+	function artifactItem(fileName: string, itemIndex: number): INodeExecutionData {
+		return {
+			json: {
+				status: 'success',
+				artifactIndex: 1,
+				artifactCount: 1,
+				fileName,
+				mimeType: 'video/mp4',
+				sizeBytes: 64,
+			},
+			binary: { data: { data: 'stored', mimeType: 'video/mp4' } as IBinaryData },
+			pairedItem: { item: itemIndex },
+		};
+	}
+
+	/** A listing that opens the given Source URL into one plan per entry address. */
+	function expandInto(...entryUrls: string[]): PlaylistExpander {
+		return vi.fn<PlaylistExpander>(async (plan) => {
+			const entryArgv = plan.argv.slice(0, plan.argv.lastIndexOf('--'));
+			return entryUrls.map((entryUrl) => ({ argv: [...entryArgv, '--', entryUrl] }));
+		});
+	}
+
+	it('opens one playlist input item into one Download Request per entry', async () => {
+		const expandRequest = expandInto(
+			'https://example.com/entry-one',
+			'https://example.com/entry-two',
+			'https://example.com/entry-three',
+		);
+		const startRequest = vi.fn<DownloadRequestExecutor>(async (plan, itemIndex) => [
+			artifactItem(`${plan.argv[plan.argv.length - 1]}.mp4`, itemIndex),
+		]);
+		const context = createExecutionContext([
+			{ sourceUrl: 'https://example.com/playlist', arguments: '' },
+		]);
+
+		const [items] = await executeYtDlpNode(
+			context,
+			startRequest,
+			createTestWorkspace,
+			undefined,
+			expandRequest,
+		);
+
+		expect(expandRequest).toHaveBeenCalledOnce();
+		expect(startRequest).toHaveBeenCalledTimes(3);
+		expect(items.map(({ json }) => json.fileName)).toEqual([
+			'https://example.com/entry-one.mp4',
+			'https://example.com/entry-two.mp4',
+			'https://example.com/entry-three.mp4',
+		]);
+		// Every Artifact Item still names the input item it came from, however far that item
+		// expanded.
+		expect(items.map(({ pairedItem }) => pairedItem)).toEqual([
+			{ item: 0 },
+			{ item: 0 },
+			{ item: 0 },
+		]);
+	});
+
+	it('runs the requests one entry at a time', async () => {
+		const running: number[] = [];
+		let concurrent = 0;
+		const startRequest = vi.fn<DownloadRequestExecutor>(async (plan, itemIndex) => {
+			running.push(++concurrent);
+			await Promise.resolve();
+			concurrent--;
+			return [artifactItem(`${plan.argv[plan.argv.length - 1]}.mp4`, itemIndex)];
+		});
+
+		await executeYtDlpNode(
+			createExecutionContext([{ sourceUrl: 'https://example.com/playlist', arguments: '' }]),
+			startRequest,
+			createTestWorkspace,
+			undefined,
+			expandInto(
+				'https://example.com/entry-one',
+				'https://example.com/entry-two',
+				'https://example.com/entry-three',
+			),
+		);
+
+		expect(running).toEqual([1, 1, 1]);
+	});
+
+	// The atomicity of a Download Request is per request. One entry the host refuses cannot reach
+	// back into the Artifacts of the requests that already succeeded, nor stop the ones after it.
+	it('delivers the Artifacts of the entries around a failing one', async () => {
+		const startRequest = vi.fn<DownloadRequestExecutor>(async (plan, itemIndex) => {
+			if (plan.argv[plan.argv.length - 1] === 'https://example.com/entry-two') {
+				throw new YtDlpProcessError('YTDLP_FAILED', 'entry refused', '', '');
+			}
+			return [artifactItem(`${plan.argv[plan.argv.length - 1]}.mp4`, itemIndex)];
+		});
+		const context = createExecutionContext(
+			[{ sourceUrl: 'https://example.com/playlist', arguments: '' }],
+			true,
+		);
+
+		const [items] = await executeYtDlpNode(
+			context,
+			startRequest,
+			createTestWorkspace,
+			undefined,
+			expandInto(
+				'https://example.com/entry-one',
+				'https://example.com/entry-two',
+				'https://example.com/entry-three',
+			),
+		);
+
+		expect(items).toEqual([
+			artifactItem('https://example.com/entry-one.mp4', 0),
+			{
+				json: {
+					status: 'error',
+					errorCode: 'YTDLP_FAILED',
+					errorMessage: 'yt-dlp could not complete the Download Request.',
+				},
+				pairedItem: { item: 0 },
+			},
+			artifactItem('https://example.com/entry-three.mp4', 0),
+		]);
+	});
+
+	it('reports one terminal event per Download Request against the source input item', async () => {
+		const startRequest = vi.fn<DownloadRequestExecutor>(async (plan, itemIndex) => [
+			artifactItem(`${plan.argv[plan.argv.length - 1]}.mp4`, itemIndex),
+		]);
+		const context = createExecutionContext([
+			{ sourceUrl: 'https://example.com/playlist', arguments: '' },
+		]);
+
+		await executeYtDlpNode(
+			context,
+			startRequest,
+			createTestWorkspace,
+			undefined,
+			expandInto('https://example.com/entry-one', 'https://example.com/entry-two'),
+		);
+
+		expect(context.logger.debug).toHaveBeenCalledTimes(2);
+		expect(context.logger.debug).toHaveBeenNthCalledWith(
+			2,
+			'yt-dlp request terminal',
+			expect.objectContaining({ inputIndex: 0, outcome: 'success' }),
+		);
+	});
+
+	// How far an input item expanded is the size of the job, and an operator has to be able to
+	// verify it after the fact. It is the one execution summary that carries it — the Observability
+	// Sınırı allows no third event.
+	it('reports how many requests the input items opened into in the execution summary', async () => {
+		const startRequest = vi.fn<DownloadRequestExecutor>().mockResolvedValue([]);
+		const context = createExecutionContext([
+			{ sourceUrl: 'https://example.com/playlist', arguments: '' },
+			{ sourceUrl: 'https://example.com/video', arguments: '' },
+		]);
+
+		await executeYtDlpNode(
+			context,
+			startRequest,
+			createTestWorkspace,
+			undefined,
+			vi.fn<PlaylistExpander>(async (plan) =>
+				plan.argv[plan.argv.length - 1] === 'https://example.com/playlist'
+					? [{ argv: ['--', 'https://example.com/entry-one'] }, { argv: ['--', 'https://example.com/entry-two'] }]
+					: [plan],
+			),
+		);
+
+		expect(context.logger.info).toHaveBeenCalledOnce();
+		expect(context.logger.info).toHaveBeenCalledWith(
+			'yt-dlp execution summary',
+			expect.objectContaining({ inputCount: 2, requestCount: 3, outcome: 'success' }),
+		);
+	});
+
+	// A listing that fails is one input item's failure, classified like any other request failure,
+	// and no Download Request is started for it.
+	it('classifies a failed listing as a request failure on the source input item', async () => {
+		const startRequest = vi.fn<DownloadRequestExecutor>();
+		const expandRequest = vi
+			.fn<PlaylistExpander>()
+			.mockRejectedValue(new YtDlpProcessError('YTDLP_FAILED', 'listing failed', '', ''));
+		const context = createExecutionContext([
+			{ sourceUrl: 'https://example.com/valid', arguments: '' },
+			{ sourceUrl: 'https://example.com/playlist', arguments: '' },
+		]);
+
+		await expect(
+			executeYtDlpNode(context, startRequest, createTestWorkspace, undefined, expandRequest),
+		).rejects.toMatchObject({ context: { errorCode: 'YTDLP_FAILED', itemIndex: 0 } });
+		expect(startRequest).not.toHaveBeenCalled();
+	});
+
+	it('passes the listing the request envelope, cancel signal and Execution Workspace', async () => {
+		vi.stubEnv('N8N_DEFAULT_BINARY_DATA_MODE', 'database');
+		const expandRequest = vi.fn<PlaylistExpander>(async (plan) => [plan]);
+
+		await executeYtDlpNode(
+			createExecutionContext([
+				{ sourceUrl: 'https://example.com/playlist', arguments: '--format best' },
+			]),
+			vi.fn<DownloadRequestExecutor>().mockResolvedValue([]),
+			undefined,
+			undefined,
+			expandRequest,
+		);
+
+		expect(expandRequest).toHaveBeenCalledWith(
+			{
+				argv: [
+					'--playlist-items',
+					'1:5',
+					'--format',
+					'best',
+					'--',
+					'https://example.com/playlist',
+				],
+			},
+			{
+				noProgressLimitMs: NO_PROGRESS_LIMIT_MS,
+				maximumArtifactSizeBytes: 512 * 1024 * 1024,
+				maximumWorkspaceSizeBytes: expect.any(Number),
+			},
+			expect.any(AbortSignal),
+			undefined,
+			expect.stringMatching(/\/n8n-nodes-yt-dlp\/n8n-nodes-yt-dlp-execution-/),
+		);
 	});
 });

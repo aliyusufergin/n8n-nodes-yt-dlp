@@ -71,6 +71,7 @@ function contentType(pathname: string): string {
 function createExecutionContext(
 	sourceUrl: string,
 	argumentsValue: string,
+	continueOnFail = false,
 ): IExecuteFunctions {
 	const node: INode = {
 		id: 'node-id',
@@ -82,7 +83,7 @@ function createExecutionContext(
 	};
 
 	return {
-		continueOnFail: vi.fn(() => false),
+		continueOnFail: vi.fn(() => continueOnFail),
 		getExecutionCancelSignal: vi.fn(() => undefined),
 		getExecutionId: vi.fn(() => 'real-toolchain-execution'),
 		getInputData: vi.fn(() => [{ json: {} }]),
@@ -722,22 +723,54 @@ describe('real packaged media toolchain', () => {
 		}
 	});
 
-	it('fails the Download Request when real yt-dlp reaches the refused playlist entry', async () => {
-		const context = createExecutionContext(`${originUrl}/playlist/partial`, '--yes-playlist');
+	// The behaviour Playlist Genişletmesi exists for, against the real extractor: the refused
+	// entry loses its own request and nothing else. Before expansion this same page failed the
+	// whole input item and threw away the two Artifacts the origin had already served.
+	it('delivers the entries around the refused one when real yt-dlp is refused', async () => {
+		const context = createExecutionContext(
+			`${originUrl}/playlist/partial`,
+			'--yes-playlist',
+			true,
+		);
 		refusedEntryRequests = 0;
 
-		await expect(executeYtDlpNode(context)).rejects.toMatchObject({
-			context: { errorCode: 'YTDLP_FAILED', itemIndex: 0 },
+		const [items] = await executeYtDlpNode(context);
+
+		expect(items.map(({ json }) => json.status)).toEqual(['success', 'error', 'success']);
+		expect(items[1].json).toEqual({
+			status: 'error',
+			errorCode: 'YTDLP_FAILED',
+			errorMessage: 'yt-dlp could not complete the Download Request.',
 		});
+		// Both survivors carry real bytes: an entry's atomicity is its own, so the refusal beside
+		// them cannot invalidate their Artifacts.
+		expect(items[0].binary?.data.data.length).toBeGreaterThan(0);
+		expect(items[2].binary?.data.data.length).toBeGreaterThan(0);
 		// The failure has to be the refusal. `YTDLP_FAILED` alone would stay green if the page
 		// stopped being read as a playlist and yt-dlp failed for an unrelated reason, so the test
 		// pins that yt-dlp actually asked the origin for the entry it refuses.
 		expect(refusedEntryRequests).toBeGreaterThan(0);
-	}, 60_000);
+		// Every output item still names the input item the playlist came from.
+		expect(items.map(({ pairedItem }) => pairedItem)).toEqual([
+			{ item: 0 },
+			{ item: 0 },
+			{ item: 0 },
+		]);
+	}, 90_000);
+
+	it('fails the execution on a refused entry when Continue On Fail is off', async () => {
+		const context = createExecutionContext(`${originUrl}/playlist/partial`, '--yes-playlist');
+
+		await expect(executeYtDlpNode(context)).rejects.toMatchObject({
+			context: { errorCode: 'YTDLP_FAILED', itemIndex: 0 },
+		});
+	}, 90_000);
 
 	// The refused entry sits in the middle, so selecting around it proves the page really does
 	// present three entries to the real extractor and that the two survivors are the ones the
-	// origin serves. Without this the test above could pass on a page yt-dlp read as one entry.
+	// origin serves. The selection is spent while the entry list is read: the requests it produces
+	// each download one entry address, so each names itself after that address rather than after
+	// its position on the page.
 	it('serves the entries on both sides of the refused playlist entry', async () => {
 		const context = createExecutionContext(
 			`${originUrl}/playlist/partial`,
@@ -747,34 +780,32 @@ describe('real packaged media toolchain', () => {
 		const [items] = await executeYtDlpNode(context);
 
 		expect(items).toHaveLength(2);
-		// The generic extractor titles each entry after its position on the page, so the two
-		// survivors name themselves: positions 1 and 3, with the refused entry 2 absent between
-		// them.
 		expect(items.map(({ json }) => json.fileName)).toEqual([
-			expect.stringMatching(/-1\.mp4$/u),
-			expect.stringMatching(/-3\.mp4$/u),
+			'000001-alpha.mp4',
+			'000001-bravo.mp4',
 		]);
-	}, 60_000);
+	}, 90_000);
 
-	it('returns a deterministic playlist atomically in basename order', async () => {
+	it('opens one playlist input item into one atomic Download Request per entry', async () => {
 		const runPlaylist = async () => {
 			const context = createExecutionContext(
 				`${originUrl}/playlist`,
 				'--yes-playlist --playlist-items 1-2',
 			);
 			const [items] = await executeYtDlpNode(context);
-			return items;
+			return { context, items };
 		};
 
 		const firstRun = await runPlaylist();
 		const secondRun = await runPlaylist();
-		const firstNames = firstRun.map(({ json }) => String(json.fileName));
+		const firstNames = firstRun.items.map(({ json }) => String(json.fileName));
 
-		expect(firstRun).toHaveLength(2);
-		expect(firstNames).toEqual([...firstNames].sort());
-		expect(secondRun.map(({ json }) => json.fileName)).toEqual(firstNames);
+		expect(firstRun.items).toHaveLength(2);
+		expect(secondRun.items.map(({ json }) => json.fileName)).toEqual(firstNames);
+		// Each entry is its own request, so each carries its own Artifact set of one rather than a
+		// position in a set the whole playlist shares.
 		expect(
-			firstRun.map(({ json, pairedItem }) => ({
+			firstRun.items.map(({ json, pairedItem }) => ({
 				artifactIndex: json.artifactIndex,
 				artifactCount: json.artifactCount,
 				mimeType: json.mimeType,
@@ -783,16 +814,22 @@ describe('real packaged media toolchain', () => {
 		).toEqual([
 			{
 				artifactIndex: 1,
-				artifactCount: 2,
+				artifactCount: 1,
 				mimeType: 'video/mp4',
 				pairedItem: { item: 0 },
 			},
 			{
-				artifactIndex: 2,
-				artifactCount: 2,
+				artifactIndex: 1,
+				artifactCount: 1,
 				mimeType: 'video/mp4',
 				pairedItem: { item: 0 },
 			},
 		]);
-	}, 60_000);
+		// How far the one input item opened is what the execution summary has to report, so an
+		// operator can verify the size of the job after the fact.
+		expect(firstRun.context.logger.info).toHaveBeenCalledWith(
+			'yt-dlp execution summary',
+			expect.objectContaining({ inputCount: 1, requestCount: 2 }),
+		);
+	}, 120_000);
 });
