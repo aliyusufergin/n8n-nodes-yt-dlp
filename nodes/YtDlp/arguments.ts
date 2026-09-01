@@ -180,6 +180,34 @@ function toSafePositiveInteger(value: string): number | undefined {
 	return Number.isSafeInteger(number) ? number : undefined;
 }
 
+function isRetryCount(value: string): boolean {
+	if (!/^(?:0|[1-9]\d*)$/u.test(value)) return false;
+	const count = Number(value);
+	return Number.isSafeInteger(count) && count <= 100;
+}
+
+function isSocketTimeout(value: string): boolean {
+	if (!/^(?:0|[1-9]\d*)(?:\.\d+)?$/u.test(value)) return false;
+	const seconds = Number(value);
+	return Number.isFinite(seconds) && seconds >= 0.1 && seconds <= 300;
+}
+
+function isLimitRate(value: string): boolean {
+	const match = /^(?<amount>(?:0|[1-9]\d*)(?:\.\d+)?)(?<unit>[KMG]?)$/u.exec(value);
+	if (match?.groups === undefined) return false;
+
+	const multiplier =
+		match.groups.unit === 'G'
+			? 1024 ** 3
+			: match.groups.unit === 'M'
+				? 1024 ** 2
+				: match.groups.unit === 'K'
+					? 1024
+					: 1;
+	const bytesPerSecond = Number(match.groups.amount) * multiplier;
+	return Number.isFinite(bytesPerSecond) && bytesPerSecond >= 1024 && bytesPerSecond <= 1024 ** 3;
+}
+
 function playlistItemCardinality(value: string): number | undefined {
 	if (value.length > 512) return undefined;
 	let cardinality = 0;
@@ -296,6 +324,24 @@ const optionDefinitions: OptionDefinition[] = [
 	},
 	{ canonicalName: '--yes-playlist', conflicts: ['--no-playlist'] },
 	{ canonicalName: '--no-playlist', conflicts: ['--yes-playlist'] },
+	{
+		canonicalName: '--retries',
+		acceptedValueSummary: 'an integer from 0 through 100',
+		valueValidator: isRetryCount,
+	},
+	{
+		canonicalName: '--fragment-retries',
+		acceptedValueSummary: 'an integer from 0 through 100',
+		valueValidator: isRetryCount,
+	},
+	{
+		canonicalName: '--socket-timeout',
+		valueValidator: isSocketTimeout,
+	},
+	{
+		canonicalName: '--limit-rate',
+		valueValidator: isLimitRate,
+	},
 	{ canonicalName: '--write-subs' },
 	{ canonicalName: '--write-auto-subs' },
 	{

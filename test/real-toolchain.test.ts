@@ -406,6 +406,18 @@ afterAll(async () => {
 });
 
 describe('real packaged media toolchain', () => {
+	it('downloads media with every network politeness option through real yt-dlp', async () => {
+		const [items] = await executeYtDlpNode(
+			createExecutionContext(
+				`${originUrl}/combined.mp4`,
+				'--limit-rate 1G --retries 1 --fragment-retries 1 --socket-timeout 5',
+			),
+		);
+
+		expect(items).toHaveLength(1);
+		expect(items[0].json).toMatchObject({ status: 'success', mimeType: 'video/mp4' });
+	}, 60_000);
+
 	// Regression for #52. The Artifact size checks in `validateArtifactSet` are only reachable when
 	// the packaged yt-dlp actually writes the Artifact, so a fixture executable that writes an
 	// oversized file directly cannot pin this: it never runs the option profile that decides

@@ -21,7 +21,7 @@ function expectInvalid(argumentsValue: string) {
 	);
 }
 
-describe('V1 argument execution plan', () => {
+describe('V2 argument execution plan', () => {
 	it('joins quoted fragments and canonicalizes a short alias', () => {
 		const plan = createYtDlpExecutionPlan({
 			sourceUrl: 'https://example.com/video',
@@ -264,6 +264,80 @@ describe('V1 argument execution plan', () => {
 	});
 });
 
+describe('network politeness options', () => {
+	it.each([
+		['--retries 0', ['--retries', '0']],
+		['--retries 100', ['--retries', '100']],
+		['--fragment-retries 0', ['--fragment-retries', '0']],
+		['--fragment-retries 100', ['--fragment-retries', '100']],
+	])('accepts bounded integer retry count %s', (argumentsValue, canonicalArguments) => {
+		expect(plan(argumentsValue).argv).toEqual([
+			'--playlist-items',
+			'1:5',
+			...canonicalArguments,
+			'--',
+			sourceUrl,
+		]);
+	});
+
+	it.each(['0.1', '4.2', '300'])(
+		'accepts bounded socket timeout %s seconds',
+		(socketTimeout) => {
+			expect(plan(`--socket-timeout ${socketTimeout}`).argv).toEqual([
+				'--playlist-items',
+				'1:5',
+				'--socket-timeout',
+				socketTimeout,
+				'--',
+				sourceUrl,
+			]);
+		},
+	);
+
+	it.each(['1024', '1K', '4.2M', '1G'])('accepts bounded download rate %s', (rate) => {
+		expect(plan(`--limit-rate ${rate}`).argv).toEqual([
+			'--playlist-items',
+			'1:5',
+			'--limit-rate',
+			rate,
+			'--',
+			sourceUrl,
+		]);
+	});
+
+	it.each([
+		['--retries infinite', '--retries accepts an integer from 0 through 100.'],
+		['--retries 101', '--retries accepts an integer from 0 through 100.'],
+		[
+			'--fragment-retries infinite',
+			'--fragment-retries accepts an integer from 0 through 100.',
+		],
+		[
+			'--fragment-retries 1.5',
+			'--fragment-retries accepts an integer from 0 through 100.',
+		],
+		[
+			'--socket-timeout 0',
+			'--socket-timeout did not receive a valid value.',
+		],
+		[
+			'--socket-timeout 300.1',
+			'--socket-timeout did not receive a valid value.',
+		],
+		[
+			'--socket-timeout 1e2',
+			'--socket-timeout did not receive a valid value.',
+		],
+		['--limit-rate 1023', '--limit-rate did not receive a valid value.'],
+		['--limit-rate 1.1G', '--limit-rate did not receive a valid value.'],
+		['--limit-rate 1GiB', '--limit-rate did not receive a valid value.'],
+	])('rejects invalid network politeness value %s', (argumentsValue, message) => {
+		expect(() => plan(argumentsValue)).toThrowError(
+			expect.objectContaining({ code: INVALID_ARGUMENTS, message }),
+		);
+	});
+});
+
 describe('option-specific rejection messages', () => {
 	const UNSUPPORTED_OPTION_MESSAGE =
 		'The Arguments value contains an option that is not part of the supported yt-dlp option profile.';
@@ -407,6 +481,10 @@ describe('option-specific rejection messages', () => {
 			`--${marker} value`,
 			`--format=${marker} --format=${marker}`,
 			`--write-subs=${marker}`,
+			`--retries ${marker}`,
+			`--fragment-retries ${marker}`,
+			`--socket-timeout ${marker}`,
+			`--limit-rate ${marker}`,
 		];
 
 		for (const argumentsValue of templates) {
